@@ -37,6 +37,6 @@ test('submission create -> approve -> visible', async ({ page, request }) => {
   expect(foundInApi).toBeTruthy();
 
   // Then verify UI has rendered the item
-  const locator = page.locator(`text=${created.title}`);
+  const locator = page.locator(`text=${created.title}`).first();
   await expect(locator).toBeVisible({ timeout: 20000 });
 });
