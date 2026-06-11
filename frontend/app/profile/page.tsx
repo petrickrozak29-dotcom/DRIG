@@ -20,7 +20,7 @@ import {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, loading, updateProfile, changePassword } = useAuth();
+  const { user, isAuthenticated, loading, updateProfile, changePassword, token } = useAuth();
   const [profileStatus, setProfileStatus] = useState('');
   const [passwordStatus, setPasswordStatus] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
@@ -139,11 +139,49 @@ export default function ProfilePage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setProfileForm((current) => ({ ...current, avatar: String(reader.result || '') }));
-    };
-    reader.readAsDataURL(file);
+    // Enforce client-side size limit for avatar (3 MB)
+    if (file.size > 3 * 1024 * 1024) {
+      setProfileStatus('Gagal: Ukuran foto profil maksimal 3 MB.');
+      return;
+    }
+
+    // If authenticated, try uploading to backend uploads endpoint
+    (async () => {
+      try {
+        if (token) {
+          const fd = new FormData();
+          fd.append('avatar', file);
+
+          const res = await fetch(`${getApiBaseUrl()}/api/uploads/avatar`, {
+            method: 'POST',
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: fd
+          });
+
+          if (res.ok) {
+            const body = await res.json();
+            setProfileForm((current) => ({ ...current, avatar: body.url }));
+            setProfileStatus('');
+            return;
+          }
+        }
+
+        // Fallback to base64 when not authenticated or upload failed
+        const reader = new FileReader();
+        reader.onload = () => {
+          setProfileForm((current) => ({ ...current, avatar: String(reader.result || '') }));
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setProfileForm((current) => ({ ...current, avatar: String(reader.result || '') }));
+        };
+        reader.readAsDataURL(file);
+      }
+    })();
   };
 
   if (loading || !user) {
