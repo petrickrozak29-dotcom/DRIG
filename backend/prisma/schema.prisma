@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== User Management Models ====================
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  name         String
+  avatar       String?
+  bio          String?
+  role         String  @default("USER") // "USER" | "ADMIN"
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  lastLogin DateTime?
+
+  isVerified Boolean @default(false)
+  isActive   Boolean @default(true) // soft delete flag
+
+  // Relationships
+  preferences      UserPreferences?
+  locations        UserLocation[]
+  savedItineraries SavedItinerary[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model UserPreferences {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  interests          String @default("") // store as JSON string for SQLite
+  budgetLevel        String @default("moderate") // 'budget' | 'moderate' | 'premium'
+  mobilityLevel      Int    @default(5) // 1-10 scale
+  maxSpendPerDay     Float  @default(0)
+  distancePreference Float  @default(5) // km
+  language           String @default("id")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserLocation {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  altitude  Float?
+  speed     Float?
+
+  timestamp DateTime
+  source    String   @default("gps") // 'gps' | 'wifi' | 'manual'
+  deviceId  String?
+
+  isDeleted Boolean  @default(false) // soft delete flag
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, timestamp])
+}
+
+model SavedItinerary {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  items       String // store itinerary array as JSON string
+
+  duration           Int
+  totalDistance      Float
+  totalEstimatedCost Float
+
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  rating   Int?
+  feedback String?
+
+  isDeleted Boolean @default(false) // soft delete flag
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ==================== Existing Content Models ====================
+
+model Tourism {
+  id          String @id @default(cuid())
+  name        String
+  description String
+  latitude    Float
+  longitude   Float
+  image       String
+  category    String
+
+  @@index([category])
+  @@index([latitude, longitude])
+}
+
+model Culinary {
+  id          String @id @default(cuid())
+  name        String
+  description String
+  priceRange  String
+  image       String
+}
+
+model Event {
+  id       String   @id @default(cuid())
+  title    String
+  date     DateTime
+  location String
+  image    String
+}
+
+model Article {
+  id       String @id @default(cuid())
+  title    String
+  content  String
+  category String
+}
