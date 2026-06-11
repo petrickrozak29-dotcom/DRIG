@@ -28,3 +28,7 @@ jobs:
         run: |
           npm ci
           npm run build
+      - name: E2E Smoke (scripts)
+        run: |
+          npm install --prefix . node-fetch@3
+          node scripts/e2e-smoke.js
