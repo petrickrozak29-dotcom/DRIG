@@ -8,6 +8,7 @@ import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
 import { useAuth } from '../../contexts/AuthContext';
 import { getApiBaseUrl } from '../../lib/api';
+import { submitCommunityCulinary, getStoredCommunityCulinary } from '../../lib/magelang-data';
 
 type CommunityCulinary = {
   id: string;
