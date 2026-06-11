@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from './prismaClient';
 
 const EARTH_RADIUS_KM = 6371;
 

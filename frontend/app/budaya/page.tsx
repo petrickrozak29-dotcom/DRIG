@@ -55,6 +55,7 @@ const cultureItems = [
 
 export default function BudayaPage() {
   const [managedCulture, setManagedCulture] = useState<DeveloperContentItem[]>([]);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const refresh = () => setManagedCulture(getDeveloperContent('culture'));
@@ -81,6 +82,12 @@ export default function BudayaPage() {
     [managedCulture]
   );
 
+  const filteredItems = useMemo(() => {
+    if (!search) return items;
+    const q = search.toLowerCase();
+    return items.filter((it) => (it.title + ' ' + it.description).toLowerCase().includes(q));
+  }, [items, search]);
+
   return (
     <GradientBg>
       <AnimatedBackground />
@@ -96,10 +103,13 @@ export default function BudayaPage() {
           <p className="mx-auto mt-4 max-w-3xl text-slate-300">
             Ringkasan budaya ini diarahkan ke sumber artikel dan kanal resmi/terkait, supaya pengunjung bisa membaca konteks lengkapnya.
           </p>
+          <div className="mt-4 flex justify-center">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari budaya..." className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none w-full max-w-md focus:border-violet-400" />
+          </div>
         </section>
 
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
             const Icon = item.icon;
 
             return (

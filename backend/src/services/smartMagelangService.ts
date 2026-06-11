@@ -1,6 +1,5 @@
-import { PrismaClient, SmartMagelangContent, Category } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { SmartMagelangContent, Category } from '@prisma/client';
+import prisma from './prismaClient';
 
 export interface CreateSmartMagelangContentInput {
   title: string;
@@ -41,6 +40,22 @@ export const smartMagelangService = {
         categoryId: category.id
       }
     });
+  },
+
+  async updateContent(id: string, input: Partial<CreateSmartMagelangContentInput>): Promise<SmartMagelangContent> {
+    const { categoryName, ...rest } = input as any;
+
+    if (categoryName) {
+      // ensure category exists and belongs to SMART_MAGELANG
+      let category = await prisma.category.findFirst({ where: { name: categoryName, featureType: 'SMART_MAGELANG' } });
+      if (!category) {
+        category = await prisma.category.create({ data: { name: categoryName, featureType: 'SMART_MAGELANG' } });
+      }
+
+      return await prisma.smartMagelangContent.update({ where: { id }, data: { ...rest, categoryId: category.id } });
+    }
+
+    return await prisma.smartMagelangContent.update({ where: { id }, data: { ...rest } });
   },
 
   async deleteContent(id: string): Promise<SmartMagelangContent> {

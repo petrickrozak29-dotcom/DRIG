@@ -12,10 +12,12 @@ import locationsRouter from './routes/locations';
 import recommendationsRouter from './routes/recommendations';
 import redisClient from './services/redisClient';
 import { initializeOpenAIClient } from './services/openaiClient';
+import prisma from './services/prismaClient';
 import categoriesRouter from './routes/categories';
 import uploadsRouter from './routes/uploads';
 import notificationsRouter from './routes/notifications';
 import submissionsRouter from './routes/submissions';
+import seedRouter from './routes/seed';
 import path from 'path';
 
 const app = express();
@@ -40,6 +42,7 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/submissions', submissionsRouter);
+app.use('/api/seed', seedRouter);
 
 // Serve uploaded files (note: persistent storage required for production)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -94,7 +97,7 @@ app.get('/', (_req, res) => {
   });
 });
 
-app.listen(port, async () => {
+const server = app.listen(port, async () => {
   console.log(`Backend running on http://localhost:${port}`);
   
   // Initialize Redis connection
@@ -133,14 +136,30 @@ app.listen(port, async () => {
 });
 
 // Graceful shutdown handling
-process.on('SIGTERM', async () => {
-  console.log('[Shutdown] SIGTERM received, closing connections...');
-  await redisClient.disconnect();
-  process.exit(0);
-});
+async function gracefulShutdown(signal: string) {
+  console.log(`[Shutdown] ${signal} received, closing connections...`);
+  try {
+    await redisClient.disconnect();
+  } catch (err) {
+    console.warn('[Shutdown] Error disconnecting Redis:', err);
+  }
 
-process.on('SIGINT', async () => {
-  console.log('[Shutdown] SIGINT received, closing connections...');
-  await redisClient.disconnect();
-  process.exit(0);
-});
+  try {
+    await prisma.$disconnect();
+  } catch (err) {
+    console.warn('[Shutdown] Error disconnecting Prisma:', err);
+  }
+
+  try {
+    server.close(() => {
+      console.log('[Shutdown] Server closed');
+      process.exit(0);
+    });
+  } catch (err) {
+    console.warn('[Shutdown] Error closing server, forcing exit:', err);
+    process.exit(0);
+  }
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

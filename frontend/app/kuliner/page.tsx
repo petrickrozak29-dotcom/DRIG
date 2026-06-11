@@ -8,7 +8,7 @@ import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
 import { useAuth } from '../../contexts/AuthContext';
 import { getApiBaseUrl } from '../../lib/api';
-import { submitCommunityCulinary, getStoredCommunityCulinary } from '../../lib/magelang-data';
+import { getStoredCommunityCulinary, submitCommunityCulinary, submitCommunityCulinaryAsync, fetchCulinaryItems } from '../../lib/magelang-data';
 
 type CommunityCulinary = {
   id: string;
@@ -40,9 +40,10 @@ type SmartMapItem = {
 const culinaryCategories = ['Makanan Khas', 'Pusat Kuliner', 'UMKM', 'Kopi dan Kafe'];
 
 export default function KulinerPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState('Semua');
   const [items, setItems] = useState<SmartMapItem[]>([]);
+  const [search, setSearch] = useState('');
   const [submissions, setSubmissions] = useState<CommunityCulinary[]>([]);
   const [status, setStatus] = useState('');
   const [formState, setFormState] = useState({
@@ -58,21 +59,27 @@ export default function KulinerPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function fetchCulinary() {
+    let timer: any;
+    async function fetchCulinary(q?: string) {
       try {
-        const res = await fetch(`${getApiBaseUrl()}/api/culinary?includePending=false`);
-        if (!res.ok) {
-          setItems([]);
-          return;
-        }
+        const params = new URLSearchParams();
+        params.set('includePending', 'false');
+        if (q) params.set('q', q);
+        const res = await fetch(`${getApiBaseUrl()}/api/culinary?${params.toString()}`);
+        if (!res.ok) return setItems([]);
         const data = await res.json();
-        if (mounted) setItems(data as SmartMapItem[]);
+        setItems(data as SmartMapItem[]);
       } catch (err) {
-        if (mounted) setItems([]);
+        setItems([]);
       }
     }
 
-    fetchCulinary();
+    timer = setTimeout(() => fetchCulinary(search || undefined), 300);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
 
     return () => {
       mounted = false;
@@ -126,9 +133,16 @@ export default function KulinerPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Enforce client-side size limit for submission images (5 MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus('Gagal: Ukuran gambar maksimal 5 MB.');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       setFormState((current) => ({ ...current, image: String(reader.result || '') }));
+      setStatus('');
     };
     reader.readAsDataURL(file);
   };
@@ -141,22 +155,27 @@ export default function KulinerPage() {
       return;
     }
 
-    const saved = submitCommunityCulinary({
-      ...formState,
-      submittedBy: user?.email
-    });
-
-    setFormState({
-      title: '',
-      typeLabel: 'UMKM',
-      location: '',
-      description: '',
-      priceRange: '',
-      image: '',
-      link: ''
-    });
-    setSubmissions(getStoredCommunityCulinary());
-    setStatus(`${saved.title} masuk antrean review developer.`);
+    (async () => {
+      try {
+        const payload = await submitCommunityCulinaryAsync({ ...formState, submittedBy: user?.email }, token ?? undefined);
+        setStatus(`${payload.title} berhasil dikirim dan menunggu moderasi.`);
+      } catch (err: any) {
+        // fallback to local storage when network fails
+        const saved = submitCommunityCulinary({ ...formState, submittedBy: user?.email } as any);
+        setStatus(`${saved.title} masuk antrean review developer (offline).`);
+      } finally {
+        setFormState({
+          title: '',
+          typeLabel: 'UMKM',
+          location: '',
+          description: '',
+          priceRange: '',
+          image: '',
+          link: ''
+        });
+        setSubmissions(getStoredCommunityCulinary());
+      }
+    })();
   };
 
   return (
@@ -177,20 +196,23 @@ export default function KulinerPage() {
         </section>
 
         <section className="mb-8 flex flex-wrap justify-center gap-3">
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              onClick={() => setSelectedFilter(filter)}
-              className={`rounded-lg px-5 py-3 text-sm font-semibold transition ${
-                selectedFilter === filter
-                  ? 'bg-amber-400 text-slate-950'
-                  : 'border border-slate-700 bg-slate-900/70 text-slate-300 hover:border-amber-300/60'
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
+          <div className="flex items-center gap-3">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kuliner..." className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-amber-400" />
+            {filters.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => setSelectedFilter(filter)}
+                className={`rounded-lg px-5 py-3 text-sm font-semibold transition ${
+                  selectedFilter === filter
+                    ? 'bg-amber-400 text-slate-950'
+                    : 'border border-slate-700 bg-slate-900/70 text-slate-300 hover:border-amber-300/60'
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
         </section>
 
         <section className="mb-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">

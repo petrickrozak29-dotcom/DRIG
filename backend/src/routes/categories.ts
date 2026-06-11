@@ -1,9 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../services/prismaClient';
 import { categoryService } from '../services/categoryService';
 import * as authService from '../services/authService';
-
-const prisma = new PrismaClient();
 const router = Router();
 
 async function authenticateDeveloper(req: Request, res: Response, next: any) {

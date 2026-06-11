@@ -55,6 +55,7 @@ const timeline = [
 
 export default function SejarahPage() {
   const [managedHistory, setManagedHistory] = useState<DeveloperContentItem[]>([]);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const refresh = () => setManagedHistory(getDeveloperContent('history'));
@@ -81,6 +82,12 @@ export default function SejarahPage() {
     [managedHistory]
   );
 
+  const filteredItems = useMemo(() => {
+    if (!search) return items;
+    const q = search.toLowerCase();
+    return items.filter((it) => (it.period + ' ' + it.detail).toLowerCase().includes(q));
+  }, [items, search]);
+
   return (
     <GradientBg>
       <AnimatedBackground />
@@ -105,6 +112,9 @@ export default function SejarahPage() {
             <PlayCircle className="h-5 w-5" />
             Tonton Video Sejarah
           </a>
+          <div className="mt-4 flex justify-center">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari sejarah..." className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none w-full max-w-md focus:border-rose-400" />
+          </div>
         </section>
 
         <section className="space-y-6">

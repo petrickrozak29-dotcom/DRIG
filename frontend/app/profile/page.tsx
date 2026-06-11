@@ -12,7 +12,7 @@ import {
   formatDate,
   getCommunityEvents,
   getStoredCommunityCulinary,
-  normalizeApiEvents,
+  fetchEvents,
   type CommunityCulinary,
   type CommunityEvent,
   type EventStatus
@@ -77,23 +77,18 @@ export default function ProfilePage() {
   useEffect(() => {
     let mounted = true;
 
-    async function fetchEvents() {
+    async function load() {
       try {
-        const response = await fetch(`${getApiBaseUrl()}/api/events?includePending=true`);
-        if (!response.ok) return;
-        const payload = await response.json();
-        const records = Array.isArray(payload) ? payload : payload.events;
-        if (mounted) setApiEvents(normalizeApiEvents(records));
+        const records = await fetchEvents(true);
+        if (mounted) setApiEvents(records);
       } catch {
         if (mounted) setApiEvents([]);
       }
     }
 
-    fetchEvents();
+    load();
 
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [dataVersion]);
 
   const handleProfileSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

@@ -1,6 +1,5 @@
-import { PrismaClient, Submission } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Submission } from '@prisma/client';
+import prisma from './prismaClient';
 
 export interface CreateSubmissionInput {
   title: string;
@@ -57,9 +56,24 @@ export const submissionService = {
     return newSubmission;
   },
 
-  async getSubmissions(filters?: { featureType?: string; status?: string; submittedById?: string }) {
+  async getSubmissions(filters?: { featureType?: string; status?: string; submittedById?: string; q?: string }) {
+    const { q, ...rest } = filters || {};
+    const where: any = { ...rest };
+
+    if (q) {
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { description: { contains: q, mode: 'insensitive' } },
+            { category: { name: { contains: q, mode: 'insensitive' } } }
+          ]
+        }
+      ];
+    }
+
     return await prisma.submission.findMany({
-      where: filters,
+      where,
       include: {
         category: true,
         submittedBy: {

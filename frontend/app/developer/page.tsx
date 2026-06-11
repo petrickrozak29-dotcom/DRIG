@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
+import CategoryManager from '../../components/category-manager';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson, getApiBaseUrl } from '../../lib/api';
 import {
-  culinaryItems,
   deleteDeveloperContent,
   formatDate,
   getCommunityEvents,
@@ -22,11 +22,14 @@ import {
   isEventPast,
   normalizeApiEvents,
   replaceDeveloperContent,
-  tourismItems,
   updateCommunityCulinaryStatus,
   updateCommunityEventStatus,
   updateCommunityTourismStatus,
   upsertDeveloperContent,
+  fetchTourismItems,
+  fetchCulinaryItems,
+  fetchUserSubmissions,
+  fetchEvents,
   type CommunityCulinary,
   type CommunityEvent,
   type CommunityTourism,
@@ -36,7 +39,7 @@ import {
   type SmartMapItem
 } from '../../lib/magelang-data';
 
-type SectionKey = 'overview' | 'smartMap' | 'smartCity' | DeveloperContentType | 'events' | 'users';
+type SectionKey = 'overview' | 'smartMap' | 'smartCity' | 'categories' | DeveloperContentType | 'events' | 'users';
 
 interface DeveloperUser {
   id: string;
@@ -62,6 +65,7 @@ const sections: Array<{ key: SectionKey; label: string }> = [
   { key: 'overview', label: 'Statistik Umum' },
   { key: 'smartMap', label: 'Kelola Smart Map' },
   { key: 'smartCity', label: 'Kelola Smart Magelang' },
+  { key: 'categories', label: 'Kelola Kategori' },
   { key: 'tourism', label: 'Kelola Wisata' },
   { key: 'culinary', label: 'Kelola Kuliner' },
   { key: 'culture', label: 'Kelola Budaya' },
@@ -183,12 +187,13 @@ export default function DeveloperPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Keep existing developer content if present; otherwise initialize with empty arrays or defaults
     if (!hasDeveloperContent('tourism')) {
-      replaceDeveloperContent('tourism', tourismItems.map(fromMapItem));
+      replaceDeveloperContent('tourism', []);
     }
 
     if (!hasDeveloperContent('culinary')) {
-      replaceDeveloperContent('culinary', culinaryItems.map(fromMapItem));
+      replaceDeveloperContent('culinary', []);
     }
 
     if (!hasDeveloperContent('culture')) {
@@ -213,11 +218,8 @@ export default function DeveloperPage() {
 
   const refreshEvents = async () => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/events?includePending=true`);
-      if (!response.ok) return;
-      const payload = await response.json();
-      const records = Array.isArray(payload) ? payload : payload.events;
-      setEvents(getCommunityEvents(normalizeApiEvents(records)));
+      const records = await fetchEvents(true);
+      setEvents(getCommunityEvents(records));
     } catch {
       setEvents(getCommunityEvents());
     }
@@ -238,8 +240,21 @@ export default function DeveloperPage() {
   };
 
   useEffect(() => {
-    refreshContent();
-    refreshEvents();
+    (async () => {
+      refreshContent();
+      await refreshEvents();
+
+      // Try to fetch managed items count from API to populate counts
+      try {
+        const [tourismApi, culinaryApi] = await Promise.all([fetchTourismItems(false), fetchCulinaryItems(false)]);
+        setContent((c) => ({ ...c, tourism: c.tourism.concat(tourismApi.map((i) => ({ id: i.id, title: i.title, description: i.description } as any))) }));
+        // store temporary culinary/tourism submissions counts
+        setCulinarySubmissions((s) => s.concat(culinaryApi.map((i) => ({ id: i.id, title: i.title, status: i.status } as any))));
+        setTourismSubmissions((s) => s.concat(tourismApi.map((i) => ({ id: i.id, title: i.title, status: i.status } as any))));
+      } catch {
+        // ignore API failures; local state remains
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -475,7 +490,11 @@ export default function DeveloperPage() {
             )}
 
             {active === 'smartCity' && (
-              <SmartCityManager />
+              <SmartMagelangManager token={token} />
+            )}
+
+            {active === 'categories' && (
+              <CategoryManager token={token} />
             )}
 
             {(['tourism', 'culinary', 'culture', 'history'] as DeveloperContentType[]).includes(active as DeveloperContentType) && (
@@ -491,6 +510,7 @@ export default function DeveloperPage() {
                   onEdit={handleEdit}
                   onDelete={handleDeleteContent}
                   onReset={() => resetForm(active as DeveloperContentType)}
+                  setStatus={setStatus}
                 />
 
                 {active === 'culinary' && (
@@ -566,54 +586,133 @@ function SmartMapManager({
   );
 }
 
-function SmartCityManager() {
-  const items = [
-    {
-      title: 'Infrastruktur Teknologi',
-      description: 'Inventaris kanal digital, perangkat pendukung layanan, basis data lokasi, integrasi peta, dan dashboard monitoring konten wisata/event/kuliner.',
-      details: ['Pusat data konten pariwisata', 'Integrasi geolokasi Smart Map', 'Dashboard moderasi dan statistik']
-    },
-    {
-      title: 'Internet dan Jaringan Komunikasi',
-      description: 'Kesiapan akses informasi melalui jaringan seluler, Wi-Fi publik/komunitas, kanal sosial, dan tautan navigasi agar wisatawan mudah menemukan rute.',
-      details: ['Akses maps dan rute digital', 'Publikasi event real-time', 'Kanal komunikasi komunitas dan UMKM']
-    },
-    {
-      title: 'Digitalisasi Layanan Publik',
-      description: 'Layanan informasi kota dibuat lebih rinci: profil destinasi, event aktif, histori event, UMKM, pengajuan warga, dan update profil pengguna.',
-      details: ['Pengajuan event warga', 'Review kuliner/UMKM', 'Profil dan aktivitas user']
-    },
-    {
-      title: 'Pengembangan Smart City',
-      description: 'Rincian Smart City difokuskan sebagai Smart Magelang: AI itinerary, Smart Map, integrasi minat, moderasi konten, dan ekosistem promosi lokal.',
-      details: ['AI Assistant berbasis minat', 'Marker wisata-event-kuliner', 'Histori dan kurasi developer']
+function SmartMagelangManager({ token }: { token?: string | null }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ id: '', title: '', description: '', categoryName: '', sourceUrl: '', image: '' });
+
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/developer/smart-magelang`, {
+        headers: { Authorization: token ? `Bearer ${token}` : '' }
+      });
+      if (!res.ok) throw new Error('Gagal fetch');
+      const data = await res.json();
+      setItems(data || []);
+    } catch (err) {
+      setStatus('Gagal memuat konten Smart Magelang.');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => { fetchItems(); }, []);
+
+  const handleEdit = (item: any) => setForm({ id: item.id, title: item.title, description: item.description, categoryName: item.category?.name || '', sourceUrl: item.sourceUrl || '', image: item.image || '' });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('Menyimpan...');
+
+    try {
+      const payload = { title: form.title, description: form.description, categoryName: form.categoryName, sourceUrl: form.sourceUrl, image: form.image };
+
+      if (form.id) {
+        const res = await fetch(`${getApiBaseUrl()}/api/developer/smart-magelang/${form.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Gagal update');
+      } else {
+        const res = await fetch(`${getApiBaseUrl()}/api/developer/smart-magelang`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Gagal buat');
+      }
+
+      setForm({ id: '', title: '', description: '', categoryName: '', sourceUrl: '', image: '' });
+      setStatus('Tersimpan');
+      fetchItems();
+    } catch (err: any) {
+      setStatus(err.message || 'Gagal menyimpan');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus konten Smart Magelang ini?')) return;
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/developer/smart-magelang/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: token ? `Bearer ${token}` : '' }
+      });
+      if (!res.ok) throw new Error('Gagal hapus');
+      setStatus('Terhapus');
+      fetchItems();
+    } catch (err: any) {
+      setStatus(err.message || 'Gagal hapus');
+    }
+  };
 
   return (
     <section className="rounded-lg border border-slate-800 bg-slate-900/85 p-6">
       <h2 className="text-2xl font-semibold">Kelola Smart Magelang</h2>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
-        Area ini menjadi kontrol konsep Smart Magelang. Konten publiknya terhubung dengan halaman Smart Magelang, AI Assistant, dan sumber data Smart Map.
-      </p>
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">Kelola konten Smart Magelang (artikel ringkas, sumber, dan label kategori).</p>
+
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {items.map((item) => (
-          <article key={item.title} className="rounded-lg border border-slate-800 bg-slate-950/75 p-5">
-            <h3 className="font-semibold text-white">{item.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">{item.description}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {item.details.map((detail) => (
-                <span key={detail} className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs text-cyan-100">
-                  {detail}
-                </span>
-              ))}
-            </div>
-          </article>
-        ))}
+        <div>
+          <h3 className="text-lg font-semibold">Daftar Konten</h3>
+          {loading && <p className="text-slate-400">Memuat...</p>}
+          {items.map((item) => (
+            <article key={item.id} className="mt-3 rounded-lg border border-slate-800 bg-slate-950/80 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-white">{item.title}</h4>
+                  <p className="mt-1 text-sm text-slate-400">{item.description?.slice(0, 120)}</p>
+                  <p className="mt-2 text-xs text-slate-500">{item.category?.name}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(item)} className="rounded-md border px-3 py-1 text-sm text-cyan-200">Edit</button>
+                  <button onClick={() => handleDelete(item.id)} className="rounded-md border px-3 py-1 text-sm text-rose-200">Hapus</button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit} className="rounded-lg border border-slate-800 bg-slate-900/85 p-4">
+          <h3 className="text-lg font-semibold">{form.id ? 'Edit Konten' : 'Tambah Konten'}</h3>
+          <label className="block text-sm font-semibold text-slate-200 mt-3">
+            Judul
+            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white" required />
+          </label>
+          <label className="block text-sm font-semibold text-slate-200 mt-3">
+            Kategori
+            <input value={form.categoryName} onChange={(e) => setForm({ ...form, categoryName: e.target.value })} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white" />
+          </label>
+          <label className="block text-sm font-semibold text-slate-200 mt-3">
+            Ringkasan
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white" rows={4} required />
+          </label>
+          <label className="block text-sm font-semibold text-slate-200 mt-3">
+            Sumber (URL)
+            <input value={form.sourceUrl} onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white" />
+          </label>
+          <label className="block text-sm font-semibold text-slate-200 mt-3">
+            URL Gambar
+            <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white" />
+          </label>
+          <div className="mt-4 flex gap-2">
+            <button type="submit" className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">Simpan</button>
+            <button type="button" onClick={() => setForm({ id: '', title: '', description: '', categoryName: '', sourceUrl: '', image: '' })} className="rounded-lg border px-4 py-2 text-sm text-slate-300">Batal</button>
+          </div>
+          {status && <p className="mt-3 text-sm text-slate-300">{status}</p>}
+        </form>
       </div>
-      <a href="/smart-magelang" className="mt-6 inline-flex rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300">
-        Buka Smart Magelang
-      </a>
     </section>
   );
 }
@@ -628,7 +727,8 @@ function ContentManager({
   onSubmit,
   onEdit,
   onDelete,
-  onReset
+  onReset,
+  setStatus
 }: {
   type: DeveloperContentType;
   records: DeveloperContentItem[];
@@ -640,6 +740,7 @@ function ContentManager({
   onEdit: (type: DeveloperContentType, item: DeveloperContentItem) => void;
   onDelete: (type: DeveloperContentType, item: DeveloperContentItem) => void;
   onReset: () => void;
+  setStatus?: (s: string) => void;
 }) {
   const isPlace = type === 'tourism' || type === 'culinary';
   const isHistory = type === 'history';
@@ -647,9 +748,17 @@ function ContentManager({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Enforce client-side size limit for submission images (5 MB)
+    if (file.size > 5 * 1024 * 1024) {
+      if (setStatus) setStatus('Gagal: Ukuran gambar maksimal 5 MB.');
+      else alert('Gagal: Ukuran gambar maksimal 5 MB.');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       setForm({ ...form, image: String(reader.result || '') });
+      if (setStatus) setStatus('');
     };
     reader.readAsDataURL(file);
   };

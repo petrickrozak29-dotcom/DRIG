@@ -3,10 +3,39 @@
 import Link from 'next/link';
 import { LogOut, UserCircle, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiBaseUrl } from '../lib/api';
+import { useEffect, useState } from 'react';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout, loading } = useAuth();
   const isDeveloper = user?.role === 'ADMIN';
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchNotifications() {
+      if (!user) return;
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/api/notifications`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!mounted) return;
+        const unread = Array.isArray(data) ? data.filter((n: any) => !n.isRead).length : 0;
+        setUnreadCount(unread);
+      } catch {
+        // ignore
+      }
+    }
+
+    if (isAuthenticated) fetchNotifications();
+    const onStorage = () => { if (isAuthenticated) fetchNotifications(); };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('magelangverse-content-updated', onStorage);
+
+    return () => { mounted = false; window.removeEventListener('storage', onStorage); window.removeEventListener('magelangverse-content-updated', onStorage); };
+  }, [user, isAuthenticated]);
 
   return (
     <header className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
@@ -28,11 +57,14 @@ export default function Navbar() {
               <Link href="/smart-magelang">Smart Magelang</Link>
             </>
           )}
-          {isAuthenticated && !isDeveloper && (
+          {isAuthenticated && (
             <>
-              <Link href="/admin">Community Form</Link>
-              <Link href="/notifications" className="ml-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-slate-200 hover:bg-slate-800">
+              {!isDeveloper && <Link href="/admin">Community Form</Link>}
+              <Link href="/notifications" className="ml-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-slate-200 hover:bg-slate-800 relative">
                 <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-2 -top-2 inline-flex items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white">{unreadCount}</span>
+                )}
               </Link>
             </>
           )}

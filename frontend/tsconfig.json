@@ -18,6 +18,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "allowImportingTsExtensions": true,
     "types": [
       "node"
     ],
@@ -30,8 +31,9 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.d.ts",
     "next-env.d.ts",
-    ".next/types/**/*.ts"
+    
   ],
   "exclude": [
     "node_modules"

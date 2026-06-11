@@ -10,6 +10,7 @@ import { getApiBaseUrl } from '../../lib/api';
 import {
   formatDate,
   eventCategories,
+  fetchEvents,
   type CommunityEvent,
   type EventCategory
 } from '../../lib/magelang-data';
@@ -23,6 +24,7 @@ export default function EventPage() {
   const [apiEvents, setApiEvents] = useState<CommunityEvent[]>([]);
   const [activeFilter, setActiveFilter] = useState<'semua' | EventCategory>('semua');
   const [dataVersion, setDataVersion] = useState(0);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const refresh = () => setDataVersion((version) => version + 1);
@@ -38,19 +40,24 @@ export default function EventPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function fetchEvents() {
+    let timer: any;
+    async function load(q?: string) {
       try {
-        const response = await fetch(`${getApiBaseUrl()}/api/events?includePending=false`);
-        if (!response.ok) return;
-        const payload = await response.json();
-        const records = Array.isArray(payload) ? payload : payload.events;
+        const params = new URLSearchParams();
+        params.set('includePending', 'false');
+        if (q) params.set('q', q);
+        const res = await fetch(`${getApiBaseUrl()}/api/events?${params.toString()}`);
+        if (!res.ok) return setApiEvents([]);
+        const records = await res.json();
         if (mounted) setApiEvents(records as CommunityEvent[]);
       } catch {
         if (mounted) setApiEvents([]);
       }
     }
 
-    fetchEvents();
+    timer = setTimeout(() => load(search || undefined), 300);
+
+    return () => { mounted = false; clearTimeout(timer); };
 
     return () => {
       mounted = false;
@@ -85,13 +92,16 @@ export default function EventPage() {
                 Event sistem, sumber publik, dan community event yang sudah disetujui developer tampil di sini dan otomatis tersedia di Smart Map.
               </p>
             </div>
-            <a
-              href="/community-form"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-rose-300"
-            >
-              <PlusCircle className="h-5 w-5" />
-              Tambah Event
-            </a>
+            <div className="flex items-center gap-3">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari event..." className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-rose-400" />
+              <a
+                href="/community-form"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-rose-300"
+              >
+                <PlusCircle className="h-5 w-5" />
+                Tambah Event
+              </a>
+            </div>
           </div>
         </section>
 
