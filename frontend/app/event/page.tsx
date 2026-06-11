@@ -64,7 +64,7 @@ export default function EventPage() {
       return new Date(item.date).getTime() >= Date.now() - 86400000;
     });
 
-    return activeFilter === 'semua' ? approved : approved.filter((item) => item.typeLabel === activeFilter || item.category === activeFilter);
+    return activeFilter === 'semua' ? approved : approved.filter((item) => item.typeLabel === activeFilter);
   }, [apiEvents, activeFilter, dataVersion]);
 
   return (
