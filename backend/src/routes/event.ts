@@ -6,11 +6,14 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const includePending = req.query.includePending === 'true';
+    const q = typeof req.query.q === 'string' ? String(req.query.q) : undefined;
     const filters: any = { featureType: 'EVENT' };
-    
+
     if (!includePending) {
       filters.status = 'APPROVED';
     }
+
+    if (q) filters.q = q;
 
     const events = await submissionService.getSubmissions(filters);
     

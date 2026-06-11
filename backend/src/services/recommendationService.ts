@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from './prismaClient';
 import { getUserLocation, haversineDistance } from './locationService';
 import OpenAI from 'openai';
 import { submissionService } from './submissionService';
-
-const prisma = new PrismaClient();
 
 // OpenAI client - optional
 let openai: OpenAI | null = null;

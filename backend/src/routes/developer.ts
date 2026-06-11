@@ -1,10 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../services/prismaClient';
+import { smartMagelangService } from '../services/smartMagelangService';
 import * as authService from '../services/authService';
 import { submissionService } from '../services/submissionService';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 type ContentType = 'tourism' | 'culinary' | 'culture' | 'history';
 
@@ -261,6 +261,56 @@ router.delete('/events/:id', async (req, res) => {
     res.json(deleted);
   } catch (err) {
     res.status(500).json({ error: 'Gagal hapus event' });
+  }
+});
+
+// Smart Magelang CRUD for developers
+router.get('/smart-magelang', async (_req, res) => {
+  try {
+    const contents = await smartMagelangService.getContentsByCategory();
+    res.json(contents);
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal mengambil Smart Magelang contents' });
+  }
+});
+
+router.post('/smart-magelang', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    if (!payload.title || !payload.description) {
+      return res.status(400).json({ error: 'title and description required' });
+    }
+
+    const created = await smartMagelangService.createContent({
+      title: payload.title,
+      description: payload.description,
+      categoryName: payload.categoryName || 'Umum',
+      sourceUrl: payload.sourceUrl,
+      image: payload.image
+    });
+
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal membuat Smart Magelang content' });
+  }
+});
+
+router.put('/smart-magelang/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updated = await smartMagelangService.updateContent(id, req.body);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal mengupdate Smart Magelang content' });
+  }
+});
+
+router.delete('/smart-magelang/:id', async (req, res) => {
+  try {
+    const deleted = await smartMagelangService.deleteContent(req.params.id);
+    res.json(deleted);
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal menghapus Smart Magelang content' });
   }
 });
 

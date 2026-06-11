@@ -1,6 +1,5 @@
-import { PrismaClient, Category } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Category } from '@prisma/client';
+import prisma from './prismaClient';
 
 export const categoryService = {
   async getCategories(featureType?: string): Promise<Category[]> {

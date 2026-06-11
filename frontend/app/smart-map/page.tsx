@@ -12,9 +12,10 @@ import { getApiBaseUrl } from '../../lib/api';
 import {
   MAGELANG_CENTER,
   buildSmartMapItems,
+  buildSmartMapItemsAsync,
   eventCategories,
   formatDate,
-  normalizeApiEvents,
+  fetchEvents,
   withDistances,
   type CommunityEvent,
   type EventCategory,
@@ -121,30 +122,41 @@ export default function SmartMapPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function fetchEvents() {
+    async function load() {
       try {
-        const response = await fetch(`${getApiBaseUrl()}/api/events?includePending=false`);
-        if (!response.ok) return;
-
-        const payload = await response.json();
-        const records = Array.isArray(payload) ? payload : payload.events;
-        if (mounted) setApiEvents(normalizeApiEvents(records));
+        const records = await fetchEvents(false);
+        if (mounted) setApiEvents(records);
       } catch {
         if (mounted) setApiEvents([]);
       }
     }
 
-    fetchEvents();
+    load();
 
     return () => {
       mounted = false;
     };
   }, [dataVersion]);
 
-  const allItems = useMemo(
-    () => withDistances(buildSmartMapItems(apiEvents), userLocation),
-    [apiEvents, userLocation, dataVersion]
-  );
+  const [asyncItems, setAsyncItems] = useState<SmartMapItemWithDistance[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const items = await buildSmartMapItemsAsync();
+        if (!mounted) return;
+        setAsyncItems(withDistances(items, userLocation));
+      } catch {
+        if (!mounted) return;
+        setAsyncItems(withDistances(buildSmartMapItems(apiEvents), userLocation));
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [apiEvents, userLocation, dataVersion]);
+
+  const allItems = asyncItems;
 
   const filteredItems = useMemo(() => {
     let next: SmartMapItemWithDistance[] = allItems.filter((item) => item.distance <= radius);

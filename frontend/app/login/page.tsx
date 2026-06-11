@@ -11,6 +11,7 @@ import GradientBg from '../../components/gradient-bg';
 export default function LoginPage() {
   const router = useRouter();
   const { login, register } = useAuth();
+  const nextParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
@@ -46,16 +47,17 @@ export default function LoginPage() {
         setStatus('Registrasi berhasil. Mengarahkan ke Smart Map...');
       } else {
         const loggedInUser = await login(email.trim(), password);
-        const target = loggedInUser.role === 'ADMIN' ? '/developer' : '/smart-map';
+        const target = nextParam || (loggedInUser.role === 'ADMIN' ? '/developer' : '/smart-map');
         setStatus(loggedInUser.role === 'ADMIN'
           ? 'Login developer berhasil. Mengarahkan ke Dashboard Developer...'
           : 'Login berhasil. Mengarahkan ke Smart Map...'
         );
-        setTimeout(() => router.push(target), 900);
+        setTimeout(() => { window.location.href = target; }, 900);
         return;
       }
 
-      setTimeout(() => router.push('/smart-map'), 900);
+      const target = nextParam || '/smart-map';
+      setTimeout(() => { window.location.href = target; }, 900);
     } catch (error: any) {
       setStatus(error.message || 'Terjadi kesalahan. Silakan coba lagi.');
       setLoading(false);

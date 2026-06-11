@@ -17,9 +17,7 @@ interface Category {
   featureType: string;
 }
 
-const WISATA_CATEGORIES = ['Alam', 'Sejarah', 'Taman Rekreasi', 'Spot Populer'];
-const KULINER_CATEGORIES = ['Makanan Khas', 'Pusat Kuliner', 'UMKM', 'Kopi dan Kafe'];
-const EVENT_CATEGORIES = ['Konser Musik', 'Seni & Budaya', 'Pameran', 'Agenda Lokal'];
+// Categories will be fetched from the backend so developers can manage them dynamically
 
 export default function CommunityFormPage() {
   const router = useRouter();
@@ -40,11 +38,28 @@ export default function CommunityFormPage() {
 
   const [preview, setPreview] = useState(false);
 
-  // Set default category when feature type changes
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+
+  // Fetch categories for the current featureType and set default
   useEffect(() => {
-    if (featureType === 'EVENT') setFormState(s => ({ ...s, categoryName: EVENT_CATEGORIES[0] }));
-    if (featureType === 'WISATA') setFormState(s => ({ ...s, categoryName: WISATA_CATEGORIES[0] }));
-    if (featureType === 'KULINER') setFormState(s => ({ ...s, categoryName: KULINER_CATEGORIES[0] }));
+    let mounted = true;
+    async function loadCategories() {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/api/categories?featureType=${featureType}`);
+        if (!res.ok) return;
+        const cats = await res.json();
+        const names = Array.isArray(cats) ? cats.map((c: any) => c.name) : [];
+        if (mounted) {
+          setCategoryOptions(names);
+          if (names.length) setFormState(s => ({ ...s, categoryName: names[0] }));
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    loadCategories();
+    return () => { mounted = false; };
   }, [featureType]);
 
   const isDeveloper = user?.role === 'ADMIN';
@@ -112,6 +127,12 @@ export default function CommunityFormPage() {
       return;
     }
 
+    // If user is not authenticated, require login before final submit
+    if (!isAuthenticated) {
+      router.push(`/login?next=${encodeURIComponent('/admin')}`);
+      return;
+    }
+
     setStatus('Mengirim submission...');
 
     try {
@@ -173,9 +194,8 @@ export default function CommunityFormPage() {
     );
   }
 
-  const categoryOptions = featureType === 'EVENT' ? EVENT_CATEGORIES :
-                          featureType === 'WISATA' ? WISATA_CATEGORIES :
-                          KULINER_CATEGORIES;
+  // options returned from API
+  // use `categoryOptions` state populated by effect above
 
   return (
     <GradientBg>

@@ -1,6 +1,5 @@
-import { PrismaClient, FeatureToggle } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { FeatureToggle } from '@prisma/client';
+import prisma from './prismaClient';
 
 export const featureToggleService = {
   async getAllFeatures(): Promise<FeatureToggle[]> {

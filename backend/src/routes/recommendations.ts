@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
 import * as recommendationService from '../services/recommendationService';
 import { verifyToken } from '../services/authService';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../services/prismaClient';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Middleware to verify JWT
 function authenticate(req: Request, res: Response, next: any) {

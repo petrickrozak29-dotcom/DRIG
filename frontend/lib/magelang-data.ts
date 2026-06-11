@@ -181,375 +181,12 @@ export function resolveLocation(location: string) {
   };
 }
 
-export const tourismItems: SmartMapItem[] = [
-  {
-    id: 'wisata-borobudur',
-    title: 'Candi Borobudur',
-    category: 'wisata',
-    typeLabel: 'Heritage',
-    description: 'Kompleks candi Buddha terbesar di dunia, pusat heritage Magelang Raya, dan titik utama wisata budaya internasional.',
-    location: 'Kawasan Candi Borobudur, Kabupaten Magelang',
-    latitude: -7.6079,
-    longitude: 110.2038,
-    image: photo.borobudur,
-    openingHours: '06.30 - 16.30',
-    rating: 4.9,
-    link: 'https://www.google.com/maps/search/?api=1&query=Candi+Borobudur',
-    detailUrl: '/smart-map?focus=wisata-borobudur',
-    tags: ['UNESCO', 'Candi', 'Heritage']
-  },
-  {
-    id: 'wisata-punthuk-setumbu',
-    title: 'Punthuk Setumbu',
-    category: 'wisata',
-    typeLabel: 'Panorama Alam',
-    description: 'Bukit sunrise dengan panorama Borobudur, Merapi, dan Merbabu yang populer untuk fotografi pagi.',
-    location: 'Karangrejo, Borobudur, Kabupaten Magelang',
-    latitude: -7.6057,
-    longitude: 110.1808,
-    image: photo.nature,
-    openingHours: '04.00 - 17.00',
-    rating: 4.7,
-    link: 'https://www.google.com/maps/search/?api=1&query=Punthuk+Setumbu',
-    detailUrl: '/smart-map?focus=wisata-punthuk-setumbu',
-    tags: ['Sunrise', 'Panorama', 'Outdoor']
-  },
-  {
-    id: 'wisata-mendut',
-    title: 'Candi Mendut',
-    category: 'wisata',
-    typeLabel: 'Heritage',
-    description: 'Candi Buddha bersejarah yang terhubung dengan lanskap ritual Borobudur dan Pawon.',
-    location: 'Mendut, Mungkid, Kabupaten Magelang',
-    latitude: -7.6047,
-    longitude: 110.2304,
-    image: photo.museum,
-    openingHours: '07.00 - 17.00',
-    rating: 4.6,
-    link: 'https://www.google.com/maps/search/?api=1&query=Candi+Mendut',
-    detailUrl: '/smart-map?focus=wisata-mendut',
-    tags: ['Candi', 'Relief', 'Spiritual']
-  },
-  {
-    id: 'wisata-kyai-langgeng',
-    title: 'Taman Kyai Langgeng',
-    category: 'wisata',
-    typeLabel: 'Taman Rekreasi',
-    description: 'Taman wisata keluarga di Kota Magelang dengan wahana, area hijau, edukasi tanaman, dan ruang rekreasi warga.',
-    location: 'Taman Kyai Langgeng, Kota Magelang',
-    latitude: -7.4758,
-    longitude: 110.2091,
-    image: photo.kyaiLanggeng,
-    openingHours: '08.00 - 16.00',
-    rating: 4.5,
-    link: 'https://www.google.com/maps/search/?api=1&query=Taman+Kyai+Langgeng+Magelang',
-    detailUrl: '/smart-map?focus=wisata-kyai-langgeng',
-    tags: ['Keluarga', 'Taman', 'Wahana']
-  },
-  {
-    id: 'wisata-gunung-tidar',
-    title: 'Gunung Tidar',
-    category: 'wisata',
-    typeLabel: 'Urban Heritage',
-    description: 'Bukit hijau di tengah kota yang dikenal sebagai pakunya Tanah Jawa, cocok untuk jalan santai dan napak tilas.',
-    location: 'Gunung Tidar, Kota Magelang',
-    latitude: -7.4894,
-    longitude: 110.2221,
-    image: photo.nature,
-    openingHours: '06.00 - 17.00',
-    rating: 4.8,
-    link: 'https://www.google.com/maps/search/?api=1&query=Gunung+Tidar+Magelang',
-    detailUrl: '/smart-map?focus=wisata-gunung-tidar',
-    tags: ['Urban Forest', 'Sejarah', 'Jogging']
-  },
-  {
-    id: 'wisata-nepal-van-java',
-    title: 'Nepal Van Java',
-    category: 'wisata',
-    typeLabel: 'Spot Populer',
-    description: 'Kampung lereng Sumbing dengan lanskap bertingkat, warna rumah yang fotogenik, dan jalur foto populer.',
-    location: 'Dusun Butuh, Kaliangkrik, Kabupaten Magelang',
-    latitude: -7.4231,
-    longitude: 110.0961,
-    image: photo.nature,
-    openingHours: '06.00 - 17.00',
-    rating: 4.7,
-    link: 'https://www.google.com/maps/search/?api=1&query=Nepal+Van+Java+Magelang',
-    detailUrl: '/smart-map?focus=wisata-nepal-van-java',
-    tags: ['Spot Foto', 'View Gunung', 'Populer']
-  },
-  {
-    id: 'wisata-svargabumi',
-    title: 'Svargabumi Borobudur',
-    category: 'wisata',
-    typeLabel: 'Spot Populer',
-    description: 'Spot foto modern di area persawahan Borobudur dengan instalasi estetik dan latar alam terbuka.',
-    location: 'Borobudur, Kabupaten Magelang',
-    latitude: -7.6041,
-    longitude: 110.1978,
-    image: photo.nature,
-    openingHours: '08.00 - 17.00',
-    rating: 4.6,
-    link: 'https://www.google.com/maps/search/?api=1&query=Svargabumi+Borobudur',
-    detailUrl: '/smart-map?focus=wisata-svargabumi',
-    tags: ['Spot Foto', 'Sawah', 'Borobudur']
-  },
-  {
-    id: 'wisata-museum-bpk',
-    title: 'Museum BPK RI',
-    category: 'wisata',
-    typeLabel: 'Museum',
-    description: 'Museum sejarah kelembagaan BPK di kompleks Kota Magelang, cocok untuk wisata edukasi dan arsip publik.',
-    location: 'Jalan Diponegoro, Kota Magelang',
-    latitude: -7.4839,
-    longitude: 110.2189,
-    image: photo.museum,
-    openingHours: '09.00 - 15.00',
-    rating: 4.6,
-    link: 'https://www.google.com/maps/search/?api=1&query=Museum+BPK+Magelang',
-    detailUrl: '/smart-map?focus=wisata-museum-bpk',
-    tags: ['Museum', 'Edukasi', 'Kota']
-  }
-];
+// Removed large local mock arrays for tourism and culinary. Frontend now prefers API-first helpers.
 
-export const culinaryItems: SmartMapItem[] = [
-  {
-    id: 'kuliner-getuk-trio',
-    title: 'Getuk Trio',
-    category: 'kuliner',
-    typeLabel: 'Oleh-oleh',
-    description: 'Ikon oleh-oleh Magelang berbahan singkong dengan warna khas, tekstur lembut, dan rasa manis ringan.',
-    location: 'Pusat Kota Magelang',
-    latitude: -7.4725,
-    longitude: 110.217,
-    image: photo.getuk,
-    rating: 4.8,
-    priceRange: 'Rp 10.000 - Rp 25.000',
-    link: 'https://www.google.com/maps/search/?api=1&query=Getuk+Trio+Magelang',
-    detailUrl: '/smart-map?focus=kuliner-getuk-trio',
-    tags: ['Oleh-oleh', 'Tradisional', 'Singkong']
-  },
-  {
-    id: 'kuliner-kupat-tahu',
-    title: 'Kupat Tahu Magelang',
-    category: 'kuliner',
-    typeLabel: 'Makanan Khas',
-    description: 'Kupat, tahu goreng, sayur, dan bumbu kacang berkuah yang menjadi menu klasik Kota Magelang.',
-    location: 'Pusat kuliner Kota Magelang',
-    latitude: -7.4812,
-    longitude: 110.2229,
-    image: photo.food,
-    rating: 4.7,
-    priceRange: 'Rp 12.000 - Rp 25.000',
-    link: 'https://www.google.com/maps/search/?api=1&query=Kupat+Tahu+Magelang',
-    detailUrl: '/smart-map?focus=kuliner-kupat-tahu',
-    tags: ['Khas', 'Makan Siang', 'Terjangkau']
-  },
-  {
-    id: 'kuliner-sop-senerek',
-    title: 'Sop Senerek',
-    category: 'kuliner',
-    typeLabel: 'Makanan Khas',
-    description: 'Sup kacang merah hangat dengan daging dan sayur, populer sebagai kuliner rumahan khas Magelang.',
-    location: 'Kota Magelang',
-    latitude: -7.4779,
-    longitude: 110.2218,
-    image: photo.food,
-    rating: 4.6,
-    priceRange: 'Rp 18.000 - Rp 35.000',
-    link: 'https://www.google.com/maps/search/?api=1&query=Sop+Senerek+Magelang',
-    detailUrl: '/smart-map?focus=kuliner-sop-senerek',
-    tags: ['Sup', 'Tradisional', 'Hangat']
-  },
-  {
-    id: 'kuliner-kopi-klotok',
-    title: 'Kopi Klotok Magelang',
-    category: 'kuliner',
-    typeLabel: 'Kopi & Kafe',
-    description: 'Kopi lokal dengan suasana santai, cocok sebagai jeda setelah wisata kota atau Borobudur.',
-    location: 'Kota Magelang',
-    latitude: -7.475,
-    longitude: 110.22,
-    image: photo.coffee,
-    rating: 4.7,
-    priceRange: 'Rp 15.000 - Rp 35.000',
-    link: 'https://www.google.com/maps/search/?api=1&query=Kopi+Klotok+Magelang',
-    detailUrl: '/smart-map?focus=kuliner-kopi-klotok',
-    tags: ['Kopi', 'Nongkrong', 'Lokal']
-  },
-  {
-    id: 'kuliner-alun-alun',
-    title: 'Kuliner Alun-alun Magelang',
-    category: 'kuliner',
-    typeLabel: 'Pusat Kuliner',
-    description: 'Area makan malam dan jajanan kaki lima di sekitar pusat kota, mudah dicapai dari ikon utama Magelang.',
-    location: 'Alun-alun Magelang',
-    latitude: -7.4797,
-    longitude: 110.2177,
-    image: photo.food,
-    rating: 4.5,
-    priceRange: 'Rp 10.000 - Rp 40.000',
-    link: 'https://www.google.com/maps/search/?api=1&query=Kuliner+Alun-alun+Magelang',
-    detailUrl: '/smart-map?focus=kuliner-alun-alun',
-    tags: ['Malam', 'Street Food', 'Kota']
-  },
-  {
-    id: 'kuliner-borobudur-view',
-    title: 'Kafe Borobudur View',
-    category: 'kuliner',
-    typeLabel: 'Kopi & Kafe',
-    description: 'Kafe sekitar Borobudur untuk menikmati kopi, makanan ringan, dan panorama desa wisata.',
-    location: 'Borobudur, Kabupaten Magelang',
-    latitude: -7.605,
-    longitude: 110.21,
-    image: photo.coffee,
-    rating: 4.6,
-    priceRange: 'Rp 25.000 - Rp 60.000',
-    link: 'https://www.google.com/maps/search/?api=1&query=Cafe+Borobudur+View',
-    detailUrl: '/smart-map?focus=kuliner-borobudur-view',
-    tags: ['Kafe', 'View', 'Borobudur']
-  },
-  {
-    id: 'kuliner-sentra-umkm',
-    title: 'Sentra UMKM Kuliner Magelang',
-    category: 'kuliner',
-    typeLabel: 'UMKM',
-    description: 'Ruang promosi usaha kuliner warga Magelang. Pengajuan UMKM dari user akan tampil di kategori ini setelah disetujui developer.',
-    location: 'Kota Magelang',
-    latitude: -7.4797,
-    longitude: 110.2177,
-    image: photo.food,
-    rating: 4.5,
-    priceRange: 'Bervariasi',
-    link: 'https://www.google.com/maps/search/?api=1&query=UMKM+Kuliner+Magelang',
-    detailUrl: '/smart-map?focus=kuliner-sentra-umkm',
-    tags: ['UMKM', 'Ekonomi Kreatif', 'Promosi Warga']
-  }
-];
+// culinary mock removed — prefer API-first
 
-export const systemEvents: CommunityEvent[] = [
-  {
-    id: 'event-bestieval-2026',
-    title: 'BESTIEVAL Magelang 2026',
-    category: 'event',
-    typeLabel: 'Konser Musik',
-    date: '2026-06-13',
-    time: '14.00 - 23.00',
-    location: 'Lap. AIM Artos Magelang',
-    description: 'Konser musik lintas genre di area Artos Magelang dengan konsep festival hiburan anak muda.',
-    latitude: -7.4912,
-    longitude: 110.2265,
-    image: photo.event,
-    link: 'https://artatix.co.id/event/bestievalmagelang_2026',
-    sourceUrl: 'https://artatix.co.id/event/bestievalmagelang_2026',
-    detailUrl: '/smart-map?focus=event-bestieval-2026',
-    status: 'approved',
-    scope: 'city',
-    source: 'system',
-    createdAt: '2026-06-09T00:00:00.000Z',
-    tags: ['Musik', 'Konser', 'Kota Magelang']
-  },
-  {
-    id: 'event-borobudur-playon-2026',
-    title: 'Rupiah Borobudur PlayOn 2026',
-    category: 'event',
-    typeLabel: 'Agenda Lokal',
-    date: '2026-07-01',
-    location: 'Candi Borobudur, Magelang',
-    description: 'Event lari 10K dan 5K di kawasan Borobudur yang menggabungkan olahraga, suasana desa, dan panorama candi.',
-    latitude: -7.6079,
-    longitude: 110.2038,
-    image: photo.run,
-    link: 'https://visitmagelang.id/event-magelang/',
-    sourceUrl: 'https://visitmagelang.id/event-magelang/',
-    detailUrl: '/smart-map?focus=event-borobudur-playon-2026',
-    status: 'approved',
-    scope: 'around',
-    source: 'system',
-    createdAt: '2026-06-09T00:00:00.000Z',
-    tags: ['Lari', 'Borobudur', 'Sport Tourism']
-  },
-  {
-    id: 'event-bite-2026',
-    title: 'Borobudur International Tourism Expo & Forum 2026',
-    category: 'event',
-    typeLabel: 'Pameran & Expo',
-    date: '2026-07-10',
-    location: 'Grand Artos Hotel & Convention',
-    description: 'Forum dan expo B2B pariwisata, hospitality, travel agent, dan MICE di Magelang.',
-    latitude: -7.4912,
-    longitude: 110.2265,
-    image: photo.expo,
-    link: 'https://visitmagelang.id/event-magelang/',
-    sourceUrl: 'https://visitmagelang.id/event-magelang/',
-    detailUrl: '/smart-map?focus=event-bite-2026',
-    status: 'approved',
-    scope: 'city',
-    source: 'system',
-    createdAt: '2026-06-09T00:00:00.000Z',
-    tags: ['Expo', 'MICE', 'Pariwisata']
-  },
-  {
-    id: 'event-taruna-run-2026',
-    title: 'Sucorwave Taruna Nusantara Run 2026',
-    category: 'event',
-    typeLabel: 'Agenda Lokal',
-    date: '2026-07-12',
-    location: 'SMA Taruna Nusantara, Banyurojo',
-    description: 'Ajang lari bertema Pace of Generations yang digelar di kawasan SMA Taruna Nusantara Magelang.',
-    latitude: -7.5013,
-    longitude: 110.1835,
-    image: photo.run,
-    link: 'https://visitmagelang.id/event-magelang/',
-    sourceUrl: 'https://visitmagelang.id/event-magelang/',
-    detailUrl: '/smart-map?focus=event-taruna-run-2026',
-    status: 'approved',
-    scope: 'city',
-    source: 'system',
-    createdAt: '2026-06-09T00:00:00.000Z',
-    tags: ['Lari', 'Komunitas', 'Kota Magelang']
-  },
-  {
-    id: 'event-ketep-summit-2026',
-    title: 'Ketep Summit Festival',
-    category: 'event',
-    typeLabel: 'Seni & Budaya',
-    date: '2026-07-16',
-    location: 'Ketep Pass, Sawangan',
-    description: 'Festival di kawasan Ketep Pass dengan agenda lari lintas alam, seni tradisional, produk lokal, dan edukasi gunung api.',
-    latitude: -7.4943,
-    longitude: 110.3811,
-    image: photo.nature,
-    link: 'https://visitmagelang.id/event-magelang/',
-    sourceUrl: 'https://visitmagelang.id/event-magelang/',
-    detailUrl: '/smart-map?focus=event-ketep-summit-2026',
-    status: 'approved',
-    scope: 'around',
-    source: 'system',
-    createdAt: '2026-06-09T00:00:00.000Z',
-    tags: ['Festival', 'Alam', 'Merapi']
-  },
-  {
-    id: 'event-borobudur-marathon-2026',
-    title: 'Borobudur Marathon 2026',
-    category: 'event',
-    typeLabel: 'Agenda Lokal',
-    date: '2026-11-01',
-    location: 'Taman Wisata Candi Borobudur',
-    description: 'Event lari besar di sekitar Borobudur dengan rute yang memadukan olahraga, wisata, dan budaya.',
-    latitude: -7.6079,
-    longitude: 110.2038,
-    image: photo.run,
-    link: 'https://visitmagelang.id/event-magelang/',
-    sourceUrl: 'https://visitmagelang.id/event-magelang/',
-    detailUrl: '/smart-map?focus=event-borobudur-marathon-2026',
-    status: 'approved',
-    scope: 'around',
-    source: 'system',
-    createdAt: '2026-06-09T00:00:00.000Z',
-    tags: ['Marathon', 'Borobudur', 'Sport Tourism']
-  }
-];
+// systemEvents have been migrated to the backend seed route.
+// Frontend now prefers API-first via `fetchEvents` / `fetchTourismItems` / `fetchCulinaryItems`.
 
 function readStoredEvents(): CommunityEvent[] {
   if (typeof window === 'undefined') return [];
@@ -727,9 +364,9 @@ export function getManagedTourismItems() {
     ];
   }
 
+  // When no developer-managed content is present, prefer API-driven items (fetchTourismItems) at runtime.
   return [
-    ...approvedSubmissions,
-    ...tourismItems
+    ...approvedSubmissions
   ];
 }
 
@@ -748,16 +385,16 @@ export function getManagedCulinaryItems() {
     ];
   }
 
+  // When no developer-managed content is present, prefer API-driven items (fetchCulinaryItems) at runtime.
   return [
-    ...approvedSubmissions,
-    ...culinaryItems
+    ...approvedSubmissions
   ];
 }
 
 export function getCommunityEvents(apiEvents: CommunityEvent[] = []) {
   const merged = new Map<string, CommunityEvent>();
 
-  [...systemEvents, ...apiEvents, ...readStoredEvents()].forEach((event) => {
+  [...apiEvents, ...readStoredEvents()].forEach((event) => {
     merged.set(event.id, event);
   });
 
@@ -1095,4 +732,189 @@ export function formatDate(date?: string) {
     month: 'long',
     year: 'numeric'
   }).format(new Date(date));
+}
+
+// New: API-first helpers (async). These prefer backend as source-of-truth.
+
+function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[] {
+  if (!Array.isArray(records)) return [];
+
+  return records.map((item) => {
+    const resolved = resolveLocation(String(item.location || item.title || ''));
+    const id = `${featureType ? featureType.toLowerCase() : 'api'}-${item.id || slugify(String(item.title || 'item'))}`;
+
+    return {
+      id,
+      title: String(item.title || item.name || ''),
+      category: (featureType === 'KULINER' ? 'kuliner' : featureType === 'WISATA' ? 'wisata' : 'event') as MapCategory,
+      typeLabel: String(item.category || item.typeLabel || item.type || 'Lainnya'),
+      description: String(item.description || item.content || ''),
+      location: String(item.location || ''),
+      latitude: Number(item.latitude ?? resolved.latitude),
+      longitude: Number(item.longitude ?? resolved.longitude),
+      image: String(item.image || item.imageUrl || photo.event),
+      link: item.link ? String(item.link) : item.sourceUrl ? String(item.sourceUrl) : undefined,
+      detailUrl: `/smart-map?focus=${id}`,
+      date: item.date ? String(item.date).slice(0, 10) : undefined,
+      time: item.time ? String(item.time) : undefined,
+      status: (item.status || 'approved') as EventStatus,
+      scope: (item.scope || resolved.scope) as EventScope,
+      source: 'api',
+      rating: Number(item.rating ?? 4.5),
+      priceRange: item.priceRange,
+      openingHours: item.openingHours,
+      tags: Array.isArray(item.tags) ? item.tags : ['API']
+    } as SmartMapItem;
+  });
+}
+
+export async function fetchEvents(includePending = false): Promise<CommunityEvent[]> {
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/events?includePending=${includePending}`);
+    if (!res.ok) return [];
+    const payload = await res.json();
+    const records = Array.isArray(payload) ? payload : payload.events ?? [];
+    return normalizeApiEvents(records);
+  } catch (err) {
+    return [];
+  }
+}
+
+export async function fetchTourismItems(includePending = false): Promise<SmartMapItem[]> {
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/tourism?includePending=${includePending}`);
+    if (!res.ok) return [];
+    const payload = await res.json();
+    const records = Array.isArray(payload) ? payload : payload.items ?? [];
+    return normalizeApiItems(records, 'WISATA');
+  } catch (err) {
+    return [];
+  }
+}
+
+export async function fetchCulinaryItems(includePending = false): Promise<SmartMapItem[]> {
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/culinary?includePending=${includePending}`);
+    if (!res.ok) return [];
+    const payload = await res.json();
+    const records = Array.isArray(payload) ? payload : payload.items ?? [];
+    return normalizeApiItems(records, 'KULINER');
+  } catch (err) {
+    return [];
+  }
+}
+
+export async function fetchUserSubmissions(userId: string, featureType?: 'EVENT' | 'WISATA' | 'KULINER') {
+  try {
+    const params = new URLSearchParams();
+    if (userId) params.set('submittedById', userId);
+    if (featureType) params.set('featureType', featureType);
+    const res = await fetch(`${getApiBaseUrl()}/api/submissions?${params.toString()}`);
+    if (!res.ok) return [];
+    const payload = await res.json();
+    return Array.isArray(payload) ? payload : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+export async function submitCommunityCulinaryAsync(input: CommunityCulinaryInput, token?: string) {
+  try {
+    const body = {
+      title: input.title,
+      location: input.location,
+      description: input.description,
+      image: input.image,
+      link: input.link,
+      priceRange: input.priceRange,
+      featureType: 'KULINER',
+      categoryName: input.typeLabel
+    };
+
+    const res = await fetch(`${getApiBaseUrl()}/api/submissions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error('Gagal mengirim pengajuan');
+    return await res.json();
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function submitCommunityTourismAsync(input: CommunityTourismInput, token?: string) {
+  try {
+    const body = {
+      title: input.title,
+      location: input.location,
+      description: input.description,
+      image: input.image,
+      link: input.link,
+      featureType: 'WISATA',
+      categoryName: input.submittedBy // note: keep category optional
+    };
+
+    const res = await fetch(`${getApiBaseUrl()}/api/submissions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error('Gagal mengirim pengajuan');
+    return await res.json();
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function submitCommunityEventAsync(input: CommunityEventInput, token?: string) {
+  try {
+    const body = {
+      title: input.title,
+      date: input.date,
+      location: input.location,
+      description: input.description,
+      image: input.image,
+      link: input.link,
+      featureType: 'EVENT',
+      categoryName: input.typeLabel
+    };
+
+    const res = await fetch(`${getApiBaseUrl()}/api/submissions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error('Gagal mengirim pengajuan event');
+    return await res.json();
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function buildSmartMapItemsAsync() {
+  const [events, tourism, culinary] = await Promise.all([
+    fetchEvents(false),
+    fetchTourismItems(false),
+    fetchCulinaryItems(false)
+  ]);
+
+  const approvedEvents = events.filter((e) => e.status === 'approved').map((event) => ({ ...event, detailUrl: `/smart-map?focus=${event.id}` }));
+  return [
+    ...approvedEvents,
+    ...tourism,
+    ...culinary
+  ];
 }

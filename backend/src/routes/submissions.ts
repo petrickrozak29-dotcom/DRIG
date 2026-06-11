@@ -1,9 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../services/prismaClient';
 import * as authService from '../services/authService';
 import { submissionService } from '../services/submissionService';
-
-const prisma = new PrismaClient();
 const router = Router();
 
 function optionalAuth(req: Request) {

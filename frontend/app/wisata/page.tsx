@@ -24,17 +24,22 @@ interface TourismItem {
 export default function WisataPage() {
   const [filter, setFilter] = useState('Semua');
   const [items, setItems] = useState<TourismItem[]>([]);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     let mounted = true;
 
-    async function fetchTourism() {
+    let timer: any;
+    async function fetchTourism(q?: string) {
       try {
-        const response = await fetch(`${getApiBaseUrl()}/api/tourism?includePending=false`);
+        const params = new URLSearchParams();
+        params.set('includePending', 'false');
+        if (q) params.set('q', q);
+
+        const response = await fetch(`${getApiBaseUrl()}/api/tourism?${params.toString()}`);
         if (!response.ok) return;
         const data = await response.json();
-        
-        // Ensure default tags and ratings are set if missing from API
+
         const formatted = data.map((item: any) => ({
           ...item,
           rating: item.rating || 4.5,
@@ -48,7 +53,12 @@ export default function WisataPage() {
       }
     }
 
-    fetchTourism();
+    timer = setTimeout(() => fetchTourism(search || undefined), 300);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
 
     return () => {
       mounted = false;
@@ -83,13 +93,16 @@ export default function WisataPage() {
                 Wisata sejarah, alam, taman kota, dan museum kini tersambung langsung ke Smart Map. Klik peta untuk membuka marker, foto, jarak, dan link rute.
               </p>
             </div>
-            <a
-              href="/admin"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
-            >
-              <PlusCircle className="h-5 w-5" />
-              Ajukan Wisata (Community Form)
-            </a>
+            <div className="flex items-center gap-3">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari wisata..." className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-cyan-400" />
+              <a
+                href="/admin"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
+              >
+                <PlusCircle className="h-5 w-5" />
+                Ajukan Wisata (Community Form)
+              </a>
+            </div>
           </div>
         </section>
 
