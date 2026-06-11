@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backend - Install & Test
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm test -- --runInBand
+
+      - name: Frontend - Install & Build
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
