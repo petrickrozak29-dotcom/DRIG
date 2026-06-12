@@ -4,7 +4,7 @@ This file explains how to deploy the `frontend` (Next.js) and `backend` (Express
 
 Prerequisites
 - A production Postgres database and its `DATABASE_URL` value
-- Project secrets: `JWT_SECRET`, `NEXT_PUBLIC_API_URL`, `S3_*` values, `OPENAI_API_KEY`, `REDIS_URL`
+- Project secrets: `JWT_SECRET`, `NEXT_PUBLIC_API_URL`, `CORS_ORIGINS`, `S3_*` values, `OPENAI_API_KEY`, `REDIS_URL`
 
 Frontend (Vercel)
 1. Create a Vercel project and connect your GitHub repository.
@@ -15,6 +15,7 @@ Backend (Railway or Docker)
 Railway (recommended for quick deploy):
 1. Create a Railway project and add a Postgres plugin.
 2. Add environment variables in Railway with the keys above.
+   For CORS, set `CORS_ORIGINS` to your frontend HTTPS origin, for example `https://magelangverse.vercel.app`.
 3. Use Railway GitHub integration or run the manual deploy workflow in GitHub Actions.
 
 Docker (self-host):

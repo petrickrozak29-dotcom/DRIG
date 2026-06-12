@@ -23,26 +23,57 @@ import path from 'path';
 const app = express();
 const port = process.env.PORT || 4000;
 
-app.use(
-  cors({
-    origin: true,
-    credentials: true,
-  })
-);
+app.set('trust proxy', 1);
+
+const configuredCorsOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowAllCorsOrigins = configuredCorsOrigins.length === 0;
+
+function resolveCorsOrigin(origin?: string) {
+  if (!origin) return allowAllCorsOrigins ? '*' : configuredCorsOrigins[0] || '*';
+  if (allowAllCorsOrigins) return origin;
+  return configuredCorsOrigins.includes(origin) ? origin : null;
+}
+
+const corsOptions: cors.CorsOptions = {
+  origin(origin, callback) {
+    const allowedOrigin = resolveCorsOrigin(origin || undefined);
+    if (!origin || allowedOrigin) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  const requestOrigin =
+    typeof req.headers.origin === 'string' ? req.headers.origin : undefined;
+  const allowedOrigin = resolveCorsOrigin(requestOrigin);
+
+  if (allowedOrigin) {
+    res.header('Access-Control-Allow-Origin', allowedOrigin);
+  }
+
+  res.header('Vary', 'Origin');
   res.header(
     'Access-Control-Allow-Headers',
     'Origin, X-Requested-With, Content-Type, Accept, Authorization'
   );
-  res.header(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, PATCH, DELETE, OPTIONS'
-  );
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
 
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    return res.sendStatus(204);
   }
 
   next();
