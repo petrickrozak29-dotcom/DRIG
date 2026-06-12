@@ -37,14 +37,19 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { featureType, status, submittedById } = req.query as any;
     const filters: any = {};
-    if (featureType) filters.featureType = featureType;
-    if (status) filters.status = status;
+    if (featureType) filters.featureType = String(featureType).toUpperCase();
+    if (status) filters.status = String(status).toUpperCase();
     if (submittedById) filters.submittedById = submittedById;
 
     const submissions = await submissionService.getSubmissions(filters);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.json(
       submissions.map((s: SubmissionWithRelations) => ({
         ...(s),
+        image:
+          s.image && s.image.startsWith('/uploads/')
+            ? `${baseUrl}${s.image}`
+            : s.image,
         status: s.status.toLowerCase(),
         typeLabel: s.category?.name,
         publishedAt: (s as any).publishedAt ? (s as any).publishedAt.toISOString() : undefined,

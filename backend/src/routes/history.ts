@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
   try {
     const includePending = req.query.includePending === 'true';
     const q = typeof req.query.q === 'string' ? String(req.query.q) : undefined;
-    const filters: any = { featureType: 'CULTURE' };
+    const filters: any = { featureType: 'HISTORY' };
 
     if (!includePending) {
       filters.status = 'APPROVED';
@@ -27,21 +27,23 @@ router.get('/', async (req, res) => {
         return {
           id: item.id,
           title: item.title,
+          period: item.title,
+          year: item.date ? new Date(item.date).getFullYear().toString() : 'Periode Baru',
           description: item.description,
           image,
           link: item.link,
-          category: item.category?.name || 'Budaya',
-          typeLabel: item.category?.name || 'Budaya',
+          source: item.link,
+          category: item.category?.name || 'Sejarah',
+          typeLabel: item.category?.name || 'Sejarah',
           status: item.status.toLowerCase(),
           submittedBy: item.submittedBy?.email || item.submittedById,
           createdAt: item.createdAt.toISOString(),
           publishedAt: item.publishedAt ? item.publishedAt.toISOString() : undefined,
-          details: item.link ? ['Sumber terkait tersedia'] : ['Konten budaya Magelang'],
         };
       })
     );
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch culture contents' });
+    res.status(500).json({ error: 'Failed to fetch history contents' });
   }
 });
 

@@ -48,8 +48,17 @@ export default function CommunityFormPage() {
   });
 
   const [preview, setPreview] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const fromQuery = new URLSearchParams(window.location.search).get('feature')?.toUpperCase();
+    if (fromQuery === 'EVENT' || fromQuery === 'WISATA' || fromQuery === 'KULINER') {
+      setFeatureType(fromQuery);
+    }
+  }, []);
 
   // Fetch categories for the current featureType and set default
   useEffect(() => {
@@ -87,6 +96,8 @@ export default function CommunityFormPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setIsUploadingImage(true);
+
     // If authenticated, attempt to upload to backend uploads endpoint
     (async () => {
       try {
@@ -106,6 +117,7 @@ export default function CommunityFormPage() {
             const body = await res.json();
             setFormState((current) => ({ ...current, image: body.url }));
             setStatus('');
+            setIsUploadingImage(false);
             return;
           }
         }
@@ -115,6 +127,7 @@ export default function CommunityFormPage() {
         reader.onload = () => {
           setFormState((current) => ({ ...current, image: String(reader.result || '') }));
           setStatus('');
+          setIsUploadingImage(false);
         };
         reader.readAsDataURL(file);
       } catch (err) {
@@ -122,10 +135,15 @@ export default function CommunityFormPage() {
         reader.onload = () => {
           setFormState((current) => ({ ...current, image: String(reader.result || '') }));
           setStatus('');
+          setIsUploadingImage(false);
         };
         reader.readAsDataURL(file);
       }
     })();
+  };
+
+  const removeImage = () => {
+    setFormState((current) => ({ ...current, image: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,7 +155,9 @@ export default function CommunityFormPage() {
 
     // If user is not authenticated, require login before final submit
     if (!isAuthenticated) {
-      router.push(`/login?next=${encodeURIComponent('/admin')}`);
+      router.push(
+        `/login?next=${encodeURIComponent(`/community-form?feature=${featureType}`)}`
+      );
       return;
     }
 
@@ -171,6 +191,7 @@ export default function CommunityFormPage() {
         priceRange: '',
       });
       setPreview(false);
+      window.dispatchEvent(new Event('magelangverse-submissions-updated'));
     } catch {
       setStatus('Gagal menyimpan submission. Silakan coba lagi.');
     }
@@ -325,10 +346,36 @@ export default function CommunityFormPage() {
                       className="w-full text-sm"
                     />
                   </span>
+                  <span className="mt-2 block text-xs font-normal text-slate-400">
+                    {isUploadingImage
+                      ? 'Mengunggah gambar...'
+                      : 'Upload gambar lalu cek preview sebelum submit.'}
+                  </span>
+                  {formState.image && (
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+                      <img
+                        src={formState.image}
+                        alt="Preview upload"
+                        className="h-48 w-full object-cover"
+                      />
+                      <div className="flex items-center justify-between gap-3 px-4 py-3">
+                        <p className="text-xs font-normal text-slate-400">
+                          Gambar sudah siap. Kamu masih bisa ganti atau hapus sebelum submit.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={removeImage}
+                          className="rounded-full border border-rose-400/40 px-3 py-1 text-xs font-semibold text-rose-200 transition hover:border-rose-300 hover:bg-rose-500/10"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </label>
 
                 <Field
-                  label="Link Terkait (Google Maps / IG / Web)"
+                  label="Link Terkait (Opsional)"
                   value={formState.link}
                   onChange={(v) => setFormState({ ...formState, link: v })}
                   placeholder="https://..."
@@ -349,8 +396,12 @@ export default function CommunityFormPage() {
               </h2>
 
               <article className="overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
-                {formState.image && (
+                {formState.image ? (
                   <img src={formState.image} alt="Preview" className="h-48 w-full object-cover" />
+                ) : (
+                  <div className="flex h-48 items-center justify-center bg-slate-900 text-slate-500">
+                    <Camera className="h-8 w-8" />
+                  </div>
                 )}
                 <div className="p-5">
                   <div className="mb-2 flex items-center justify-between">

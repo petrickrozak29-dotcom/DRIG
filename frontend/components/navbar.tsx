@@ -35,11 +35,13 @@ export default function Navbar() {
     };
     window.addEventListener('storage', onStorage);
     window.addEventListener('magelangverse-content-updated', onStorage);
+    window.addEventListener('magelangverse-notifications-updated', onStorage);
 
     return () => {
       mounted = false;
       window.removeEventListener('storage', onStorage);
       window.removeEventListener('magelangverse-content-updated', onStorage);
+      window.removeEventListener('magelangverse-notifications-updated', onStorage);
     };
   }, [user, isAuthenticated]);
 
@@ -59,14 +61,12 @@ export default function Navbar() {
               <Link href="/budaya">Budaya</Link>
               <Link href="/sejarah">Sejarah</Link>
               <Link href="/event">Event</Link>
-              <Link href="/teknologi-data">Teknologi Data</Link>
               <Link href="/smart-map">Smart Map</Link>
-              <Link href="/smart-magelang">Smart Magelang</Link>
             </>
           )}
           {isAuthenticated && (
             <>
-              {!isDeveloper && <Link href="/admin">Community Form</Link>}
+              {!isDeveloper && <Link href="/community-form">Community Form</Link>}
               <Link
                 href="/notifications"
                 className="ml-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-slate-200 hover:bg-slate-800 relative"

@@ -25,9 +25,18 @@ export const notificationService = {
     })) as NotificationRecord;
   },
 
-  async getForUser(userId: string): Promise<NotificationWithParsedPayload[]> {
+  async getForUser(
+    userId: string,
+    options?: { includeSystem?: boolean }
+  ): Promise<NotificationWithParsedPayload[]> {
+    const where = options?.includeSystem
+      ? {
+          OR: [{ userId }, { userId: null }],
+        }
+      : { userId };
+
     const records = (await prisma.notification.findMany({
-      where: { OR: [{ userId }, { userId: null }] },
+      where,
       orderBy: { createdAt: 'desc' },
     })) as NotificationRecord[];
 
@@ -45,7 +54,27 @@ export const notificationService = {
     }));
   },
 
-  async markAsRead(id: string): Promise<NotificationRecord> {
+  async markAsRead(
+    id: string,
+    userId: string,
+    options?: { includeSystem?: boolean }
+  ): Promise<NotificationRecord> {
+    const existing = (await prisma.notification.findUnique({
+      where: { id },
+      select: { id: true, userId: true },
+    })) as Pick<NotificationRecord, 'id' | 'userId'> | null;
+
+    if (!existing) {
+      throw new Error('NOT_FOUND');
+    }
+
+    const canAccess =
+      existing.userId === userId || (options?.includeSystem && existing.userId === null);
+
+    if (!canAccess) {
+      throw new Error('FORBIDDEN');
+    }
+
     return (await prisma.notification.update({
       where: { id },
       data: { isRead: true },

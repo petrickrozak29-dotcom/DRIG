@@ -27,12 +27,6 @@ router.post('/run', authenticateAdmin, async (_req: Request, res: Response) => {
       WISATA: ['Alam', 'Sejarah', 'Taman Rekreasi', 'Spot Populer'],
       KULINER: ['Makanan Khas', 'Pusat Kuliner', 'UMKM', 'Kopi dan Kafe'],
       EVENT: ['Konser Musik', 'Seni & Budaya', 'Pameran', 'Agenda Lokal'],
-      SMART_MAGELANG: [
-        'Infrastruktur Teknologi',
-        'Internet dan Jaringan Komunikasi',
-        'Digitalisasi Layanan Publik',
-        'Pengembangan Smart City',
-      ],
     };
 
     for (const [featureType, list] of Object.entries(defaultCategories)) {
@@ -228,28 +222,6 @@ router.post('/run', authenticateAdmin, async (_req: Request, res: Response) => {
           updatedAt: now,
         },
       });
-    }
-
-    // Create a couple of SmartMagelang contents
-    const smartCategories = ['Infrastruktur Teknologi', 'Digitalisasi Layanan Publik'];
-    for (const name of smartCategories) {
-      const cat = await prisma.category.findFirst({
-        where: { name, featureType: 'SMART_MAGELANG' },
-      });
-      if (cat) {
-        await prisma.smartMagelangContent.upsert({
-          where: { id: `seed-smart-${slugify(name)}` },
-          update: {},
-          create: {
-            id: `seed-smart-${slugify(name)}`,
-            title: `${name} (Seed)`,
-            description: `Contoh konten Smart Magelang untuk kategori ${name}`,
-            categoryId: cat.id,
-            sourceUrl: 'https://magelangkota.go.id/',
-            image: '',
-          },
-        });
-      }
     }
 
     res.json({ message: 'Seed run completed' });

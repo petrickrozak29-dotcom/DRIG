@@ -20,7 +20,10 @@ export default function NotificationsPage() {
         const data = await apiJson<any[]>('/api/notifications', {
           headers: { Authorization: token ? `Bearer ${token}` : '' },
         });
-        if (mounted) setItems(data);
+        if (mounted) {
+          setItems(data);
+          window.dispatchEvent(new Event('magelangverse-notifications-updated'));
+        }
       } catch (err) {
         setItems([]);
       } finally {
@@ -45,7 +48,10 @@ export default function NotificationsPage() {
         method: 'PATCH',
         headers: { Authorization: token ? `Bearer ${token}` : '' },
       });
-      if (res.ok) setItems((cur) => cur.map((it) => (it.id === id ? { ...it, isRead: true } : it)));
+      if (res.ok) {
+        setItems((cur) => cur.map((it) => (it.id === id ? { ...it, isRead: true } : it)));
+        window.dispatchEvent(new Event('magelangverse-notifications-updated'));
+      }
     } catch {}
   };
 

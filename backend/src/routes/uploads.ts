@@ -38,7 +38,7 @@ router.post('/avatar', (req: Request, res: Response) => {
     const localPath = file.path;
 
     try {
-      const result = await uploadToObjectStorage(localPath, file.filename);
+      const result = await uploadToObjectStorage(localPath, file.filename, file.mimetype);
 
       // Remove local copy if uploaded to remote
       if (result.url && !result.url.startsWith('/uploads/')) {
@@ -70,7 +70,7 @@ router.post('/image', (req: Request, res: Response) => {
     const localPath = file.path;
 
     try {
-      const result = await uploadToObjectStorage(localPath, file.filename);
+      const result = await uploadToObjectStorage(localPath, file.filename, file.mimetype);
 
       if (result.url && !result.url.startsWith('/uploads/')) {
         try {

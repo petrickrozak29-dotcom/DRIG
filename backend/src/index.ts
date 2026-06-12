@@ -3,6 +3,7 @@ import cors from 'cors';
 import tourismRouter from './routes/tourism';
 import culinaryRouter from './routes/culinary';
 import cultureRouter from './routes/culture';
+import historyRouter from './routes/history';
 import eventRouter from './routes/event';
 import articlesRouter from './routes/articles';
 import aiRouter from './routes/ai';
@@ -39,6 +40,7 @@ app.use((err: any, _req: any, res: any, next: any) => {
 app.use('/api/tourism', tourismRouter);
 app.use('/api/culinary', culinaryRouter);
 app.use('/api/culture', cultureRouter);
+app.use('/api/history', historyRouter);
 app.use('/api/events', eventRouter);
 app.use('/api/articles', articlesRouter);
 app.use('/api/ai', aiRouter);
@@ -98,6 +100,7 @@ app.get('/', (_req, res) => {
       '/api/tourism',
       '/api/culinary',
       '/api/culture',
+      '/api/history',
       '/api/events',
       '/api/articles',
       '/api/ai',

@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BarChart3,
+  CalendarDays,
   CheckCircle2,
   Eye,
   ImagePlus,
   MapPin,
   Pencil,
-  Plus,
   Save,
   Trash2,
   Users,
@@ -23,183 +23,116 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiJson, getApiBaseUrl } from '../../lib/api';
 import {
   deleteDeveloperContent,
-  formatDate,
-  getCommunityEvents,
-  getDeveloperContent,
-  getManagedCulinaryItems,
-  getManagedTourismItems,
-  getStoredCommunityCulinary,
-  getStoredCommunityTourism,
-  hasDeveloperContent,
-  isEventPast,
-  normalizeApiEvents,
-  replaceDeveloperContent,
-  updateCommunityCulinaryStatus,
-  updateCommunityEventStatus,
-  updateCommunityTourismStatus,
-  upsertDeveloperContent,
-  fetchTourismItems,
-  fetchCulinaryItems,
-  fetchUserSubmissions,
-  fetchEvents,
-  type CommunityCulinary,
-  type CommunityEvent,
-  type CommunityTourism,
-  type DeveloperContentItem,
-  type DeveloperContentType,
-  type EventStatus,
-  type SmartMapItem,
-} from '../../lib/magelang-data';
+  fetchCategories,
+  fetchDeveloperContent,
+  fetchDeveloperOverview,
+  saveDeveloperContent,
+  updateDeveloperContentStatus,
+  type CategoryRecord,
+  type DeveloperType,
+  type ManagedContentItem,
+  type OverviewPayload,
+} from '../../lib/content-api';
 
-type SectionKey =
-  | 'overview'
-  | 'smartMap'
-  | 'smartCity'
-  | 'categories'
-  | DeveloperContentType
-  | 'events'
-  | 'users';
-
-interface DeveloperUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  lastLogin?: string | null;
-}
-
-interface OverviewPayload {
-  stats: {
-    totalUser: number;
-    totalEvent: number;
-    eventPending: number;
-    eventPublished: number;
-  };
-  users: DeveloperUser[];
-}
+type SectionKey = 'overview' | 'categories' | 'tourism' | 'culinary' | 'event' | 'culture' | 'history' | 'users';
+type CategoryFeatureKey = 'WISATA' | 'KULINER' | 'EVENT';
+type StatusFilter = 'pending' | 'approved' | 'rejected';
 
 const sections: Array<{ key: SectionKey; label: string }> = [
   { key: 'overview', label: 'Statistik Umum' },
-  { key: 'smartMap', label: 'Kelola Smart Map' },
-  { key: 'smartCity', label: 'Kelola Smart Magelang' },
   { key: 'categories', label: 'Kelola Kategori' },
   { key: 'tourism', label: 'Kelola Wisata' },
   { key: 'culinary', label: 'Kelola Kuliner' },
+  { key: 'event', label: 'Kelola Event' },
   { key: 'culture', label: 'Kelola Budaya' },
   { key: 'history', label: 'Kelola Sejarah' },
-  { key: 'events', label: 'Kelola Event' },
   { key: 'users', label: 'Kelola Pengguna' },
 ];
 
-const defaultCulture: DeveloperContentItem[] = [
-  {
-    id: 'culture-mantyasih',
-    title: 'Cagar Budaya Mantyasih',
-    description:
-      'Jejak Mantyasih menjadi pintu masuk penting untuk memahami hari jadi Kota Magelang.',
-    category: 'Budaya',
-    details: ['Lumpang Mantyasih', 'Prasasti lokal', 'Kampung Meteseh'],
-    source: 'https://kebudayaan.magelangkota.go.id/',
-  },
-  {
-    id: 'culture-festival',
-    title: 'Agenda Seni Kota',
-    description: 'Agenda seni, batik, aksara, museum, dan kegiatan edukasi budaya Magelang.',
-    category: 'Budaya',
-    details: ['Parade seni', 'Harmoni batik', 'Pameran aksara'],
-    source: 'https://kebudayaan.magelangkota.go.id/',
-  },
-];
-
-const defaultHistory: DeveloperContentItem[] = [
-  {
-    id: 'history-mantyasih',
-    title: 'Mantyasih dan Hari Jadi',
-    period: 'Mantyasih dan Hari Jadi',
-    year: '907 M',
-    description:
-      'Cikal bakal Magelang dikaitkan dengan Desa Perdikan Mantyasih dan tradisi sejarah 11 April 907.',
-    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Borobudur_Temple.jpg',
-    source: 'https://magelangkota.go.id/page/profil-kota-magelang-2',
-  },
-  {
-    id: 'history-modern',
-    title: 'Heritage, Wisata, dan Kota Modern',
-    period: 'Heritage, Wisata, dan Kota Modern',
-    year: '2000-sekarang',
-    description:
-      'Identitas Magelang bergerak di antara heritage, pariwisata, UMKM, pendidikan, dan layanan digital.',
-    image:
-      'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',
-    source: 'https://magesty.magelangkota.go.id/',
-  },
-];
-
-const emptyForm: DeveloperContentItem = {
+const defaultForm = {
   id: '',
   title: '',
   description: '',
   typeLabel: '',
   location: '',
-  latitude: undefined,
-  longitude: undefined,
+  latitude: '',
+  longitude: '',
   image: '',
   link: '',
-  rating: 4.5,
   priceRange: '',
-  openingHours: '',
-  category: '',
-  details: [],
-  year: '',
-  period: '',
-  source: '',
+  date: '',
 };
 
-function fromMapItem(item: SmartMapItem): DeveloperContentItem {
-  return {
-    id: item.id,
-    title: item.title,
-    description: item.description,
-    typeLabel: item.typeLabel,
-    location: item.location,
-    latitude: item.latitude,
-    longitude: item.longitude,
-    image: item.image,
-    link: item.link,
-    rating: item.rating,
-    priceRange: item.priceRange,
-    openingHours: item.openingHours,
-    details: item.tags || [],
-  };
+const fallbackImage =
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80';
+
+function sectionLabel(section: SectionKey) {
+  return sections.find((item) => item.key === section)?.label || section;
 }
 
-function statusLabel(status: EventStatus) {
+function sectionToFeature(section: DeveloperType): CategoryFeatureKey | null {
+  if (section === 'tourism') return 'WISATA';
+  if (section === 'culinary') return 'KULINER';
+  if (section === 'event') return 'EVENT';
+  return null;
+}
+
+function statusLabel(status: StatusFilter) {
   if (status === 'approved') return 'Published';
   if (status === 'pending') return 'Pending';
   return 'Rejected';
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
+function toFormState(item?: ManagedContentItem | null) {
+  if (!item) return defaultForm;
+  return {
+    id: item.id,
+    title: item.title || '',
+    description: item.description || '',
+    typeLabel: item.typeLabel || item.category || '',
+    location: item.location || '',
+    latitude: item.latitude !== undefined && item.latitude !== null ? String(item.latitude) : '',
+    longitude:
+      item.longitude !== undefined && item.longitude !== null ? String(item.longitude) : '',
+    image: item.image || '',
+    link: item.link || '',
+    priceRange: item.priceRange || '',
+    date: item.date ? String(item.date).slice(0, 10) : '',
+  };
+}
+
 export default function DeveloperPage() {
   const router = useRouter();
   const { user, token, loading, isAuthenticated } = useAuth();
+  const isDeveloper = user?.role === 'ADMIN';
+
   const [active, setActive] = useState<SectionKey>('overview');
   const [overview, setOverview] = useState<OverviewPayload | null>(null);
-  const [users, setUsers] = useState<DeveloperUser[]>([]);
-  const [events, setEvents] = useState<CommunityEvent[]>([]);
-  const [culinarySubmissions, setCulinarySubmissions] = useState<CommunityCulinary[]>([]);
-  const [tourismSubmissions, setTourismSubmissions] = useState<CommunityTourism[]>([]);
-  const [content, setContent] = useState<Record<DeveloperContentType, DeveloperContentItem[]>>({
+  const [users, setUsers] = useState<OverviewPayload['users']>([]);
+  const [content, setContent] = useState<Record<DeveloperType, ManagedContentItem[]>>({
     tourism: [],
     culinary: [],
+    event: [],
     culture: [],
     history: [],
   });
-  const [formType, setFormType] = useState<DeveloperContentType>('tourism');
-  const [form, setForm] = useState<DeveloperContentItem>(emptyForm);
-  const [status, setStatus] = useState('');
-  const isDeveloper = user?.role === 'ADMIN';
+  const [categoryMap, setCategoryMap] = useState<Record<CategoryFeatureKey, CategoryRecord[]>>({
+    WISATA: [],
+    KULINER: [],
+    EVENT: [],
+  });
+  const [formState, setFormState] = useState(defaultForm);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || !isDeveloper)) {
@@ -207,281 +140,227 @@ export default function DeveloperPage() {
     }
   }, [isAuthenticated, isDeveloper, loading, router]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // Keep existing developer content if present; otherwise initialize with empty arrays or defaults
-    if (!hasDeveloperContent('tourism')) {
-      replaceDeveloperContent('tourism', []);
-    }
-
-    if (!hasDeveloperContent('culinary')) {
-      replaceDeveloperContent('culinary', []);
-    }
-
-    if (!hasDeveloperContent('culture')) {
-      replaceDeveloperContent('culture', defaultCulture);
-    }
-
-    if (!hasDeveloperContent('history')) {
-      replaceDeveloperContent('history', defaultHistory);
-    }
-  }, []);
-
-  const refreshContent = () => {
-    setContent({
-      tourism: getDeveloperContent('tourism'),
-      culinary: getDeveloperContent('culinary'),
-      culture: getDeveloperContent('culture'),
-      history: getDeveloperContent('history'),
-    });
-    setCulinarySubmissions(getStoredCommunityCulinary());
-    setTourismSubmissions(getStoredCommunityTourism());
-  };
-
-  const refreshEvents = async () => {
-    try {
-      const records = await fetchEvents(true);
-      setEvents(getCommunityEvents(records));
-    } catch {
-      setEvents(getCommunityEvents());
-    }
-  };
-
   const refreshOverview = async () => {
     if (!token) return;
+    const payload = await fetchDeveloperOverview(token);
+    setOverview(payload);
+    setUsers(payload.users);
+  };
 
-    try {
-      const payload = await apiJson<OverviewPayload>('/api/developer/overview', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setOverview(payload);
-      setUsers(payload.users);
-    } catch (error: any) {
-      setStatus(error.message || 'Gagal memuat dashboard developer.');
+  const refreshCategories = async () => {
+    const [wisata, kuliner, event] = await Promise.all([
+      fetchCategories('WISATA'),
+      fetchCategories('KULINER'),
+      fetchCategories('EVENT'),
+    ]);
+    setCategoryMap({ WISATA: wisata, KULINER: kuliner, EVENT: event });
+  };
+
+  const refreshContent = async (section?: DeveloperType) => {
+    if (!token) return;
+
+    if (section) {
+      const records = await fetchDeveloperContent(section, token);
+      setContent((current) => ({ ...current, [section]: records }));
+      return;
     }
+
+    const [tourism, culinary, event, culture, history] = await Promise.all([
+      fetchDeveloperContent('tourism', token),
+      fetchDeveloperContent('culinary', token),
+      fetchDeveloperContent('event', token),
+      fetchDeveloperContent('culture', token),
+      fetchDeveloperContent('history', token),
+    ]);
+
+    setContent({ tourism, culinary, event, culture, history });
   };
 
   useEffect(() => {
-    (async () => {
-      refreshContent();
-      await refreshEvents();
+    if (!token || !isDeveloper) return;
 
-      // Try to fetch managed items count from API to populate counts
+    (async () => {
       try {
-        const [tourismApi, culinaryApi] = await Promise.all([
-          fetchTourismItems(false),
-          fetchCulinaryItems(false),
-        ]);
-        setContent((c) => ({
-          ...c,
-          tourism: c.tourism.concat(
-            tourismApi.map((i) => ({ id: i.id, title: i.title, description: i.description }) as any)
-          ),
-        }));
-        // store temporary culinary/tourism submissions counts
-        setCulinarySubmissions((s) =>
-          s.concat(culinaryApi.map((i) => ({ id: i.id, title: i.title, status: i.status }) as any))
-        );
-        setTourismSubmissions((s) =>
-          s.concat(tourismApi.map((i) => ({ id: i.id, title: i.title, status: i.status }) as any))
-        );
-      } catch {
-        // ignore API failures; local state remains
+        await Promise.all([refreshOverview(), refreshCategories(), refreshContent()]);
+      } catch (error: any) {
+        setStatusMessage(error.message || 'Gagal memuat dashboard developer.');
       }
     })();
-  }, []);
-
-  useEffect(() => {
-    if (token && isDeveloper) {
-      refreshOverview();
-    }
   }, [token, isDeveloper]);
 
   useEffect(() => {
     const refresh = () => {
-      refreshContent();
-      refreshEvents();
+      refreshCategories().catch(() => undefined);
     };
-    window.addEventListener('magelangverse-content-updated', refresh);
-    window.addEventListener('magelangverse-events-updated', refresh);
-    window.addEventListener('magelangverse-culinary-updated', refresh);
-    window.addEventListener('magelangverse-tourism-updated', refresh);
-    window.addEventListener('storage', refresh);
 
+    window.addEventListener('magelangverse-categories-updated', refresh);
     return () => {
-      window.removeEventListener('magelangverse-content-updated', refresh);
-      window.removeEventListener('magelangverse-events-updated', refresh);
-      window.removeEventListener('magelangverse-culinary-updated', refresh);
-      window.removeEventListener('magelangverse-tourism-updated', refresh);
-      window.removeEventListener('storage', refresh);
+      window.removeEventListener('magelangverse-categories-updated', refresh);
     };
   }, []);
 
-  const computedStats = useMemo(
-    () => ({
-      totalUser: overview?.stats.totalUser ?? users.length,
-      totalEvent: events.length,
-      eventPending: events.filter((event) => event.status === 'pending').length,
-      eventPublished: events.filter((event) => event.status === 'approved').length,
-      culinaryPending: culinarySubmissions.filter((item) => item.status === 'pending').length,
-    }),
-    [culinarySubmissions, events, overview, users.length]
+  const currentSection = (['tourism', 'culinary', 'event', 'culture', 'history'] as DeveloperType[]).includes(
+    active as DeveloperType
+  )
+    ? (active as DeveloperType)
+    : null;
+
+  const activeFeature = currentSection ? sectionToFeature(currentSection) : null;
+
+  const statCards = useMemo<Array<[string, number]>>(
+    () =>
+      overview
+        ? [
+            ['Total User', overview.stats.totalUser],
+            ['Total Wisata', overview.stats.totalWisata],
+            ['Total Kuliner', overview.stats.totalKuliner],
+            ['Total Event', overview.stats.totalEvent],
+            ['Total Budaya', overview.stats.totalBudaya],
+            ['Total Sejarah', overview.stats.totalSejarah],
+            ['Total Artikel', overview.stats.totalArtikel],
+            ['Total Lokasi', overview.stats.totalLokasi],
+            ['Total Kategori', overview.stats.totalKategori],
+            ['Total Submission', overview.stats.totalSubmission],
+            ['Total Pending', overview.stats.totalPending],
+            ['Total Approved', overview.stats.totalApproved],
+            ['Total Rejected', overview.stats.totalRejected],
+            ['Published Content', overview.stats.totalPublishedContent],
+            ['Draft Content', overview.stats.totalDraftContent],
+          ]
+        : [],
+    [overview]
   );
 
-  const eventGroups = useMemo(
-    () => ({
-      pending: events.filter((event) => event.status === 'pending'),
-      approved: events.filter((event) => event.status === 'approved'),
-      rejected: events.filter((event) => event.status === 'rejected'),
-    }),
-    [events]
-  );
+  const groupedContent = useMemo(() => {
+    if (!currentSection) return { pending: [], approved: [], rejected: [] } as Record<
+      StatusFilter,
+      ManagedContentItem[]
+    >;
 
-  const culinaryGroups = useMemo(
-    () => ({
-      pending: culinarySubmissions.filter((item) => item.status === 'pending'),
-      approved: culinarySubmissions.filter((item) => item.status === 'approved'),
-      rejected: culinarySubmissions.filter((item) => item.status === 'rejected'),
-    }),
-    [culinarySubmissions]
-  );
+    const records = content[currentSection] || [];
+    return {
+      pending: records.filter((item) => item.status === 'pending'),
+      approved: records.filter((item) => item.status === 'approved'),
+      rejected: records.filter((item) => item.status === 'rejected'),
+    };
+  }, [content, currentSection]);
 
-  const tourismGroups = useMemo(
-    () => ({
-      pending: tourismSubmissions.filter((item) => item.status === 'pending'),
-      approved: tourismSubmissions.filter((item) => item.status === 'approved'),
-      rejected: tourismSubmissions.filter((item) => item.status === 'rejected'),
-    }),
-    [tourismSubmissions]
-  );
-
-  const handleEdit = (type: DeveloperContentType, item: DeveloperContentItem) => {
-    setFormType(type);
-    setForm({ ...emptyForm, ...item });
-    setActive(type);
+  const resetForm = () => {
+    setFormState(defaultForm);
   };
 
-  const resetForm = (type = formType) => {
-    setFormType(type);
-    setForm(emptyForm);
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !token) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/uploads/image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal mengunggah gambar');
+      }
+
+      const payload = await response.json();
+      setFormState((current) => ({ ...current, image: payload.url || '' }));
+      setStatusMessage('Gambar berhasil diunggah.');
+    } catch (error: any) {
+      setStatusMessage(error.message || 'Gagal mengunggah gambar.');
+    }
   };
 
-  const handleContentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const normalized = upsertDeveloperContent(formType, {
-      ...form,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      details:
-        typeof form.details === 'string'
-          ? String(form.details)
-              .split(',')
-              .map((item) => item.trim())
-              .filter(Boolean)
-          : form.details,
-    });
+    if (!token || !currentSection) return;
 
-    setStatus(
-      `${normalized.title} tersimpan di ${sections.find((item) => item.key === formType)?.label}.`
-    );
-    resetForm(formType);
+    setSaving(true);
+    try {
+      const payload: Record<string, unknown> = {
+        title: formState.title.trim(),
+        description: formState.description.trim(),
+        typeLabel: formState.typeLabel.trim(),
+        category: formState.typeLabel.trim(),
+        location: formState.location.trim() || undefined,
+        latitude: formState.latitude ? Number(formState.latitude) : undefined,
+        longitude: formState.longitude ? Number(formState.longitude) : undefined,
+        image: formState.image.trim() || undefined,
+        link: formState.link.trim() || undefined,
+        priceRange: formState.priceRange.trim() || undefined,
+        date: formState.date || undefined,
+      };
 
-    if (token) {
-      try {
-        await apiJson(`/api/developer/content/${formType}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(normalized),
-        });
-      } catch {
-        setStatus(
-          `${normalized.title} tersimpan lokal. Backend developer belum menerima sinkronisasi.`
-        );
+      if (currentSection === 'culture' && !payload.typeLabel) {
+        payload.typeLabel = 'Budaya';
+        payload.category = 'Budaya';
       }
+
+      if (currentSection === 'history' && !payload.typeLabel) {
+        payload.typeLabel = 'Sejarah';
+        payload.category = 'Sejarah';
+      }
+
+      await saveDeveloperContent(currentSection, payload, token, formState.id || undefined);
+      await Promise.all([refreshContent(currentSection), refreshOverview()]);
+      resetForm();
+      setStatusMessage(`${sectionLabel(active)} berhasil disimpan dan tersinkron ke publik.`);
+    } catch (error: any) {
+      setStatusMessage(error.message || 'Gagal menyimpan konten.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDeleteContent = (type: DeveloperContentType, item: DeveloperContentItem) => {
-    deleteDeveloperContent(type, item.id);
-    setStatus(
-      `${item.title} dihapus dari ${sections.find((section) => section.key === type)?.label}.`
-    );
+  const handleEdit = (item: ManagedContentItem) => {
+    setFormState(toFormState(item));
   };
 
-  const moderateEvent = async (item: CommunityEvent, nextStatus: EventStatus) => {
-    updateCommunityEventStatus(item.id, nextStatus);
+  const handleDelete = async (item: ManagedContentItem) => {
+    if (!token || !currentSection) return;
+    if (!confirm(`Hapus "${item.title}"?`)) return;
 
-    if (item.id.startsWith('api-') && token) {
-      try {
-        await apiJson(`/api/developer/events/${item.id.replace(/^api-/, '')}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: nextStatus }),
-        });
-      } catch {
-        setStatus('Status event tersimpan lokal. Sinkron backend belum berhasil.');
+    try {
+      await deleteDeveloperContent(currentSection, item.id, token);
+      await Promise.all([refreshContent(currentSection), refreshOverview()]);
+      if (formState.id === item.id) {
+        resetForm();
       }
+      setStatusMessage(`${item.title} berhasil dihapus.`);
+    } catch (error: any) {
+      setStatusMessage(error.message || 'Gagal menghapus konten.');
     }
-
-    setEvents((current) =>
-      current.map((event) => (event.id === item.id ? { ...event, status: nextStatus } : event))
-    );
-    setStatus(
-      nextStatus === 'approved'
-        ? 'Event published dan masuk Event serta Smart Map.'
-        : `Event dipindahkan ke ${statusLabel(nextStatus)}.`
-    );
   };
 
-  const moderateCulinary = (item: CommunityCulinary, nextStatus: EventStatus) => {
-    updateCommunityCulinaryStatus(item.id, nextStatus);
-    setCulinarySubmissions((current) =>
-      current.map((record) => (record.id === item.id ? { ...record, status: nextStatus } : record))
-    );
-    setStatus(
-      nextStatus === 'approved'
-        ? 'Kuliner/UMKM published dan masuk Kuliner serta Smart Map.'
-        : `Kuliner/UMKM dipindahkan ke ${statusLabel(nextStatus)}.`
-    );
+  const handleModerate = async (item: ManagedContentItem, nextStatus: StatusFilter) => {
+    if (!token || !currentSection) return;
+
+    try {
+      await updateDeveloperContentStatus(currentSection, item.id, nextStatus.toUpperCase() as Uppercase<StatusFilter>, token);
+      await Promise.all([refreshContent(currentSection), refreshOverview()]);
+      setStatusMessage(`${item.title} dipindahkan ke ${statusLabel(nextStatus)}.`);
+    } catch (error: any) {
+      setStatusMessage(error.message || 'Gagal mengubah status konten.');
+    }
   };
 
-  const moderateTourism = (item: CommunityTourism, nextStatus: EventStatus) => {
-    updateCommunityTourismStatus(item.id, nextStatus);
-    setTourismSubmissions((current) =>
-      current.map((record) => (record.id === item.id ? { ...record, status: nextStatus } : record))
-    );
-    setStatus(
-      nextStatus === 'approved'
-        ? 'Spot Populer published dan masuk Wisata serta Smart Map.'
-        : `Spot Populer dipindahkan ke ${statusLabel(nextStatus)}.`
-    );
-  };
-
-  const toggleUser = async (item: DeveloperUser) => {
+  const toggleUser = async (id: string) => {
     if (!token) return;
 
     try {
-      const updated = await apiJson<DeveloperUser>(
-        `/api/developer/users/${item.id}/toggle-active`,
-        {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const updated = await apiJson<OverviewPayload['users'][number]>(`/api/developer/users/${id}/toggle-active`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      setUsers((current) =>
-        current.map((userItem) => (userItem.id === updated.id ? updated : userItem))
-      );
-      setStatus(`${updated.name} sekarang ${updated.isActive ? 'aktif' : 'nonaktif'}.`);
+      setUsers((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      setStatusMessage(`${updated.name} sekarang ${updated.isActive ? 'aktif' : 'nonaktif'}.`);
     } catch (error: any) {
-      setStatus(error.message || 'Gagal mengubah status pengguna.');
+      setStatusMessage(error.message || 'Gagal mengubah status pengguna.');
     }
   };
 
@@ -515,8 +394,8 @@ export default function DeveloperPage() {
                   type="button"
                   onClick={() => {
                     setActive(section.key);
-                    if (['tourism', 'culinary', 'culture', 'history'].includes(section.key)) {
-                      resetForm(section.key as DeveloperContentType);
+                    if (['tourism', 'culinary', 'event', 'culture', 'history'].includes(section.key)) {
+                      resetForm();
                     }
                   }}
                   className={`rounded-lg px-4 py-3 text-left text-sm font-semibold transition ${
@@ -531,81 +410,115 @@ export default function DeveloperPage() {
             </div>
           </aside>
 
-          <section className="min-w-0 space-y-6">
-            {status && (
+          <section className="space-y-6">
+            {statusMessage && (
               <div className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
-                {status}
+                {statusMessage}
               </div>
             )}
 
             {active === 'overview' && (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <StatCard label="Total User" value={computedStats.totalUser} />
-                <StatCard label="Total Event" value={computedStats.totalEvent} />
-                <StatCard label="Event Pending" value={computedStats.eventPending} />
-                <StatCard label="Event Published" value={computedStats.eventPublished} />
-                <StatCard label="Kuliner Pending" value={computedStats.culinaryPending} />
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {statCards.map(([label, value]) => (
+                  <StatCard key={label} label={label} value={Number(value)} />
+                ))}
               </div>
             )}
-
-            {active === 'smartMap' && (
-              <SmartMapManager
-                tourismCount={getManagedTourismItems().length}
-                culinaryCount={getManagedCulinaryItems().length}
-                eventCount={events.filter((event) => event.status === 'approved').length}
-              />
-            )}
-
-            {active === 'smartCity' && <SmartMagelangManager token={token} />}
 
             {active === 'categories' && <CategoryManager token={token} />}
 
-            {(['tourism', 'culinary', 'culture', 'history'] as DeveloperContentType[]).includes(
-              active as DeveloperContentType
-            ) && (
-              <div className="space-y-6">
-                <ContentManager
-                  type={active as DeveloperContentType}
-                  records={content[active as DeveloperContentType]}
-                  form={form}
-                  setForm={setForm}
-                  formType={formType}
-                  setFormType={setFormType}
-                  onSubmit={handleContentSubmit}
-                  onEdit={handleEdit}
-                  onDelete={handleDeleteContent}
-                  onReset={() => resetForm(active as DeveloperContentType)}
-                  setStatus={setStatus}
+            {currentSection && (
+              <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+                <ContentFormCard
+                  section={currentSection}
+                  formState={formState}
+                  setFormState={setFormState}
+                  categories={activeFeature ? categoryMap[activeFeature] : []}
+                  onSubmit={handleSave}
+                  onImageUpload={handleImageUpload}
+                  onReset={resetForm}
+                  saving={saving}
                 />
 
-                {active === 'culinary' && (
-                  <CulinarySubmissionManager
-                    itemGroups={culinaryGroups}
-                    onModerate={moderateCulinary}
-                  />
-                )}
-
-                {active === 'tourism' && (
-                  <TourismSubmissionManager
-                    itemGroups={tourismGroups}
-                    onModerate={moderateTourism}
-                  />
-                )}
+                <div className="space-y-6">
+                  {(['pending', 'approved', 'rejected'] as StatusFilter[]).map((status) => (
+                    <div
+                      key={status}
+                      className="rounded-lg border border-slate-800 bg-slate-900/85 p-5"
+                    >
+                      <h2 className="text-xl font-semibold">
+                        {statusLabel(status)} ({groupedContent[status].length})
+                      </h2>
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
+                        {groupedContent[status].map((item) => (
+                          <ContentCard
+                            key={item.id}
+                            item={item}
+                            section={currentSection}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                            onModerate={handleModerate}
+                          />
+                        ))}
+                        {groupedContent[status].length === 0 && (
+                          <p className="text-sm text-slate-400">Belum ada data.</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {active === 'events' && (
-              <EventManager eventGroups={eventGroups} onModerate={moderateEvent} />
-            )}
-
             {active === 'users' && (
-              <UserManager
-                users={users}
-                events={events}
-                culinarySubmissions={culinarySubmissions}
-                tourismSubmissions={tourismSubmissions}
-                onToggle={toggleUser}
-              />
+              <section className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
+                <h2 className="flex items-center gap-2 text-2xl font-semibold">
+                  <Users className="h-6 w-6 text-cyan-300" />
+                  Kelola Pengguna
+                </h2>
+                <div className="mt-5 overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-left text-sm">
+                    <thead className="text-slate-400">
+                      <tr>
+                        <th className="border-b border-slate-800 py-3 pr-4">Nama</th>
+                        <th className="border-b border-slate-800 py-3 pr-4">Email</th>
+                        <th className="border-b border-slate-800 py-3 pr-4">Status</th>
+                        <th className="border-b border-slate-800 py-3 pr-4">Tanggal Daftar</th>
+                        <th className="border-b border-slate-800 py-3 pr-4">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((item) => (
+                        <tr key={item.id} className="border-b border-slate-800/70">
+                          <td className="py-4 pr-4 font-semibold text-white">{item.name}</td>
+                          <td className="py-4 pr-4 text-slate-300">{item.email}</td>
+                          <td className="py-4 pr-4">
+                            <span
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                                item.isActive
+                                  ? 'border-emerald-400/40 text-emerald-200'
+                                  : 'border-rose-400/40 text-rose-200'
+                              }`}
+                            >
+                              {item.isActive ? 'Aktif' : 'Nonaktif'}
+                            </span>
+                          </td>
+                          <td className="py-4 pr-4 text-slate-300">{formatDate(item.createdAt)}</td>
+                          <td className="py-4 pr-4">
+                            <button
+                              type="button"
+                              onClick={() => toggleUser(item.id)}
+                              className="rounded-lg border border-rose-500/40 px-3 py-2 text-rose-200 hover:border-rose-300"
+                            >
+                              {item.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             )}
           </section>
         </section>
@@ -618,867 +531,285 @@ export default function DeveloperPage() {
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <article className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
-      <p className="text-sm text-slate-400">{label}</p>
+      <p className="text-sm font-semibold uppercase tracking-wide text-slate-400">{label}</p>
       <p className="mt-3 text-3xl font-bold text-white">{value}</p>
     </article>
   );
 }
 
-function SmartMapManager({
-  tourismCount,
-  culinaryCount,
-  eventCount,
-}: {
-  tourismCount: number;
-  culinaryCount: number;
-  eventCount: number;
-}) {
-  return (
-    <section className="space-y-6">
-      <div className="rounded-lg border border-slate-800 bg-slate-900/85 p-6">
-        <h2 className="flex items-center gap-2 text-2xl font-semibold">
-          <MapPin className="h-6 w-6 text-cyan-300" />
-          Kelola Smart Map
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
-          Marker Smart Map berasal dari event published, wisata, kuliner, dan UMKM yang sudah
-          disetujui. Gunakan pintasan berikut untuk mengelola sumber datanya.
-        </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <StatCard label="Marker Wisata" value={tourismCount} />
-          <StatCard label="Marker Kuliner" value={culinaryCount} />
-          <StatCard label="Marker Event" value={eventCount} />
-        </div>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            href="/smart-map"
-            className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
-          >
-            Buka Smart Map
-          </a>
-          <a
-            href="/developer"
-            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-cyan-200 hover:border-cyan-300"
-          >
-            Dashboard
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SmartMagelangManager({ token }: { token?: string | null }) {
-  const [items, setItems] = useState<any[]>([]);
-  const [status, setStatus] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    id: '',
-    title: '',
-    description: '',
-    categoryName: '',
-    sourceUrl: '',
-    image: '',
-  });
-
-  const fetchItems = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${getApiBaseUrl()}/api/developer/smart-magelang`, {
-        headers: { Authorization: token ? `Bearer ${token}` : '' },
-      });
-      if (!res.ok) throw new Error('Gagal fetch');
-      const data = await res.json();
-      setItems(data || []);
-    } catch (err) {
-      setStatus('Gagal memuat konten Smart Magelang.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
-  const handleEdit = (item: any) =>
-    setForm({
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      categoryName: item.category?.name || '',
-      sourceUrl: item.sourceUrl || '',
-      image: item.image || '',
-    });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus('Menyimpan...');
-
-    try {
-      const payload = {
-        title: form.title,
-        description: form.description,
-        categoryName: form.categoryName,
-        sourceUrl: form.sourceUrl,
-        image: form.image,
-      };
-
-      if (form.id) {
-        const res = await fetch(`${getApiBaseUrl()}/api/developer/smart-magelang/${form.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: token ? `Bearer ${token}` : '',
-          },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error('Gagal update');
-      } else {
-        const res = await fetch(`${getApiBaseUrl()}/api/developer/smart-magelang`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: token ? `Bearer ${token}` : '',
-          },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error('Gagal buat');
-      }
-
-      setForm({ id: '', title: '', description: '', categoryName: '', sourceUrl: '', image: '' });
-      setStatus('Tersimpan');
-      fetchItems();
-    } catch (err: any) {
-      setStatus(err.message || 'Gagal menyimpan');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Hapus konten Smart Magelang ini?')) return;
-    try {
-      const res = await fetch(`${getApiBaseUrl()}/api/developer/smart-magelang/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: token ? `Bearer ${token}` : '' },
-      });
-      if (!res.ok) throw new Error('Gagal hapus');
-      setStatus('Terhapus');
-      fetchItems();
-    } catch (err: any) {
-      setStatus(err.message || 'Gagal hapus');
-    }
-  };
-
-  return (
-    <section className="rounded-lg border border-slate-800 bg-slate-900/85 p-6">
-      <h2 className="text-2xl font-semibold">Kelola Smart Magelang</h2>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
-        Kelola konten Smart Magelang (artikel ringkas, sumber, dan label kategori).
-      </p>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <div>
-          <h3 className="text-lg font-semibold">Daftar Konten</h3>
-          {loading && <p className="text-slate-400">Memuat...</p>}
-          {items.map((item) => (
-            <article
-              key={item.id}
-              className="mt-3 rounded-lg border border-slate-800 bg-slate-950/80 p-4"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h4 className="font-semibold text-white">{item.title}</h4>
-                  <p className="mt-1 text-sm text-slate-400">{item.description?.slice(0, 120)}</p>
-                  <p className="mt-2 text-xs text-slate-500">{item.category?.name}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="rounded-md border px-3 py-1 text-sm text-cyan-200"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="rounded-md border px-3 py-1 text-sm text-rose-200"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-lg border border-slate-800 bg-slate-900/85 p-4"
-        >
-          <h3 className="text-lg font-semibold">{form.id ? 'Edit Konten' : 'Tambah Konten'}</h3>
-          <label className="block text-sm font-semibold text-slate-200 mt-3">
-            Judul
-            <input
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-              required
-            />
-          </label>
-          <label className="block text-sm font-semibold text-slate-200 mt-3">
-            Kategori
-            <input
-              value={form.categoryName}
-              onChange={(e) => setForm({ ...form, categoryName: e.target.value })}
-              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-            />
-          </label>
-          <label className="block text-sm font-semibold text-slate-200 mt-3">
-            Ringkasan
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-              rows={4}
-              required
-            />
-          </label>
-          <label className="block text-sm font-semibold text-slate-200 mt-3">
-            Sumber (URL)
-            <input
-              value={form.sourceUrl}
-              onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })}
-              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-            />
-          </label>
-          <label className="block text-sm font-semibold text-slate-200 mt-3">
-            URL Gambar
-            <input
-              value={form.image}
-              onChange={(e) => setForm({ ...form, image: e.target.value })}
-              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-            />
-          </label>
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950"
-            >
-              Simpan
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setForm({
-                  id: '',
-                  title: '',
-                  description: '',
-                  categoryName: '',
-                  sourceUrl: '',
-                  image: '',
-                })
-              }
-              className="rounded-lg border px-4 py-2 text-sm text-slate-300"
-            >
-              Batal
-            </button>
-          </div>
-          {status && <p className="mt-3 text-sm text-slate-300">{status}</p>}
-        </form>
-      </div>
-    </section>
-  );
-}
-
-function ContentManager({
-  type,
-  records,
-  form,
-  setForm,
-  formType,
-  setFormType,
+function ContentFormCard({
+  section,
+  formState,
+  setFormState,
+  categories,
   onSubmit,
-  onEdit,
-  onDelete,
+  onImageUpload,
   onReset,
-  setStatus,
+  saving,
 }: {
-  type: DeveloperContentType;
-  records: DeveloperContentItem[];
-  form: DeveloperContentItem;
-  setForm: (value: DeveloperContentItem) => void;
-  formType: DeveloperContentType;
-  setFormType: (value: DeveloperContentType) => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  onEdit: (type: DeveloperContentType, item: DeveloperContentItem) => void;
-  onDelete: (type: DeveloperContentType, item: DeveloperContentItem) => void;
+  section: DeveloperType;
+  formState: typeof defaultForm;
+  setFormState: React.Dispatch<React.SetStateAction<typeof defaultForm>>;
+  categories: CategoryRecord[];
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   onReset: () => void;
-  setStatus?: (s: string) => void;
+  saving: boolean;
 }) {
-  const isPlace = type === 'tourism' || type === 'culinary';
-  const isHistory = type === 'history';
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm({ ...form, image: String(reader.result || '') });
-      if (setStatus) setStatus('');
-    };
-    reader.readAsDataURL(file);
-  };
+  const isPlace = section === 'tourism' || section === 'culinary' || section === 'event';
+  const isEvent = section === 'event';
+  const isCulinary = section === 'culinary';
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <section className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-2xl font-semibold">
-            {sections.find((section) => section.key === type)?.label}
-          </h2>
+    <form
+      onSubmit={onSubmit}
+      className="rounded-lg border border-slate-800 bg-slate-900/85 p-6 xl:sticky xl:top-6"
+    >
+      <h2 className="text-2xl font-semibold">
+        {formState.id ? `Edit ${sectionLabel(section)}` : `Tambah ${sectionLabel(section)}`}
+      </h2>
+
+      <div className="mt-6 space-y-4">
+        <Field
+          label="Judul"
+          value={formState.title}
+          onChange={(value) => setFormState((current) => ({ ...current, title: value }))}
+          required
+        />
+
+        <label className="block text-sm font-semibold text-slate-200">
+          Deskripsi
+          <textarea
+            value={formState.description}
+            onChange={(event) =>
+              setFormState((current) => ({ ...current, description: event.target.value }))
+            }
+            rows={5}
+            className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+            required
+          />
+        </label>
+
+        {categories.length > 0 ? (
+          <label className="block text-sm font-semibold text-slate-200">
+            Kategori
+            <select
+              value={formState.typeLabel}
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, typeLabel: event.target.value }))
+              }
+              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              required
+            >
+              <option value="">Pilih kategori</option>
+              {categories.map((item) => (
+                <option key={item.id} value={item.name}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <Field
+            label="Label"
+            value={formState.typeLabel}
+            onChange={(value) => setFormState((current) => ({ ...current, typeLabel: value }))}
+            placeholder={section === 'culture' ? 'Budaya' : section === 'history' ? 'Sejarah' : ''}
+          />
+        )}
+
+        {isPlace && (
+          <>
+            <Field
+              label="Lokasi"
+              value={formState.location}
+              onChange={(value) => setFormState((current) => ({ ...current, location: value }))}
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Latitude"
+                type="number"
+                value={formState.latitude}
+                onChange={(value) => setFormState((current) => ({ ...current, latitude: value }))}
+              />
+              <Field
+                label="Longitude"
+                type="number"
+                value={formState.longitude}
+                onChange={(value) => setFormState((current) => ({ ...current, longitude: value }))}
+              />
+            </div>
+          </>
+        )}
+
+        {isEvent && (
+          <Field
+            label="Tanggal Event"
+            type="date"
+            value={formState.date}
+            onChange={(value) => setFormState((current) => ({ ...current, date: value }))}
+          />
+        )}
+
+        {isCulinary && (
+          <Field
+            label="Rentang Harga"
+            value={formState.priceRange}
+            onChange={(value) => setFormState((current) => ({ ...current, priceRange: value }))}
+          />
+        )}
+
+        <Field
+          label="URL Gambar"
+          value={formState.image}
+          onChange={(value) => setFormState((current) => ({ ...current, image: value }))}
+        />
+
+        <label className="block text-sm font-semibold text-slate-200">
+          Upload Gambar
+          <span className="mt-2 flex items-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-950 px-4 py-3 text-slate-400">
+            <ImagePlus className="h-5 w-5 text-cyan-300" />
+            <input type="file" accept="image/*" onChange={onImageUpload} className="w-full text-sm" />
+          </span>
+        </label>
+
+        {formState.image && (
+          <img
+            src={formState.image}
+            alt="Preview"
+            className="h-40 w-full rounded-lg border border-slate-800 object-cover"
+          />
+        )}
+
+        <Field
+          label="Link/Sumber"
+          value={formState.link}
+          onChange={(value) => setFormState((current) => ({ ...current, link: value }))}
+        />
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-60"
+          >
+            <Save className="h-5 w-5" />
+            {saving ? 'Menyimpan...' : 'Simpan'}
+          </button>
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
+            className="rounded-lg border border-slate-700 px-5 py-3 font-semibold text-slate-200 hover:border-slate-500"
           >
-            <Plus className="h-4 w-4" />
-            Tambah
+            Reset
           </button>
         </div>
-
-        <div className="space-y-3">
-          {records.map((item) => (
-            <article
-              key={item.id}
-              className="rounded-lg border border-slate-800 bg-slate-950/80 p-4"
-            >
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <h3 className="font-semibold text-white">{item.period || item.title}</h3>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-400">{item.description}</p>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {item.location || item.year || item.category || item.typeLabel}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(type, item)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-cyan-200 hover:border-cyan-300"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(type, item)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-rose-500/40 px-3 py-2 text-sm text-rose-200 hover:border-rose-300"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Hapus
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <form onSubmit={onSubmit} className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
-        <h3 className="text-xl font-semibold">{form.id ? 'Edit Konten' : 'Tambah Konten'}</h3>
-        <div className="mt-5 space-y-4">
-          <input
-            type="hidden"
-            value={formType}
-            onChange={(event) => setFormType(event.target.value as DeveloperContentType)}
-          />
-          <Field
-            label={isHistory ? 'Judul Periode' : 'Nama/Judul'}
-            value={form.title}
-            onChange={(value) => setForm({ ...form, title: value })}
-            required
-          />
-          {isHistory && (
-            <>
-              <Field
-                label="Tahun/Periode"
-                value={form.year || ''}
-                onChange={(value) => setForm({ ...form, year: value })}
-              />
-              <Field
-                label="Nama Periode"
-                value={form.period || ''}
-                onChange={(value) => setForm({ ...form, period: value })}
-              />
-            </>
-          )}
-          <label className="block text-sm font-semibold text-slate-200">
-            Deskripsi
-            <textarea
-              value={form.description}
-              onChange={(event) => setForm({ ...form, description: event.target.value })}
-              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
-              rows={5}
-              required
-            />
-          </label>
-          <Field
-            label="Kategori/Label"
-            value={form.typeLabel || form.category || ''}
-            onChange={(value) => setForm({ ...form, typeLabel: value, category: value })}
-          />
-          {isPlace && (
-            <>
-              <Field
-                label="Lokasi"
-                value={form.location || ''}
-                onChange={(value) => setForm({ ...form, location: value })}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field
-                  label="Latitude"
-                  type="number"
-                  value={String(form.latitude ?? '')}
-                  onChange={(value) =>
-                    setForm({ ...form, latitude: value ? Number(value) : undefined })
-                  }
-                />
-                <Field
-                  label="Longitude"
-                  type="number"
-                  value={String(form.longitude ?? '')}
-                  onChange={(value) =>
-                    setForm({ ...form, longitude: value ? Number(value) : undefined })
-                  }
-                />
-              </div>
-              <Field
-                label={type === 'culinary' ? 'Rentang Harga' : 'Jam Buka'}
-                value={type === 'culinary' ? form.priceRange || '' : form.openingHours || ''}
-                onChange={(value) =>
-                  setForm(
-                    type === 'culinary'
-                      ? { ...form, priceRange: value }
-                      : { ...form, openingHours: value }
-                  )
-                }
-              />
-            </>
-          )}
-          <Field
-            label="URL Gambar"
-            value={form.image || ''}
-            onChange={(value) => setForm({ ...form, image: value })}
-          />
-          <label className="block text-sm font-semibold text-slate-200">
-            Upload Gambar
-            <span className="mt-2 flex items-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-950 px-4 py-3 text-slate-400">
-              <ImagePlus className="h-5 w-5 text-cyan-300" />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="w-full text-sm"
-              />
-            </span>
-          </label>
-          <Field
-            label="Link/Sumber"
-            value={form.link || form.source || ''}
-            onChange={(value) => setForm({ ...form, link: value, source: value })}
-          />
-          <Field
-            label="Detail/Tag, pisahkan koma"
-            value={(form.details || []).join(', ')}
-            onChange={(value) =>
-              setForm({
-                ...form,
-                details: value
-                  .split(',')
-                  .map((item) => item.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
-          <button
-            type="submit"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950 hover:bg-cyan-300"
-          >
-            <Save className="h-5 w-5" />
-            Simpan
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-function EventManager({
-  eventGroups,
-  onModerate,
-}: {
-  eventGroups: Record<EventStatus, CommunityEvent[]>;
-  onModerate: (item: CommunityEvent, status: EventStatus) => void;
-}) {
-  return (
-    <section className="space-y-6">
-      {(['pending', 'approved', 'rejected'] as EventStatus[]).map((status) => (
-        <div key={status} className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
-          <h2 className="text-xl font-semibold">
-            {statusLabel(status)} ({eventGroups[status].length})
-          </h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {eventGroups[status].map((item) => (
-              <article
-                key={item.id}
-                className="rounded-lg border border-slate-800 bg-slate-950/80 p-4"
-              >
-                <h3 className="font-semibold text-white">{item.title}</h3>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full border border-slate-700 px-3 py-1 text-slate-300">
-                    {item.typeLabel}
-                  </span>
-                  <span className="rounded-full border border-slate-700 px-3 py-1 text-slate-300">
-                    {formatDate(item.date)}
-                  </span>
-                  {isEventPast(item.date) && (
-                    <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-3 py-1 text-amber-200">
-                      Histori
-                    </span>
-                  )}
-                </div>
-                <p className="mt-3 text-sm text-slate-400">{item.location}</p>
-                <p className="mt-3 line-clamp-3 text-sm text-slate-300">{item.description}</p>
-                <div className="mt-3 grid gap-2 text-xs text-slate-500">
-                  <span>
-                    Koordinat: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
-                  </span>
-                  <span>Pengirim: {item.submittedBy || item.source || 'Sistem'}</span>
-                  {item.link && (
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-cyan-300 hover:text-cyan-200"
-                    >
-                      Buka link event
-                    </a>
-                  )}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'approved')}
-                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Publish
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'pending')}
-                    className="inline-flex items-center gap-2 rounded-lg border border-amber-400/50 px-3 py-2 text-sm font-semibold text-amber-200 hover:border-amber-300"
-                  >
-                    <Eye className="h-4 w-4" />
-                    Pending
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'rejected')}
-                    className="inline-flex items-center gap-2 rounded-lg bg-rose-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-rose-300"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Reject
-                  </button>
-                </div>
-              </article>
-            ))}
-            {eventGroups[status].length === 0 && (
-              <p className="text-sm text-slate-400">Tidak ada event.</p>
-            )}
-          </div>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function CulinarySubmissionManager({
-  itemGroups,
-  onModerate,
-}: {
-  itemGroups: Record<EventStatus, CommunityCulinary[]>;
-  onModerate: (item: CommunityCulinary, status: EventStatus) => void;
-}) {
-  return (
-    <section className="space-y-6">
-      {(['pending', 'approved', 'rejected'] as EventStatus[]).map((status) => (
-        <div key={status} className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
-          <h2 className="text-xl font-semibold">
-            {statusLabel(status)} Kuliner/UMKM ({itemGroups[status].length})
-          </h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {itemGroups[status].map((item) => (
-              <article
-                key={item.id}
-                className="rounded-lg border border-slate-800 bg-slate-950/80 p-4"
-              >
-                <div className="flex gap-4">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="h-20 w-24 rounded-lg object-cover"
-                  />
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-white">{item.title}</h3>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {item.typeLabel} - {item.location}
-                    </p>
-                    <p className="mt-2 line-clamp-2 text-sm text-slate-300">{item.description}</p>
-                    <div className="mt-2 grid gap-1 text-xs text-slate-500">
-                      <span>Harga: {item.priceRange || 'Belum diisi'}</span>
-                      <span>
-                        Koordinat: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
-                      </span>
-                      <span>Pengirim: {item.submittedBy || 'User'}</span>
-                    </div>
-                    {item.link && (
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-2 inline-flex text-xs font-semibold text-cyan-300 hover:text-cyan-200"
-                      >
-                        Buka link kuliner
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'approved')}
-                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Publish
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'pending')}
-                    className="inline-flex items-center gap-2 rounded-lg border border-amber-400/50 px-3 py-2 text-sm font-semibold text-amber-200 hover:border-amber-300"
-                  >
-                    <Eye className="h-4 w-4" />
-                    Pending
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'rejected')}
-                    className="inline-flex items-center gap-2 rounded-lg bg-rose-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-rose-300"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Reject
-                  </button>
-                </div>
-              </article>
-            ))}
-            {itemGroups[status].length === 0 && (
-              <p className="text-sm text-slate-400">Tidak ada kuliner/UMKM.</p>
-            )}
-          </div>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function TourismSubmissionManager({
-  itemGroups,
-  onModerate,
-}: {
-  itemGroups: Record<EventStatus, CommunityTourism[]>;
-  onModerate: (item: CommunityTourism, status: EventStatus) => void;
-}) {
-  return (
-    <section className="space-y-6">
-      {(['pending', 'approved', 'rejected'] as EventStatus[]).map((status) => (
-        <div key={status} className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
-          <h2 className="text-xl font-semibold">
-            {statusLabel(status)} Spot Populer ({itemGroups[status].length})
-          </h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {itemGroups[status].map((item) => (
-              <article
-                key={item.id}
-                className="rounded-lg border border-slate-800 bg-slate-950/80 p-4"
-              >
-                <div className="flex gap-4">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="h-20 w-24 rounded-lg object-cover"
-                  />
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-white">{item.title}</h3>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {item.typeLabel} - {item.location}
-                    </p>
-                    <p className="mt-2 line-clamp-2 text-sm text-slate-300">{item.description}</p>
-                    <div className="mt-2 grid gap-1 text-xs text-slate-500">
-                      <span>
-                        Koordinat: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
-                      </span>
-                      <span>Pengirim: {item.submittedBy || 'User'}</span>
-                    </div>
-                    {item.link && (
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-2 inline-flex text-xs font-semibold text-cyan-300 hover:text-cyan-200"
-                      >
-                        Buka link spot
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'approved')}
-                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Publish
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'pending')}
-                    className="inline-flex items-center gap-2 rounded-lg border border-amber-400/50 px-3 py-2 text-sm font-semibold text-amber-200 hover:border-amber-300"
-                  >
-                    <Eye className="h-4 w-4" />
-                    Pending
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onModerate(item, 'rejected')}
-                    className="inline-flex items-center gap-2 rounded-lg bg-rose-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-rose-300"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Reject
-                  </button>
-                </div>
-              </article>
-            ))}
-            {itemGroups[status].length === 0 && (
-              <p className="text-sm text-slate-400">Tidak ada Spot Populer.</p>
-            )}
-          </div>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function UserManager({
-  users,
-  events,
-  culinarySubmissions,
-  tourismSubmissions,
-  onToggle,
-}: {
-  users: DeveloperUser[];
-  events: CommunityEvent[];
-  culinarySubmissions: CommunityCulinary[];
-  tourismSubmissions: CommunityTourism[];
-  onToggle: (item: DeveloperUser) => void;
-}) {
-  const showDetail = (item: DeveloperUser) => {
-    const userEvents = events.filter((event) => event.submittedBy === item.email);
-    const userCulinary = culinarySubmissions.filter((record) => record.submittedBy === item.email);
-    const userTourism = tourismSubmissions.filter((record) => record.submittedBy === item.email);
-    const published = [
-      ...userEvents
-        .filter((record) => record.status === 'approved')
-        .map((record) => `Event: ${record.title}`),
-      ...userCulinary
-        .filter((record) => record.status === 'approved')
-        .map((record) => `Kuliner: ${record.title}`),
-      ...userTourism
-        .filter((record) => record.status === 'approved')
-        .map((record) => `Spot: ${record.title}`),
-    ];
-    const pendingCount = [...userEvents, ...userCulinary, ...userTourism].filter(
-      (record) => record.status === 'pending'
-    ).length;
-
-    alert(
-      [
-        item.name,
-        item.email,
-        `Role: ${item.role}`,
-        `Published: ${published.length}`,
-        `Pending: ${pendingCount}`,
-        published.length
-          ? `Aktivitas publish:\n- ${published.join('\n- ')}`
-          : 'Belum ada aktivitas publish.',
-      ].join('\n')
-    );
-  };
-
-  return (
-    <section className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
-      <h2 className="flex items-center gap-2 text-2xl font-semibold">
-        <Users className="h-6 w-6 text-cyan-300" />
-        Statistik Pengguna
-      </h2>
-      <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="text-slate-400">
-            <tr>
-              <th className="border-b border-slate-800 py-3 pr-4">Nama</th>
-              <th className="border-b border-slate-800 py-3 pr-4">Email</th>
-              <th className="border-b border-slate-800 py-3 pr-4">Status</th>
-              <th className="border-b border-slate-800 py-3 pr-4">Tanggal Daftar</th>
-              <th className="border-b border-slate-800 py-3 pr-4">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((item) => (
-              <tr key={item.id} className="border-b border-slate-800/70">
-                <td className="py-4 pr-4 font-semibold text-white">{item.name}</td>
-                <td className="py-4 pr-4 text-slate-300">{item.email}</td>
-                <td className="py-4 pr-4">
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${item.isActive ? 'border-emerald-400/40 text-emerald-200' : 'border-rose-400/40 text-rose-200'}`}
-                  >
-                    {item.isActive ? 'Aktif' : 'Nonaktif'}
-                  </span>
-                </td>
-                <td className="py-4 pr-4 text-slate-300">{formatDate(item.createdAt)}</td>
-                <td className="py-4 pr-4">
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => showDetail(item)}
-                      className="rounded-lg border border-slate-700 px-3 py-2 text-cyan-200 hover:border-cyan-300"
-                    >
-                      Detail
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onToggle(item)}
-                      className="rounded-lg border border-rose-500/40 px-3 py-2 text-rose-200 hover:border-rose-300"
-                    >
-                      {item.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
-    </section>
+    </form>
+  );
+}
+
+function ContentCard({
+  item,
+  section,
+  onEdit,
+  onDelete,
+  onModerate,
+}: {
+  item: ManagedContentItem;
+  section: DeveloperType;
+  onEdit: (item: ManagedContentItem) => void;
+  onDelete: (item: ManagedContentItem) => void;
+  onModerate: (item: ManagedContentItem, status: StatusFilter) => Promise<void>;
+}) {
+  return (
+    <article className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80">
+      <img src={item.image || fallbackImage} alt={item.title} className="h-44 w-full object-cover" />
+      <div className="p-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <span className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+              {item.typeLabel || sectionLabel(section)}
+            </span>
+            <h3 className="mt-3 text-xl font-semibold text-white">{item.title}</h3>
+          </div>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              item.status === 'approved'
+                ? 'bg-emerald-500/15 text-emerald-200'
+                : item.status === 'pending'
+                  ? 'bg-amber-500/15 text-amber-200'
+                  : 'bg-rose-500/15 text-rose-200'
+            }`}
+          >
+            {statusLabel(item.status as StatusFilter)}
+          </span>
+        </div>
+
+        <p className="line-clamp-3 text-sm leading-6 text-slate-300">{item.description}</p>
+
+        <div className="mt-4 grid gap-2 text-xs text-slate-400">
+          {item.location && (
+            <span className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-cyan-300" />
+              {item.location}
+            </span>
+          )}
+          {item.date && (
+            <span className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-rose-300" />
+              {formatDate(item.date)}
+            </span>
+          )}
+          {item.priceRange && <span>Harga: {item.priceRange}</span>}
+          {item.submittedBy && <span>Pengirim: {item.submittedBy}</span>}
+          {item.publishedAt && <span>Publish: {formatDate(item.publishedAt)}</span>}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(item)}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 hover:border-cyan-300"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => onModerate(item, 'approved')}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Publish
+          </button>
+          <button
+            type="button"
+            onClick={() => onModerate(item, 'pending')}
+            className="inline-flex items-center gap-2 rounded-lg border border-amber-400/50 px-3 py-2 text-sm font-semibold text-amber-200 hover:border-amber-300"
+          >
+            <Eye className="h-4 w-4" />
+            Pending
+          </button>
+          <button
+            type="button"
+            onClick={() => onModerate(item, 'rejected')}
+            className="inline-flex items-center gap-2 rounded-lg bg-rose-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-rose-300"
+          >
+            <XCircle className="h-4 w-4" />
+            Reject
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(item)}
+            className="inline-flex items-center gap-2 rounded-lg border border-rose-500/40 px-3 py-2 text-sm font-semibold text-rose-200 hover:border-rose-300"
+          >
+            <Trash2 className="h-4 w-4" />
+            Hapus
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -1488,12 +819,14 @@ function Field({
   onChange,
   type = 'text',
   required = false,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   required?: boolean;
+  placeholder?: string;
 }) {
   return (
     <label className="block text-sm font-semibold text-slate-200">
@@ -1504,6 +837,7 @@ function Field({
         onChange={(event) => onChange(event.target.value)}
         className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
         required={required}
+        placeholder={placeholder}
         step={type === 'number' ? 'any' : undefined}
       />
     </label>

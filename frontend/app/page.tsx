@@ -41,29 +41,29 @@ const modules = [
       'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
   },
   {
-    title: 'Digital Heritage',
-    description: 'Pelajari sejarah dan budaya kota Magelang yang kaya.',
+    title: 'Cultural Heritage',
+    description: 'Explore Magelang cultural stories, traditions, and local creative communities.',
     icon: '📚',
     href: '/budaya',
-    gradient: 'from-purple-600 via-purple-500 to-pink-400',
+    gradient: 'from-fuchsia-600 via-rose-500 to-orange-400',
     bgPattern:
       'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="20"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
   },
   {
-    title: 'Smart Interactive Map',
-    description: 'Navigasi peta interaktif dengan semua fasilitas kota.',
+    title: 'Historical Timeline',
+    description: 'Read the major milestones, legacy sites, and historical identity of Magelang.',
     icon: '🗺️',
-    href: '/smart-map',
-    gradient: 'from-green-600 via-emerald-500 to-teal-400',
+    href: '/sejarah',
+    gradient: 'from-violet-700 via-purple-600 to-indigo-400',
     bgPattern:
       'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Cpath d="M0 0h60v60H0z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
   },
   {
-    title: 'Smart Magelang',
-    description: 'AI itinerary, teknologi kota, dan potensi modern Magelang dalam satu fitur.',
+    title: 'Smart Interactive Map',
+    description: 'Navigasi peta interaktif dengan semua fasilitas kota.',
     icon: '🤖',
-    href: '/smart-magelang',
-    gradient: 'from-cyan-600 via-blue-500 to-indigo-400',
+    href: '/smart-map',
+    gradient: 'from-green-600 via-emerald-500 to-teal-400',
     bgPattern:
       'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
   },
@@ -82,7 +82,7 @@ const stats = [
   { icon: MapPin, number: '50+', label: 'Destinasi Wisata', color: 'cyan' },
   { icon: Utensils, number: '30+', label: 'Kuliner Khas', color: 'orange' },
   { icon: Calendar, number: '100+', label: 'Event per Tahun', color: 'purple' },
-  { icon: MessageCircle, number: '24/7', label: 'Smart Magelang', color: 'green' },
+  { icon: MessageCircle, number: '24/7', label: 'Culture & History Access', color: 'green' },
 ];
 
 const modernPotentials = [
@@ -112,7 +112,7 @@ const modernPotentials = [
     description:
       'Community Event memberi ruang warga untuk mengirim agenda, lalu masuk map setelah disetujui developer.',
     icon: ShieldCheck,
-    href: '/admin',
+    href: '/community-form',
   },
 ];
 
@@ -219,7 +219,7 @@ export default function Home() {
             variants={itemVariants}
             className="mt-4 text-lg bg-gradient-to-r from-cyan-300 to-purple-300 bg-clip-text text-transparent font-semibold"
           >
-            ✨ Explore Heritage, Experience Technology
+            Explore Heritage, Culture, and City Experiences
           </motion.p>
 
           <motion.div variants={itemVariants} className="mt-12 flex flex-wrap justify-center gap-4">
@@ -366,13 +366,13 @@ export default function Home() {
             Siap Menjelajahi Magelang?
           </h2>
           <p className="mt-4 text-lg text-slate-200">
-            Gunakan Smart Magelang untuk membuat itinerary dan melihat potensi digital kota.
+            Buka Smart Map dan fitur publik untuk menjelajahi event, budaya, sejarah, wisata, dan kuliner Magelang.
           </p>
           <Link
-            href="/smart-magelang"
+            href="/smart-map"
             className="mt-8 inline-block rounded-full bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 px-8 py-4 font-semibold text-white transition hover:shadow-2xl hover:shadow-purple-500/50"
           >
-            Buat Itinerary Sekarang →
+            Jelajahi Smart Map →
           </Link>
         </motion.div>
       </section>

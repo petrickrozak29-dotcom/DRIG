@@ -350,7 +350,7 @@ export default function SmartMapPage() {
 
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
               <span>{filteredItems.length} marker aktif dalam filter saat ini</span>
-              <a href="/admin" className="font-semibold text-cyan-300 hover:text-cyan-200">
+              <a href="/community-form" className="font-semibold text-cyan-300 hover:text-cyan-200">
                 Tambah Community Event
               </a>
             </div>

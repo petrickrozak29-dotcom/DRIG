@@ -6,7 +6,7 @@ import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
-import { getApiBaseUrl } from '../../lib/api';
+import { fetchCategories } from '../../lib/content-api';
 
 interface TourismItem {
   id: string;
@@ -25,6 +25,7 @@ export default function WisataPage() {
   const [filter, setFilter] = useState('Semua');
   const [items, setItems] = useState<TourismItem[]>([]);
   const [search, setSearch] = useState('');
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -66,9 +67,32 @@ export default function WisataPage() {
     };
   }, [search]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    fetchCategories('WISATA')
+      .then((records) => {
+        if (mounted) {
+          setCategoryOptions(records.map((item) => item.name));
+        }
+      })
+      .catch(() => {
+        if (mounted) setCategoryOptions([]);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const categories = useMemo(
-    () => ['Semua', ...Array.from(new Set(items.map((item) => item.typeLabel).filter(Boolean)))],
-    [items]
+    () => [
+      'Semua',
+      ...Array.from(
+        new Set([...categoryOptions, ...items.map((item) => item.typeLabel).filter(Boolean)])
+      ),
+    ],
+    [categoryOptions, items]
   );
 
   const filtered = useMemo(
@@ -103,11 +127,11 @@ export default function WisataPage() {
                 className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-cyan-400"
               />
               <a
-                href="/admin"
+                href="/community-form?feature=WISATA"
                 className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
               >
                 <PlusCircle className="h-5 w-5" />
-                Ajukan Wisata (Community Form)
+                Tambah Wisata
               </a>
             </div>
           </div>
@@ -154,7 +178,7 @@ export default function WisataPage() {
                     {item.rating}
                   </span>
                 </div>
-                <h2 className="text-2xl font-bold text-white">{item.title}</h2>
+                <h2 className="text-xl font-bold text-white">{item.title}</h2>
                 <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
 
                 <div className="mt-5 space-y-3 text-sm text-slate-400">

@@ -1,23 +1,41 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { CalendarDays, ChefHat, ImagePlus, Lock, MapPin, Save, UserCircle } from 'lucide-react';
+import { type ReactNode, useEffect, useState } from 'react';
+import {
+  CalendarDays,
+  ChefHat,
+  ImagePlus,
+  Lock,
+  MapPin,
+  Save,
+  Ticket,
+  UserCircle,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
 import { getApiBaseUrl } from '../../lib/api';
-import {
-  formatDate,
-  getCommunityEvents,
-  fetchEvents,
-  fetchUserSubmissions,
-  type CommunityCulinary,
-  type CommunityEvent,
-  type CommunityTourism,
-  type EventStatus,
-} from '../../lib/magelang-data';
+import { formatDate, fetchUserSubmissions } from '../../lib/magelang-data';
+
+type SubmissionStatus = 'approved' | 'pending' | 'rejected';
+
+interface ProfileSubmissionItem {
+  id: string;
+  title: string;
+  description: string;
+  featureType: string;
+  status: SubmissionStatus;
+  typeLabel?: string;
+  location?: string | null;
+  image?: string | null;
+  priceRange?: string | null;
+  date?: string | null;
+  submittedById?: string | null;
+  submittedBy?: { id?: string; name?: string; email?: string } | null;
+  createdAt?: string;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -26,11 +44,10 @@ export default function ProfilePage() {
   const [passwordStatus, setPasswordStatus] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [apiEvents, setApiEvents] = useState<CommunityEvent[]>([]);
-  const [culinarySubmissions, setCulinarySubmissions] = useState<CommunityCulinary[]>([]);
-  const [tourismSubmissions, setTourismSubmissions] = useState<CommunityTourism[]>([]);
-  const [eventFilter, setEventFilter] = useState<EventStatus>('pending');
-  const [culinaryFilter, setCulinaryFilter] = useState<EventStatus>('pending');
+  const [submissions, setSubmissions] = useState<ProfileSubmissionItem[]>([]);
+  const [eventFilter, setEventFilter] = useState<SubmissionStatus>('pending');
+  const [culinaryFilter, setCulinaryFilter] = useState<SubmissionStatus>('pending');
+  const [tourismFilter, setTourismFilter] = useState<SubmissionStatus>('pending');
   const [dataVersion, setDataVersion] = useState(0);
   const [profileForm, setProfileForm] = useState({
     name: '',
@@ -61,14 +78,14 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const refresh = () => setDataVersion((version) => version + 1);
-    window.addEventListener('magelangverse-events-updated', refresh);
-    window.addEventListener('magelangverse-culinary-updated', refresh);
+    window.addEventListener('magelangverse-submissions-updated', refresh);
     window.addEventListener('storage', refresh);
+    window.addEventListener('focus', refresh);
 
     return () => {
-      window.removeEventListener('magelangverse-events-updated', refresh);
-      window.removeEventListener('magelangverse-culinary-updated', refresh);
+      window.removeEventListener('magelangverse-submissions-updated', refresh);
       window.removeEventListener('storage', refresh);
+      window.removeEventListener('focus', refresh);
     };
   }, []);
 
@@ -77,26 +94,24 @@ export default function ProfilePage() {
 
     async function loadUserSubmissions() {
       if (!user) {
-        if (mounted) setCulinarySubmissions([]);
+        if (mounted) setSubmissions([]);
         return;
       }
 
       try {
-        // Prefer API helper which supports backend as source-of-truth
         const data = await fetchUserSubmissions(user.id);
         if (!mounted) return;
-        const culinaries = Array.isArray(data)
-          ? data.filter((s: any) => String(s.featureType).toUpperCase() === 'KULINER')
+        const normalized = Array.isArray(data)
+          ? (data.filter((item: any) => {
+              const submittedById = item?.submittedById;
+              const submittedByEmail = item?.submittedBy?.email;
+              return submittedById === user.id || submittedByEmail === user.email;
+            }) as ProfileSubmissionItem[])
           : [];
 
-        const tourism = Array.isArray(data)
-          ? data.filter((s: any) => String(s.featureType).toUpperCase() === 'WISATA')
-          : [];
-
-        setCulinarySubmissions(culinaries as CommunityCulinary[]);
-        setTourismSubmissions(tourism as CommunityTourism[]);
+        setSubmissions(normalized);
       } catch (err) {
-        if (mounted) setCulinarySubmissions([]);
+        if (mounted) setSubmissions([]);
       }
     }
 
@@ -106,25 +121,6 @@ export default function ProfilePage() {
       mounted = false;
     };
   }, [dataVersion, user]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function load() {
-      try {
-        const records = await fetchEvents(true);
-        if (mounted) setApiEvents(records);
-      } catch {
-        if (mounted) setApiEvents([]);
-      }
-    }
-
-    load();
-
-    return () => {
-      mounted = false;
-    };
-  }, [dataVersion]);
 
   const handleProfileSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -216,16 +212,25 @@ export default function ProfilePage() {
     );
   }
 
-  const userEvents = getCommunityEvents(apiEvents).filter(
-    (item) => item.submittedBy === user.email
+  const userEvents = submissions.filter((item) => String(item.featureType).toUpperCase() === 'EVENT');
+  const userTourism = submissions.filter(
+    (item) => String(item.featureType).toUpperCase() === 'WISATA'
+  );
+  const userCulinary = submissions.filter(
+    (item) => String(item.featureType).toUpperCase() === 'KULINER'
   );
   const filteredEvents = userEvents.filter((item) => item.status === eventFilter);
-  const userCulinary = culinarySubmissions.filter((item) => item.submittedBy === user.email);
+  const filteredTourism = userTourism.filter((item) => item.status === tourismFilter);
   const filteredCulinary = userCulinary.filter((item) => item.status === culinaryFilter);
   const eventCounts = {
     pending: userEvents.filter((item) => item.status === 'pending').length,
     approved: userEvents.filter((item) => item.status === 'approved').length,
     rejected: userEvents.filter((item) => item.status === 'rejected').length,
+  };
+  const tourismCounts = {
+    pending: userTourism.filter((item) => item.status === 'pending').length,
+    approved: userTourism.filter((item) => item.status === 'approved').length,
+    rejected: userTourism.filter((item) => item.status === 'rejected').length,
   };
   const culinaryCounts = {
     pending: userCulinary.filter((item) => item.status === 'pending').length,
@@ -395,125 +400,169 @@ export default function ProfilePage() {
           </form>
         </section>
 
-        <section className="mt-8 rounded-lg border border-slate-800 bg-slate-900/80 p-6">
-          <h2 className="flex items-center gap-2 text-2xl font-semibold">
-            <CalendarDays className="h-6 w-6 text-cyan-300" />
-            Event Saya
-          </h2>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {[
-              { value: 'pending' as EventStatus, label: `Pending (${eventCounts.pending})` },
-              { value: 'approved' as EventStatus, label: `Published (${eventCounts.approved})` },
-              { value: 'rejected' as EventStatus, label: `Rejected (${eventCounts.rejected})` },
-            ].map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setEventFilter(item.value)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                  eventFilter === item.value
-                    ? 'bg-cyan-400 text-slate-950'
-                    : 'border border-slate-700 bg-slate-950 text-slate-300 hover:border-cyan-300'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+        <SubmissionSection
+          title="Event Saya"
+          icon={<CalendarDays className="h-6 w-6 text-cyan-300" />}
+          accent="cyan"
+          items={filteredEvents}
+          counts={eventCounts}
+          activeFilter={eventFilter}
+          onFilterChange={setEventFilter}
+          emptyMessage="Belum ada event dengan status ini."
+        />
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {filteredEvents.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-lg border border-slate-800 bg-slate-950/80 p-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold text-white">{item.title}</h3>
-                  <span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-300">
-                    {item.status === 'approved' ? 'Published' : item.status}
-                  </span>
-                </div>
-                <p className="mt-3 flex gap-2 text-sm text-slate-400">
-                  <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-                  <span>{formatDate(item.date)}</span>
-                </p>
-                <p className="mt-2 flex gap-2 text-sm text-slate-400">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
-                  <span>{item.location}</span>
-                </p>
-                <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
-              </article>
-            ))}
-          </div>
+        <SubmissionSection
+          title="Wisata Saya"
+          icon={<MapPin className="h-6 w-6 text-emerald-300" />}
+          accent="emerald"
+          items={filteredTourism}
+          counts={tourismCounts}
+          activeFilter={tourismFilter}
+          onFilterChange={setTourismFilter}
+          emptyMessage="Belum ada wisata dengan status ini."
+        />
 
-          {filteredEvents.length === 0 && (
-            <p className="mt-6 rounded-lg border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
-              Belum ada event dengan status ini.
-            </p>
-          )}
-        </section>
-
-        <section className="mt-8 rounded-lg border border-slate-800 bg-slate-900/80 p-6">
-          <h2 className="flex items-center gap-2 text-2xl font-semibold">
-            <ChefHat className="h-6 w-6 text-amber-300" />
-            Kuliner Saya
-          </h2>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {[
-              { value: 'pending' as EventStatus, label: `Pending (${culinaryCounts.pending})` },
-              { value: 'approved' as EventStatus, label: `Published (${culinaryCounts.approved})` },
-              { value: 'rejected' as EventStatus, label: `Rejected (${culinaryCounts.rejected})` },
-            ].map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setCulinaryFilter(item.value)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                  culinaryFilter === item.value
-                    ? 'bg-amber-400 text-slate-950'
-                    : 'border border-slate-700 bg-slate-950 text-slate-300 hover:border-amber-300'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {filteredCulinary.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-lg border border-slate-800 bg-slate-950/80 p-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold text-white">{item.title}</h3>
-                  <span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-300">
-                    {item.status === 'approved' ? 'Published' : item.status}
-                  </span>
-                </div>
-                <p className="mt-3 flex gap-2 text-sm text-slate-400">
-                  <ChefHat className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                  <span>
-                    {item.typeLabel} - {item.priceRange}
-                  </span>
-                </p>
-                <p className="mt-2 flex gap-2 text-sm text-slate-400">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-                  <span>{item.location}</span>
-                </p>
-                <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
-              </article>
-            ))}
-          </div>
-
-          {filteredCulinary.length === 0 && (
-            <p className="mt-6 rounded-lg border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
-              Belum ada kuliner dengan status ini.
-            </p>
-          )}
-        </section>
+        <SubmissionSection
+          title="Kuliner Saya"
+          icon={<ChefHat className="h-6 w-6 text-amber-300" />}
+          accent="amber"
+          items={filteredCulinary}
+          counts={culinaryCounts}
+          activeFilter={culinaryFilter}
+          onFilterChange={setCulinaryFilter}
+          emptyMessage="Belum ada kuliner dengan status ini."
+        />
       </main>
       <Footer />
     </GradientBg>
+  );
+}
+
+function SubmissionSection({
+  title,
+  icon,
+  accent,
+  items,
+  counts,
+  activeFilter,
+  onFilterChange,
+  emptyMessage,
+}: {
+  title: string;
+  icon: ReactNode;
+  accent: 'cyan' | 'emerald' | 'amber';
+  items: ProfileSubmissionItem[];
+  counts: Record<SubmissionStatus, number>;
+  activeFilter: SubmissionStatus;
+  onFilterChange: (value: SubmissionStatus) => void;
+  emptyMessage: string;
+}) {
+  const accentClass =
+    accent === 'amber'
+      ? {
+          active: 'bg-amber-400 text-slate-950',
+          idle: 'border border-slate-700 bg-slate-950 text-slate-300 hover:border-amber-300',
+        }
+      : accent === 'emerald'
+        ? {
+            active: 'bg-emerald-400 text-slate-950',
+            idle:
+              'border border-slate-700 bg-slate-950 text-slate-300 hover:border-emerald-300',
+          }
+        : {
+            active: 'bg-cyan-400 text-slate-950',
+            idle: 'border border-slate-700 bg-slate-950 text-slate-300 hover:border-cyan-300',
+          };
+
+  return (
+    <section className="mt-8 rounded-lg border border-slate-800 bg-slate-900/80 p-6">
+      <h2 className="flex items-center gap-2 text-2xl font-semibold">
+        {icon}
+        {title}
+      </h2>
+      <div className="mt-5 flex flex-wrap gap-3">
+        {([
+          { value: 'pending', label: `Pending (${counts.pending})` },
+          { value: 'approved', label: `Published (${counts.approved})` },
+          { value: 'rejected', label: `Rejected (${counts.rejected})` },
+        ] as Array<{ value: SubmissionStatus; label: string }>).map((item) => (
+          <button
+            key={item.value}
+            type="button"
+            onClick={() => onFilterChange(item.value)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              activeFilter === item.value ? accentClass.active : accentClass.idle
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {items.map((item) => (
+          <article
+            key={item.id}
+            className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80"
+          >
+            {item.image ? (
+              <img src={item.image} alt={item.title} className="h-44 w-full object-cover" />
+            ) : (
+              <div className="flex h-44 items-center justify-center bg-slate-900 text-slate-600">
+                <ImagePlus className="h-8 w-8" />
+              </div>
+            )}
+
+            <div className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="font-semibold text-white">{item.title}</h3>
+                <span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-300">
+                  {item.status === 'approved' ? 'Published' : item.status}
+                </span>
+              </div>
+
+              <div className="mt-3 space-y-2 text-sm text-slate-400">
+                {item.date && (
+                  <p className="flex gap-2">
+                    <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+                    <span>{formatDate(item.date)}</span>
+                  </p>
+                )}
+
+                {item.typeLabel && (
+                  <div>
+                    <span className="inline-flex rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-300">
+                      {item.typeLabel}
+                    </span>
+                  </div>
+                )}
+
+                {item.priceRange && (
+                  <p className="flex gap-2">
+                    <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    <span>{item.priceRange}</span>
+                  </p>
+                )}
+
+                {item.location && (
+                  <p className="flex gap-2">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                    <span>{item.location}</span>
+                  </p>
+                )}
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {items.length === 0 && (
+        <p className="mt-6 rounded-lg border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
+          {emptyMessage}
+        </p>
+      )}
+    </section>
   );
 }

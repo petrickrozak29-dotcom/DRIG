@@ -15,9 +15,6 @@ const FEATURE_TYPES: { value: string; label: string }[] = [
   { value: 'WISATA', label: 'Wisata' },
   { value: 'KULINER', label: 'Kuliner' },
   { value: 'EVENT', label: 'Event' },
-  { value: 'SMART_MAGELANG', label: 'Smart Magelang' },
-  { value: 'CULTURE', label: 'Budaya' },
-  { value: 'HISTORY', label: 'Sejarah' },
 ];
 
 export default function CategoryManager({ token }: { token?: string | null }) {
@@ -69,6 +66,7 @@ export default function CategoryManager({ token }: { token?: string | null }) {
       if (!res.ok) throw new Error('Gagal membuat kategori');
       setNewName('');
       await loadCategories(featureType);
+      window.dispatchEvent(new Event('magelangverse-categories-updated'));
       setStatus('Kategori dibuat.');
     } catch (err: any) {
       setStatus(err.message || 'Gagal membuat kategori');
@@ -92,6 +90,7 @@ export default function CategoryManager({ token }: { token?: string | null }) {
       setEditingId(null);
       setEditingName('');
       await loadCategories(featureType);
+      window.dispatchEvent(new Event('magelangverse-categories-updated'));
       setStatus('Kategori diperbarui.');
     } catch (err: any) {
       setStatus(err.message || 'Gagal mengubah kategori');
@@ -108,6 +107,7 @@ export default function CategoryManager({ token }: { token?: string | null }) {
       });
       if (!res.ok) throw new Error('Gagal menghapus kategori');
       await loadCategories(featureType);
+      window.dispatchEvent(new Event('magelangverse-categories-updated'));
       setStatus('Kategori dihapus.');
     } catch (err: any) {
       setStatus(err.message || 'Gagal menghapus kategori');

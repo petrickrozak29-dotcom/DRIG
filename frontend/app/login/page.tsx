@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
+import AnimatedBackground from '../../components/animated-background';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -72,6 +73,7 @@ export default function LoginPage() {
 
   return (
     <GradientBg>
+      <AnimatedBackground />
       <Navbar />
       <main className="mx-auto flex min-h-[78vh] max-w-6xl items-center justify-center px-4 py-10 text-white sm:px-6">
         <section className="w-full max-w-md rounded-lg border border-slate-800 bg-slate-900/85 p-6 shadow-2xl sm:p-8">

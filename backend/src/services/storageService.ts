@@ -6,7 +6,11 @@ export interface UploadResult {
   key?: string;
 }
 
-export async function uploadToObjectStorage(localFilePath: string, key?: string): Promise<UploadResult> {
+export async function uploadToObjectStorage(
+  localFilePath: string,
+  key?: string,
+  contentType?: string
+): Promise<UploadResult> {
   const fileName = key || `${Date.now()}-${path.basename(localFilePath)}`;
 
   // If S3/Spaces env is configured, attempt to upload using AWS SDK v3 dynamically
@@ -41,7 +45,7 @@ export async function uploadToObjectStorage(localFilePath: string, key?: string)
           Bucket: bucket,
           Key: fileName,
           Body: fileStream,
-          ContentType: 'image/jpeg',
+          ContentType: contentType || 'application/octet-stream',
         })
       );
 
