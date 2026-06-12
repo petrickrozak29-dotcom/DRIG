@@ -1,8 +1,14 @@
 export function getApiBaseUrl() {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const defaultProductionUrl = 'https://magelang-production-5158.up.railway.app';
 
   if (configuredUrl) {
     return configuredUrl.replace(/\/$/, '');
+  }
+
+  // If built for production and no public API URL provided, use the Railway production URL
+  if (process.env.NODE_ENV === 'production') {
+    return defaultProductionUrl;
   }
 
   if (typeof window !== 'undefined') {
