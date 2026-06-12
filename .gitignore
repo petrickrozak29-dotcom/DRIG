@@ -10,3 +10,4 @@ coverage
 frontend/.next
 backend/node_modules
 backend/prisma/dev.db
+backend/prisma/dev-fresh.db
