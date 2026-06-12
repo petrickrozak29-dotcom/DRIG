@@ -2,6 +2,7 @@ import prisma from './prismaClient';
 import { getUserLocation, haversineDistance } from './locationService';
 import OpenAI from 'openai';
 import { submissionService } from './submissionService';
+import type { SubmissionWithRelations, TourismRecord } from '../types/models';
 
 // OpenAI client - optional
 let openai: OpenAI | null = null;
@@ -12,7 +13,7 @@ if (process.env.OPENAI_API_KEY) {
 }
 
 interface ScoredDestination {
-  destination: any;
+  destination: TourismRecord;
   score: number;
   distance: number;
   reason: string;
@@ -121,38 +122,54 @@ async function getRouteCandidates(
   origin: { latitude: number; longitude: number },
   selectedInterests: string[]
 ): Promise<RouteCandidate[]> {
-  const dbTourism = await prisma.tourism.findMany().catch(() => []);
+  const dbTourism = await prisma.tourism.findMany().catch((): TourismRecord[] => []);
   const tourismRecordsDb =
-    dbTourism.length > 0 ? dbTourism.map((item) => ({ ...item, kind: 'wisata' })) : [];
+    dbTourism.length > 0
+      ? dbTourism.map((item: TourismRecord) => ({ ...item, kind: 'wisata' as const }))
+      : [];
 
-  const submissions = await submissionService.getSubmissions({ status: 'APPROVED' });
+  const submissions: SubmissionWithRelations[] = await submissionService.getSubmissions({
+    status: 'APPROVED',
+  });
 
   const tourismRecordsSub = submissions
     .filter(
-      (item) =>
+      (item: SubmissionWithRelations) =>
         item.featureType === 'WISATA' &&
         Number.isFinite(item.latitude) &&
         Number.isFinite(item.longitude)
     )
-    .map((item) => ({ ...item, name: item.title, kind: 'wisata' }));
+    .map((item: SubmissionWithRelations) => ({
+      ...item,
+      name: item.title,
+      kind: 'wisata' as const,
+    }));
 
   const culinaryRecords = submissions
     .filter(
-      (item) =>
+      (item: SubmissionWithRelations) =>
         item.featureType === 'KULINER' &&
         Number.isFinite(item.latitude) &&
         Number.isFinite(item.longitude)
     )
-    .map((item) => ({ ...item, name: item.title, kind: 'kuliner' }));
+    .map((item: SubmissionWithRelations) => ({
+      ...item,
+      name: item.title,
+      kind: 'kuliner' as const,
+    }));
 
   const eventRecords = submissions
     .filter(
-      (item) =>
+      (item: SubmissionWithRelations) =>
         item.featureType === 'EVENT' &&
         Number.isFinite(item.latitude) &&
         Number.isFinite(item.longitude)
     )
-    .map((item) => ({ ...item, name: item.title, kind: 'event' }));
+    .map((item: SubmissionWithRelations) => ({
+      ...item,
+      name: item.title,
+      kind: 'event' as const,
+    }));
 
   const allCandidates = [
     ...tourismRecordsDb,
@@ -219,14 +236,14 @@ export async function scoreDestinations(
   }
 
   // Get all tourism destinations
-  const destinations = await prisma.tourism.findMany();
+  const destinations = (await prisma.tourism.findMany()) as TourismRecord[];
 
   const maxDistance =
     preferences.distancePreference || calculateMaxDistance(preferences.mobilityLevel);
 
   // Score each destination
   const scored: ScoredDestination[] = destinations
-    .map((dest) => {
+    .map((dest: TourismRecord) => {
       // Calculate distance
       const distance = haversineDistance(
         userLocation.latitude,
@@ -292,8 +309,8 @@ export async function scoreDestinations(
         },
       };
     })
-    .filter((item): item is ScoredDestination => item !== null)
-    .sort((a, b) => b.score - a.score)
+    .filter((item: ScoredDestination | null): item is ScoredDestination => item !== null)
+    .sort((a: ScoredDestination, b: ScoredDestination) => b.score - a.score)
     .slice(0, maxResults);
 
   return scored;
@@ -450,7 +467,7 @@ export async function generateItinerary(
         totalEstimatedCost: totalCost,
       },
     })
-    .catch(() => undefined);
+    .catch((): undefined => undefined);
 
   return {
     itinerary,

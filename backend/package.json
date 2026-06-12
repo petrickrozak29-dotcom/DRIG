@@ -4,14 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
+    "build": "npm run prisma:generate && tsc",
     "prestart": "npm run build",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev --name dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "start": "npx prisma migrate deploy && node dist/index.js",
-    "postinstall": "npm run prisma:generate || true",
+    "postinstall": "npm run prisma:generate",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -26,7 +26,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^1.4.5-lts.1",
     "openai": "^6.42.0",
-    "prisma": "^5.15.0",
+    "prisma": "^5.22.0",
     "redis": "^6.0.0",
     "zod": "^3.25.76"
   },

@@ -3,6 +3,11 @@ import prisma from '../services/prismaClient';
 import { smartMagelangService } from '../services/smartMagelangService';
 import * as authService from '../services/authService';
 import { submissionService } from '../services/submissionService';
+import type {
+  SubmissionFeatureType,
+  SubmissionStatus,
+  SubmissionWithRelations,
+} from '../types/models';
 
 const router = Router();
 
@@ -58,8 +63,12 @@ router.get('/overview', async (_req, res) => {
     stats: {
       totalUser,
       totalEvent: events.length,
-      eventPending: events.filter((event) => event.status === 'PENDING').length,
-      eventPublished: events.filter((event) => event.status === 'APPROVED').length,
+      eventPending: events.filter(
+        (event: SubmissionWithRelations) => event.status === 'PENDING'
+      ).length,
+      eventPublished: events.filter(
+        (event: SubmissionWithRelations) => event.status === 'APPROVED'
+      ).length,
     },
     users,
   });
@@ -117,7 +126,7 @@ router.patch('/users/:id/toggle-active', async (req, res) => {
   res.json(updated);
 });
 
-function getFeatureType(type: ContentType) {
+function getFeatureType(type: ContentType): SubmissionFeatureType {
   switch (type) {
     case 'tourism':
       return 'WISATA';
@@ -141,7 +150,7 @@ router.get('/content/:type', async (req, res) => {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     res.json(
-      records.map((r) => {
+      records.map((r: SubmissionWithRelations) => {
         const rawImage = String(r.image || '');
         const image = rawImage.startsWith('/uploads/') ? `${baseUrl}${rawImage}` : rawImage || undefined;
 
@@ -176,17 +185,17 @@ router.get('/submissions', async (req, res) => {
       ];
     }
 
-    const submissions = await prisma.submission.findMany({
+    const submissions = (await prisma.submission.findMany({
       where,
       include: {
         category: true,
         submittedBy: { select: { id: true, name: true, email: true } },
       },
       orderBy: { createdAt: 'desc' },
-    });
+    })) as SubmissionWithRelations[];
 
     res.json(
-      submissions.map((s) => ({
+      submissions.map((s: SubmissionWithRelations) => ({
         ...s,
         status: s.status.toLowerCase(),
         typeLabel: s.category?.name,
@@ -211,7 +220,7 @@ router.post('/content/:type', async (req, res) => {
     const item = await submissionService.createSubmission({
       title,
       description: payload.description || payload.content,
-      featureType: featureType as any,
+      featureType,
       categoryName: payload.category || payload.typeLabel || 'Lainnya',
       location: payload.location,
       latitude: payload.latitude,
@@ -276,7 +285,10 @@ router.patch('/events/:id/status', async (req, res) => {
       return res.status(400).json({ error: 'Status event tidak valid.' });
     }
 
-    const event = await submissionService.updateStatus(req.params.id, upperStatus as any);
+    const event = await submissionService.updateStatus(
+      req.params.id,
+      upperStatus as SubmissionStatus
+    );
     res.json({ ...event, status: event.status.toLowerCase() });
   } catch (err) {
     res.status(500).json({ error: 'Gagal ubah status' });

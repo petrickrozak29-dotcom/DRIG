@@ -197,7 +197,8 @@ class RedisClientWrapper {
 
     try {
       if (!this.client) return this.fallbackCache.get(key);
-      return await this.client.get(key);
+      const value = (await this.client.get(key)) as string | null;
+      return value;
     } catch (error: any) {
       console.error('[Redis] GET error:', error.message);
       return this.fallbackCache.get(key);

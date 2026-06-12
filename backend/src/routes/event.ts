@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { submissionService } from '../services/submissionService';
+import type { SubmissionStatus, SubmissionWithRelations } from '../types/models';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.get('/', async (req, res) => {
     // Map Prisma Submission back to what the frontend expects
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
-    const mappedEvents = events.map((event) => {
+    const mappedEvents = events.map((event: SubmissionWithRelations) => {
       const rawImage = String(event.image || '');
       const image = rawImage.startsWith('/uploads/') ? `${baseUrl}${rawImage}` : rawImage || undefined;
 
@@ -103,7 +104,10 @@ router.patch('/:id/status', async (req, res) => {
       return res.status(400).json({ error: 'Status event tidak valid.' });
     }
 
-    const event = await submissionService.updateStatus(req.params.id, upperStatus as any);
+    const event = await submissionService.updateStatus(
+      req.params.id,
+      upperStatus as SubmissionStatus
+    );
     res.json({ ...event, status: event.status.toLowerCase() });
   } catch (error) {
     console.error('Error updating event status:', error);

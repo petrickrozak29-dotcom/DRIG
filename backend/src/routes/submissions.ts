@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../services/prismaClient';
 import * as authService from '../services/authService';
 import { submissionService } from '../services/submissionService';
+import type { SubmissionStatus, SubmissionWithRelations } from '../types/models';
 const router = Router();
 
 function optionalAuth(req: Request) {
@@ -42,7 +43,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     const submissions = await submissionService.getSubmissions(filters);
     res.json(
-      submissions.map((s) => ({
+      submissions.map((s: SubmissionWithRelations) => ({
         ...(s),
         status: s.status.toLowerCase(),
         typeLabel: s.category?.name,
@@ -90,7 +91,7 @@ router.patch('/:id/status', authenticateAdmin, async (req: Request, res: Respons
     const upper = String(status).toUpperCase();
     if (!['APPROVED', 'PENDING', 'REJECTED'].includes(upper))
       return res.status(400).json({ error: 'Status invalid' });
-    const updated = await submissionService.updateStatus(req.params.id, upper as any);
+    const updated = await submissionService.updateStatus(req.params.id, upper as SubmissionStatus);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: 'Gagal update status' });

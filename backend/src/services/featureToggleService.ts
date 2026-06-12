@@ -1,25 +1,25 @@
-import { FeatureToggle } from '@prisma/client';
 import prisma from './prismaClient';
+import type { FeatureToggleRecord } from '../types/models';
 
 export const featureToggleService = {
-  async getAllFeatures(): Promise<FeatureToggle[]> {
-    return await prisma.featureToggle.findMany({
+  async getAllFeatures(): Promise<FeatureToggleRecord[]> {
+    return (await prisma.featureToggle.findMany({
       orderBy: { name: 'asc' },
-    });
+    })) as FeatureToggleRecord[];
   },
 
-  async getFeatureByName(name: string): Promise<FeatureToggle | null> {
-    return await prisma.featureToggle.findUnique({
+  async getFeatureByName(name: string): Promise<FeatureToggleRecord | null> {
+    return (await prisma.featureToggle.findUnique({
       where: { name },
-    });
+    })) as FeatureToggleRecord | null;
   },
 
-  async toggleFeature(name: string, isActive: boolean): Promise<FeatureToggle> {
-    return await prisma.featureToggle.upsert({
+  async toggleFeature(name: string, isActive: boolean): Promise<FeatureToggleRecord> {
+    return (await prisma.featureToggle.upsert({
       where: { name },
       update: { isActive },
       create: { name, isActive, description: `Feature ${name}` },
-    });
+    })) as FeatureToggleRecord;
   },
 
   async isFeatureActive(name: string): Promise<boolean> {

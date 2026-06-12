@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { submissionService } from '../services/submissionService';
+import type { SubmissionWithRelations } from '../types/models';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.get('/', async (req, res) => {
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
-    const mappedCulinary = culinaryList.map((item) => {
+    const mappedCulinary = culinaryList.map((item: SubmissionWithRelations) => {
       const rawImage = String(item.image || '');
       const image = rawImage.startsWith('/uploads/') ? `${baseUrl}${rawImage}` : rawImage || undefined;
 

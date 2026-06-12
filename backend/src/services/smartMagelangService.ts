@@ -1,5 +1,8 @@
-import { SmartMagelangContent, Category } from '@prisma/client';
 import prisma from './prismaClient';
+import type {
+  SmartMagelangContentRecord,
+  SmartMagelangContentWithCategory,
+} from '../types/models';
 
 export interface CreateSmartMagelangContentInput {
   title: string;
@@ -12,17 +15,17 @@ export interface CreateSmartMagelangContentInput {
 export const smartMagelangService = {
   async getContentsByCategory(
     categoryName?: string
-  ): Promise<(SmartMagelangContent & { category: Category })[]> {
-    return await prisma.smartMagelangContent.findMany({
+  ): Promise<SmartMagelangContentWithCategory[]> {
+    return (await prisma.smartMagelangContent.findMany({
       where: categoryName ? { category: { name: categoryName } } : undefined,
       include: {
         category: true,
       },
       orderBy: { createdAt: 'desc' },
-    });
+    })) as SmartMagelangContentWithCategory[];
   },
 
-  async createContent(input: CreateSmartMagelangContentInput): Promise<SmartMagelangContent> {
+  async createContent(input: CreateSmartMagelangContentInput): Promise<SmartMagelangContentRecord> {
     const { categoryName, ...rest } = input;
 
     // Find or create category specifically for SMART_MAGELANG
@@ -36,19 +39,19 @@ export const smartMagelangService = {
       });
     }
 
-    return await prisma.smartMagelangContent.create({
+    return (await prisma.smartMagelangContent.create({
       data: {
         ...rest,
         categoryId: category.id,
       },
-    });
+    })) as SmartMagelangContentRecord;
   },
 
   async updateContent(
     id: string,
     input: Partial<CreateSmartMagelangContentInput>
-  ): Promise<SmartMagelangContent> {
-    const { categoryName, ...rest } = input as any;
+  ): Promise<SmartMagelangContentRecord> {
+    const { categoryName, ...rest } = input;
 
     if (categoryName) {
       // ensure category exists and belongs to SMART_MAGELANG
@@ -61,18 +64,21 @@ export const smartMagelangService = {
         });
       }
 
-      return await prisma.smartMagelangContent.update({
+      return (await prisma.smartMagelangContent.update({
         where: { id },
         data: { ...rest, categoryId: category.id },
-      });
+      })) as SmartMagelangContentRecord;
     }
 
-    return await prisma.smartMagelangContent.update({ where: { id }, data: { ...rest } });
+    return (await prisma.smartMagelangContent.update({
+      where: { id },
+      data: { ...rest },
+    })) as SmartMagelangContentRecord;
   },
 
-  async deleteContent(id: string): Promise<SmartMagelangContent> {
-    return await prisma.smartMagelangContent.delete({
+  async deleteContent(id: string): Promise<SmartMagelangContentRecord> {
+    return (await prisma.smartMagelangContent.delete({
       where: { id },
-    });
+    })) as SmartMagelangContentRecord;
   },
 };

@@ -1,11 +1,16 @@
-import { Submission } from '@prisma/client';
 import prisma from './prismaClient';
 import { log } from './logger';
+import type {
+  SubmissionFeatureType,
+  SubmissionRecord,
+  SubmissionStatus,
+  SubmissionWithRelations,
+} from '../types/models';
 
 export interface CreateSubmissionInput {
   title: string;
   description: string;
-  featureType: 'EVENT' | 'WISATA' | 'KULINER';
+  featureType: SubmissionFeatureType;
   categoryName: string;
   location?: string;
   latitude?: number;
@@ -18,7 +23,7 @@ export interface CreateSubmissionInput {
 }
 
 export const submissionService = {
-  async createSubmission(input: CreateSubmissionInput): Promise<Submission> {
+  async createSubmission(input: CreateSubmissionInput): Promise<SubmissionRecord> {
     const { categoryName, featureType, ...rest } = input;
 
     // Find or create category
@@ -31,14 +36,14 @@ export const submissionService = {
         data: { name: categoryName, featureType },
       });
     }
-    const newSubmission = await prisma.submission.create({
+    const newSubmission = (await prisma.submission.create({
       data: {
         ...rest,
         featureType,
         status: 'PENDING',
         categoryId: category.id,
       },
-    });
+    })) as SubmissionRecord;
 
     try {
       log('info', 'New submission created', { id: newSubmission.id, title: newSubmission.title, featureType });
@@ -65,7 +70,7 @@ export const submissionService = {
     status?: string;
     submittedById?: string;
     q?: string;
-  }) {
+  }): Promise<SubmissionWithRelations[]> {
     const { q, ...rest } = filters || {};
     const where: any = { ...rest };
 
@@ -81,7 +86,7 @@ export const submissionService = {
       ];
     }
 
-    return await prisma.submission.findMany({
+    return (await prisma.submission.findMany({
       where,
       include: {
         category: true,
@@ -90,29 +95,29 @@ export const submissionService = {
         },
       },
       orderBy: { createdAt: 'desc' },
-    });
+    })) as SubmissionWithRelations[];
   },
 
-  async updateStatus(id: string, status: 'PENDING' | 'APPROVED' | 'REJECTED'): Promise<Submission> {
+  async updateStatus(id: string, status: SubmissionStatus): Promise<SubmissionRecord> {
     const data: any = { status };
     if (status === 'APPROVED') data.publishedAt = new Date();
     else data.publishedAt = null;
 
-    let updated: Submission;
+    let updated: SubmissionRecord;
     try {
-      updated = await prisma.submission.update({
+      updated = (await prisma.submission.update({
         where: { id },
         data,
-      });
+      })) as SubmissionRecord;
     } catch (err) {
       // If the DB schema hasn't been migrated to include publishedAt, retry without it
       try {
         log('warn', 'Retrying update without publishedAt (may require prisma migrate)', { id, err: String(err) });
       } catch {}
-      updated = await prisma.submission.update({
+      updated = (await prisma.submission.update({
         where: { id },
         data: { status },
-      });
+      })) as SubmissionRecord;
     }
 
     // Notify submitter about status change
@@ -146,9 +151,9 @@ export const submissionService = {
     return updated;
   },
 
-  async deleteSubmission(id: string): Promise<Submission> {
-    return await prisma.submission.delete({
+  async deleteSubmission(id: string): Promise<SubmissionRecord> {
+    return (await prisma.submission.delete({
       where: { id },
-    });
+    })) as SubmissionRecord;
   },
 };

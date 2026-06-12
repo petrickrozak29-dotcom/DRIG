@@ -1,12 +1,13 @@
 import prisma from './prismaClient';
+import type { NotificationRecord, NotificationWithParsedPayload } from '../types/models';
 
 export const notificationService = {
   async createNotification(opts: {
     userId?: string | null;
     type: string;
     message: string;
-    payload?: any;
-  }) {
+    payload?: unknown;
+  }): Promise<NotificationRecord> {
     const payloadValue =
       opts.payload === undefined || opts.payload === null
         ? null
@@ -14,41 +15,41 @@ export const notificationService = {
           ? opts.payload
           : JSON.stringify(opts.payload);
 
-    return await prisma.notification.create({
+    return (await prisma.notification.create({
       data: {
         userId: opts.userId ?? null,
         type: opts.type,
         message: opts.message,
         payload: payloadValue,
       },
-    });
+    })) as NotificationRecord;
   },
 
-  async getForUser(userId: string) {
-    const records = await prisma.notification.findMany({
+  async getForUser(userId: string): Promise<NotificationWithParsedPayload[]> {
+    const records = (await prisma.notification.findMany({
       where: { OR: [{ userId }, { userId: null }] },
       orderBy: { createdAt: 'desc' },
-    });
+    })) as NotificationRecord[];
 
-    return records.map((r) => ({
-      ...r,
-      payload: r.payload
+    return records.map((record: NotificationRecord) => ({
+      ...record,
+      payload: record.payload
         ? (() => {
             try {
-              return JSON.parse(r.payload);
+              return JSON.parse(record.payload);
             } catch {
-              return r.payload;
+              return record.payload;
             }
           })()
         : null,
     }));
   },
 
-  async markAsRead(id: string) {
-    return await prisma.notification.update({
+  async markAsRead(id: string): Promise<NotificationRecord> {
+    return (await prisma.notification.update({
       where: { id },
       data: { isRead: true },
-    });
+    })) as NotificationRecord;
   },
 };
 

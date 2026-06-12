@@ -1,4 +1,5 @@
 import prisma from './prismaClient';
+import type { TourismRecord, UserLocationRecord } from '../types/models';
 
 const EARTH_RADIUS_KM = 6371;
 
@@ -13,7 +14,7 @@ interface LocationInput {
 }
 
 interface DestinationWithDistance {
-  destination: any;
+  destination: TourismRecord;
   distance: number;
   estimatedTravelTime: number; // minutes
 }
@@ -52,7 +53,10 @@ function validateCoordinates(lat: number, lng: number): void {
   }
 }
 
-export async function updateUserLocation(userId: string, location: LocationInput): Promise<any> {
+export async function updateUserLocation(
+  userId: string,
+  location: LocationInput
+): Promise<UserLocationRecord> {
   const { latitude, longitude, accuracy, altitude, speed, source, deviceId } = location;
 
   // Validate coordinates
@@ -63,7 +67,7 @@ export async function updateUserLocation(userId: string, location: LocationInput
   }
 
   // Create new location record
-  const userLocation = await prisma.userLocation.create({
+  const userLocation = (await prisma.userLocation.create({
     data: {
       userId,
       latitude,
@@ -75,13 +79,13 @@ export async function updateUserLocation(userId: string, location: LocationInput
       source: source || 'gps',
       deviceId,
     },
-  });
+  })) as UserLocationRecord;
 
   return userLocation;
 }
 
-export async function getUserLocation(userId: string): Promise<any> {
-  const location = await prisma.userLocation.findFirst({
+export async function getUserLocation(userId: string): Promise<UserLocationRecord> {
+  const location = (await prisma.userLocation.findFirst({
     where: {
       userId,
       isDeleted: false,
@@ -89,7 +93,7 @@ export async function getUserLocation(userId: string): Promise<any> {
     orderBy: {
       timestamp: 'desc',
     },
-  });
+  })) as UserLocationRecord | null;
 
   if (!location) {
     throw new Error('No location data available');
@@ -98,8 +102,11 @@ export async function getUserLocation(userId: string): Promise<any> {
   return location;
 }
 
-export async function getLocationHistory(userId: string, limit: number = 50): Promise<any[]> {
-  const locations = await prisma.userLocation.findMany({
+export async function getLocationHistory(
+  userId: string,
+  limit: number = 50
+): Promise<UserLocationRecord[]> {
+  const locations = (await prisma.userLocation.findMany({
     where: {
       userId,
       isDeleted: false,
@@ -108,7 +115,7 @@ export async function getLocationHistory(userId: string, limit: number = 50): Pr
       timestamp: 'desc',
     },
     take: Math.min(limit, 100), // Max 100
-  });
+  })) as UserLocationRecord[];
 
   return locations;
 }
@@ -137,11 +144,11 @@ export async function getNearbyDestinations(
   const userLocation = await getUserLocation(userId);
 
   // Get all tourism destinations
-  const destinations = await prisma.tourism.findMany();
+  const destinations = (await prisma.tourism.findMany()) as TourismRecord[];
 
   // Calculate distances and filter
   const destinationsWithDistance: DestinationWithDistance[] = destinations
-    .map((dest) => {
+    .map((dest: TourismRecord) => {
       const distance = haversineDistance(
         userLocation.latitude,
         userLocation.longitude,
@@ -158,8 +165,8 @@ export async function getNearbyDestinations(
         estimatedTravelTime,
       };
     })
-    .filter((item) => item.distance <= radius)
-    .sort((a, b) => a.distance - b.distance)
+    .filter((item: DestinationWithDistance) => item.distance <= radius)
+    .sort((a: DestinationWithDistance, b: DestinationWithDistance) => a.distance - b.distance)
     .slice(0, limit);
 
   return destinationsWithDistance;
