@@ -3,7 +3,6 @@ import cors from 'cors';
 import tourismRouter from './routes/tourism';
 import culinaryRouter from './routes/culinary';
 import cultureRouter from './routes/culture';
-import historyRouter from './routes/history';
 import eventRouter from './routes/event';
 import articlesRouter from './routes/articles';
 import aiRouter from './routes/ai';
@@ -24,9 +23,17 @@ import path from 'path';
 const app = express();
 const port = process.env.PORT || 4000;
 
-app.use(cors());
-// Allow larger JSON payloads (images as base64 or large submission bodies)
-// Increased to accommodate larger uploads and base64 payloads
+app.use(
+  cors({
+    origin: [
+      "https://rd-ey4.vercel.app",
+      "http://localhost:3000",
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 app.use(express.json({ limit: '100mb' }));
 
 // Guard JSON parse errors to return a friendly response instead of crashing
@@ -40,7 +47,6 @@ app.use((err: any, _req: any, res: any, next: any) => {
 app.use('/api/tourism', tourismRouter);
 app.use('/api/culinary', culinaryRouter);
 app.use('/api/culture', cultureRouter);
-app.use('/api/history', historyRouter);
 app.use('/api/events', eventRouter);
 app.use('/api/articles', articlesRouter);
 app.use('/api/ai', aiRouter);
@@ -100,7 +106,6 @@ app.get('/', (_req, res) => {
       '/api/tourism',
       '/api/culinary',
       '/api/culture',
-      '/api/history',
       '/api/events',
       '/api/articles',
       '/api/ai',
