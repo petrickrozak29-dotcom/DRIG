@@ -9,7 +9,15 @@ Deployment checklist for MAGELANGVERSE-ID
   - `NODE_ENV` -> production
 
 - Storage:
+ - Storage:
   - `uploads/` directory persisted or use external object storage (S3, GCS) with rewrite of `/api/uploads` handlers
+  - Recommended env vars for object storage:
+    - `S3_BUCKET`
+    - `S3_REGION`
+    - `S3_ACCESS_KEY_ID`
+    - `S3_SECRET_ACCESS_KEY`
+    - `S3_ENDPOINT` (optional, for Spaces/MinIO)
+    - `S3_PUBLIC_URL` (optional, base URL for public assets)
   - Configure CORS and allowed origins
 
 - Security:
@@ -24,8 +32,12 @@ Deployment checklist for MAGELANGVERSE-ID
   - Use managed DB with pooling
 
 - CI/CD:
+ - CI/CD:
   - Run `npm test` for backend and `npm run build` for frontend in pipeline
   - Run E2E smoke tests: create->approve->list
+  - Ensure workflow sets `DATABASE_URL` for migrations and `NEXT_PUBLIC_API_URL` for frontend build
+  - For Vercel: set `NEXT_PUBLIC_API_URL` to your backend URL and ensure `S3_*` envs are present for serverless uploads
+  - For Railway: set `DATABASE_URL` to a Postgres connection and run `npx prisma migrate deploy` on deploy
 
 - Rollback plan:
   - Keep schema migrations reversible or support feature flags
