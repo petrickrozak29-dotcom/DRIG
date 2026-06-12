@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
         status: item.status.toLowerCase(),
         submittedBy: item.submittedBy?.email || item.submittedById,
         createdAt: item.createdAt.toISOString(),
-        publishedAt: item.publishedAt ? item.publishedAt.toISOString() : undefined,
+        publishedAt: (item as any).publishedAt ? (item as any).publishedAt.toISOString() : undefined,
       };
     });
 

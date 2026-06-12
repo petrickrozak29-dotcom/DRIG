@@ -43,10 +43,10 @@ router.get('/', async (req: Request, res: Response) => {
     const submissions = await submissionService.getSubmissions(filters);
     res.json(
       submissions.map((s) => ({
-        ...s,
+        ...(s),
         status: s.status.toLowerCase(),
         typeLabel: s.category?.name,
-        publishedAt: s.publishedAt ? s.publishedAt.toISOString() : undefined,
+        publishedAt: (s as any).publishedAt ? (s as any).publishedAt.toISOString() : undefined,
       }))
     );
   } catch (err) {

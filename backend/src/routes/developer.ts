@@ -150,7 +150,7 @@ router.get('/content/:type', async (req, res) => {
           image,
           status: r.status.toLowerCase(),
           typeLabel: r.category?.name,
-          publishedAt: r.publishedAt ? r.publishedAt.toISOString() : undefined,
+          publishedAt: (r as any).publishedAt ? (r as any).publishedAt.toISOString() : undefined,
         };
       })
     );
