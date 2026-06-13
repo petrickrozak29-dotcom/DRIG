@@ -72,26 +72,23 @@ function normalizeInterest(value: string) {
   const normalized = value.toLowerCase().trim();
   if (['food', 'culinary', 'kuliner'].includes(normalized)) return 'kuliner';
   if (['event', 'events', 'agenda'].includes(normalized)) return 'event';
+  if (['history', 'sejarah', 'historical'].includes(normalized)) return 'sejarah';
+  if (['culture', 'budaya', 'cultural'].includes(normalized)) return 'budaya';
   return 'wisata';
 }
 
 function matchesInterest(candidate: any, interests: string[]) {
-  const searchable = [
-    candidate.category,
-    candidate.typeLabel,
-    candidate.name,
-    candidate.title,
-    candidate.description,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
   return interests.some((interest) => {
     if (interest === 'kuliner') return candidate.kind === 'kuliner';
     if (interest === 'event') return candidate.kind === 'event';
+    if (interest === 'sejarah') return candidate.kind === 'sejarah';
+    if (interest === 'budaya') return candidate.kind === 'budaya';
     return candidate.kind === 'wisata';
   });
+}
+
+function hasCoordinates(item: SubmissionWithRelations) {
+  return Number.isFinite(item.latitude) && Number.isFinite(item.longitude);
 }
 
 function slugify(value: string) {
@@ -135,40 +132,55 @@ async function getRouteCandidates(
   const tourismRecordsSub = submissions
     .filter(
       (item: SubmissionWithRelations) =>
-        item.featureType === 'WISATA' &&
-        Number.isFinite(item.latitude) &&
-        Number.isFinite(item.longitude)
+        item.featureType === 'WISATA' && hasCoordinates(item)
     )
     .map((item: SubmissionWithRelations) => ({
       ...item,
       name: item.title,
+      typeLabel: item.category?.name,
       kind: 'wisata' as const,
     }));
 
   const culinaryRecords = submissions
     .filter(
       (item: SubmissionWithRelations) =>
-        item.featureType === 'KULINER' &&
-        Number.isFinite(item.latitude) &&
-        Number.isFinite(item.longitude)
+        item.featureType === 'KULINER' && hasCoordinates(item)
     )
     .map((item: SubmissionWithRelations) => ({
       ...item,
       name: item.title,
+      typeLabel: item.category?.name,
       kind: 'kuliner' as const,
     }));
 
   const eventRecords = submissions
     .filter(
       (item: SubmissionWithRelations) =>
-        item.featureType === 'EVENT' &&
-        Number.isFinite(item.latitude) &&
-        Number.isFinite(item.longitude)
+        item.featureType === 'EVENT' && hasCoordinates(item)
     )
     .map((item: SubmissionWithRelations) => ({
       ...item,
       name: item.title,
+      typeLabel: item.category?.name,
       kind: 'event' as const,
+    }));
+
+  const historyRecords = submissions
+    .filter((item: SubmissionWithRelations) => item.featureType === 'HISTORY' && hasCoordinates(item))
+    .map((item: SubmissionWithRelations) => ({
+      ...item,
+      name: item.title,
+      typeLabel: item.category?.name,
+      kind: 'sejarah' as const,
+    }));
+
+  const cultureRecords = submissions
+    .filter((item: SubmissionWithRelations) => item.featureType === 'CULTURE' && hasCoordinates(item))
+    .map((item: SubmissionWithRelations) => ({
+      ...item,
+      name: item.title,
+      typeLabel: item.category?.name,
+      kind: 'budaya' as const,
     }));
 
   const allCandidates = [
@@ -176,6 +188,8 @@ async function getRouteCandidates(
     ...tourismRecordsSub,
     ...culinaryRecords,
     ...eventRecords,
+    ...historyRecords,
+    ...cultureRecords,
   ];
   const matched = allCandidates.filter((item) => matchesInterest(item, selectedInterests));
   const source = matched.length > 0 ? matched : allCandidates;
@@ -187,8 +201,16 @@ async function getRouteCandidates(
       const longitude = Number(record.longitude);
       const distance = haversineDistance(origin.latitude, origin.longitude, latitude, longitude);
       const mapPrefix =
-        record.kind === 'event' ? 'event' : record.kind === 'kuliner' ? 'kuliner' : 'wisata';
-      const mapId = record.mapId || `${mapPrefix}-${slugify(record.name || record.title)}`;
+        record.kind === 'event'
+          ? 'api'
+          : record.kind === 'kuliner'
+            ? 'kuliner'
+            : record.kind === 'sejarah'
+              ? 'sejarah'
+              : record.kind === 'budaya'
+                ? 'budaya'
+                : 'wisata';
+      const mapId = record.mapId || `${mapPrefix}-${record.id || slugify(record.name || record.title)}`;
 
       return {
         destination: {
@@ -200,7 +222,11 @@ async function getRouteCandidates(
               ? 'Kuliner'
               : record.kind === 'event'
                 ? record.category?.name || 'Event'
-                : record.category?.name || 'Wisata',
+                : record.kind === 'sejarah'
+                  ? record.category?.name || 'Sejarah'
+                  : record.kind === 'budaya'
+                    ? record.category?.name || 'Budaya'
+                    : record.category?.name || 'Wisata',
           mapId,
           detailUrl: `/smart-map?focus=${mapId}`,
           link:

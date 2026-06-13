@@ -4,10 +4,14 @@ import { type ReactNode, useEffect, useState } from 'react';
 import {
   CalendarDays,
   ChefHat,
+  Eye,
+  EyeOff,
   ImagePlus,
   Lock,
   MapPin,
+  Pencil,
   Save,
+  Star,
   Ticket,
   UserCircle,
 } from 'lucide-react';
@@ -21,6 +25,9 @@ import { formatDate, fetchUserSubmissions } from '../../lib/magelang-data';
 
 type SubmissionStatus = 'approved' | 'pending' | 'rejected';
 
+const fallbackSubmissionImage =
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80';
+
 interface ProfileSubmissionItem {
   id: string;
   title: string;
@@ -30,7 +37,9 @@ interface ProfileSubmissionItem {
   typeLabel?: string;
   location?: string | null;
   image?: string | null;
+  link?: string | null;
   priceRange?: string | null;
+  rating?: number | null;
   date?: string | null;
   submittedById?: string | null;
   submittedBy?: { id?: string; name?: string; email?: string } | null;
@@ -44,7 +53,26 @@ export default function ProfilePage() {
   const [passwordStatus, setPasswordStatus] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
   const [submissions, setSubmissions] = useState<ProfileSubmissionItem[]>([]);
+  const [editingSubmission, setEditingSubmission] = useState<ProfileSubmissionItem | null>(null);
+  const [savingSubmission, setSavingSubmission] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState('');
+  const [submissionForm, setSubmissionForm] = useState({
+    title: '',
+    description: '',
+    categoryName: '',
+    location: '',
+    image: '',
+    link: '',
+    priceRange: '',
+    rating: '',
+    date: '',
+  });
   const [eventFilter, setEventFilter] = useState<SubmissionStatus>('pending');
   const [culinaryFilter, setCulinaryFilter] = useState<SubmissionStatus>('pending');
   const [tourismFilter, setTourismFilter] = useState<SubmissionStatus>('pending');
@@ -204,6 +232,98 @@ export default function ProfilePage() {
     })();
   };
 
+  const startEditSubmission = (item: ProfileSubmissionItem) => {
+    setEditingSubmission(item);
+    setSubmissionStatus('');
+    setSubmissionForm({
+      title: item.title || '',
+      description: item.description || '',
+      categoryName: item.typeLabel || '',
+      location: item.location || '',
+      image: item.image || '',
+      link: item.link || '',
+      priceRange: item.priceRange || '',
+      rating: item.rating !== undefined && item.rating !== null ? String(item.rating) : '',
+      date: item.date ? String(item.date).slice(0, 10) : '',
+    });
+  };
+
+  const handleSubmissionImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    (async () => {
+      try {
+        if (token) {
+          const fd = new FormData();
+          fd.append('image', file);
+
+          const res = await fetch(`${getApiBaseUrl()}/api/uploads/image`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          });
+
+          if (res.ok) {
+            const body = await res.json();
+            setSubmissionForm((current) => ({ ...current, image: body.url }));
+            return;
+          }
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          setSubmissionForm((current) => ({ ...current, image: String(reader.result || '') }));
+        };
+        reader.readAsDataURL(file);
+      } catch {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setSubmissionForm((current) => ({ ...current, image: String(reader.result || '') }));
+        };
+        reader.readAsDataURL(file);
+      }
+    })();
+  };
+
+  const handleSubmissionEditSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingSubmission || !token) return;
+
+    setSavingSubmission(true);
+    setSubmissionStatus('');
+
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/submissions/${editingSubmission.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...submissionForm,
+          featureType: editingSubmission.featureType,
+          rating: submissionForm.rating ? Number(submissionForm.rating) : undefined,
+          date: submissionForm.date || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || 'Gagal mengedit submission.');
+      }
+
+      setSubmissionStatus('Submission berhasil diedit dan masuk antrean review developer.');
+      setEditingSubmission(null);
+      setDataVersion((version) => version + 1);
+      window.dispatchEvent(new Event('magelangverse-submissions-updated'));
+    } catch (error: any) {
+      setSubmissionStatus(error.message || 'Gagal mengedit submission.');
+    } finally {
+      setSavingSubmission(false);
+    }
+  };
+
   if (loading || !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
@@ -347,44 +467,101 @@ export default function ProfilePage() {
             <div className="mt-6 space-y-5">
               <label className="block text-sm font-semibold text-slate-200">
                 Password Lama
-                <input
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(event) =>
-                    setPasswordForm({ ...passwordForm, currentPassword: event.target.value })
-                  }
-                  autoComplete="current-password"
-                  className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-rose-400"
-                  required
-                />
+                <span className="mt-2 flex overflow-hidden rounded-lg border border-slate-700 bg-slate-950 focus-within:border-rose-400">
+                  <input
+                    type={showPassword.currentPassword ? 'text' : 'password'}
+                    value={passwordForm.currentPassword}
+                    onChange={(event) =>
+                      setPasswordForm({ ...passwordForm, currentPassword: event.target.value })
+                    }
+                    autoComplete="current-password"
+                    className="min-w-0 flex-1 bg-transparent px-4 py-3 text-white outline-none"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((current) => ({
+                        ...current,
+                        currentPassword: !current.currentPassword,
+                      }))
+                    }
+                    className="flex w-12 items-center justify-center border-l border-slate-700 text-slate-300 hover:bg-slate-800"
+                    aria-label="Lihat password lama"
+                  >
+                    {showPassword.currentPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </span>
               </label>
 
               <label className="block text-sm font-semibold text-slate-200">
                 Password Baru
-                <input
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(event) =>
-                    setPasswordForm({ ...passwordForm, newPassword: event.target.value })
-                  }
-                  autoComplete="new-password"
-                  className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-rose-400"
-                  required
-                />
+                <span className="mt-2 flex overflow-hidden rounded-lg border border-slate-700 bg-slate-950 focus-within:border-rose-400">
+                  <input
+                    type={showPassword.newPassword ? 'text' : 'password'}
+                    value={passwordForm.newPassword}
+                    onChange={(event) =>
+                      setPasswordForm({ ...passwordForm, newPassword: event.target.value })
+                    }
+                    autoComplete="new-password"
+                    className="min-w-0 flex-1 bg-transparent px-4 py-3 text-white outline-none"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((current) => ({
+                        ...current,
+                        newPassword: !current.newPassword,
+                      }))
+                    }
+                    className="flex w-12 items-center justify-center border-l border-slate-700 text-slate-300 hover:bg-slate-800"
+                    aria-label="Lihat password baru"
+                  >
+                    {showPassword.newPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </span>
               </label>
 
               <label className="block text-sm font-semibold text-slate-200">
                 Konfirmasi Password Baru
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(event) =>
-                    setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })
-                  }
-                  autoComplete="new-password"
-                  className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-rose-400"
-                  required
-                />
+                <span className="mt-2 flex overflow-hidden rounded-lg border border-slate-700 bg-slate-950 focus-within:border-rose-400">
+                  <input
+                    type={showPassword.confirmPassword ? 'text' : 'password'}
+                    value={passwordForm.confirmPassword}
+                    onChange={(event) =>
+                      setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })
+                    }
+                    autoComplete="new-password"
+                    className="min-w-0 flex-1 bg-transparent px-4 py-3 text-white outline-none"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((current) => ({
+                        ...current,
+                        confirmPassword: !current.confirmPassword,
+                      }))
+                    }
+                    className="flex w-12 items-center justify-center border-l border-slate-700 text-slate-300 hover:bg-slate-800"
+                    aria-label="Lihat konfirmasi password"
+                  >
+                    {showPassword.confirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </span>
               </label>
 
               <button
@@ -400,6 +577,152 @@ export default function ProfilePage() {
           </form>
         </section>
 
+        {submissionStatus && (
+          <p className="mt-8 rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-4 text-sm font-semibold text-cyan-100">
+            {submissionStatus}
+          </p>
+        )}
+
+        {editingSubmission && (
+          <form
+            onSubmit={handleSubmissionEditSubmit}
+            className="mt-8 rounded-lg border border-slate-800 bg-slate-900/80 p-6"
+          >
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold">Edit Submission</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Perubahan akan masuk lagi ke antrean review developer.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSubmission(null)}
+                className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-slate-500"
+              >
+                Batal
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              <ProfileField
+                label="Judul"
+                value={submissionForm.title}
+                onChange={(value) =>
+                  setSubmissionForm((current) => ({ ...current, title: value }))
+                }
+                required
+              />
+              <ProfileField
+                label="Kategori"
+                value={submissionForm.categoryName}
+                onChange={(value) =>
+                  setSubmissionForm((current) => ({ ...current, categoryName: value }))
+                }
+              />
+              <ProfileField
+                label="Lokasi"
+                value={submissionForm.location}
+                onChange={(value) =>
+                  setSubmissionForm((current) => ({ ...current, location: value }))
+                }
+              />
+              <ProfileField
+                label="Rating"
+                type="number"
+                value={submissionForm.rating}
+                onChange={(value) =>
+                  setSubmissionForm((current) => ({ ...current, rating: value }))
+                }
+                min="1"
+                max="5"
+                step="0.1"
+              />
+              {String(editingSubmission.featureType).toUpperCase() === 'EVENT' && (
+                <ProfileField
+                  label="Tanggal Event"
+                  type="date"
+                  value={submissionForm.date}
+                  onChange={(value) =>
+                    setSubmissionForm((current) => ({ ...current, date: value }))
+                  }
+                />
+              )}
+              {String(editingSubmission.featureType).toUpperCase() === 'KULINER' && (
+                <ProfileField
+                  label="Rentang Harga"
+                  value={submissionForm.priceRange}
+                  onChange={(value) =>
+                    setSubmissionForm((current) => ({ ...current, priceRange: value }))
+                  }
+                />
+              )}
+              <ProfileField
+                label="Link Terkait"
+                value={submissionForm.link}
+                onChange={(value) =>
+                  setSubmissionForm((current) => ({ ...current, link: value }))
+                }
+              />
+              <label className="block text-sm font-semibold text-slate-200">
+                Upload Gambar
+                <span className="mt-2 flex items-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-950 px-4 py-3 text-slate-400">
+                  <ImagePlus className="h-5 w-5 text-cyan-300" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSubmissionImageUpload}
+                    className="w-full text-sm"
+                  />
+                </span>
+              </label>
+              <label className="block text-sm font-semibold text-slate-200 md:col-span-2">
+                URL Gambar
+                <input
+                  type="text"
+                  value={submissionForm.image}
+                  onChange={(event) =>
+                    setSubmissionForm((current) => ({ ...current, image: event.target.value }))
+                  }
+                  className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+                />
+              </label>
+              <label className="block text-sm font-semibold text-slate-200 md:col-span-2">
+                Deskripsi
+                <textarea
+                  value={submissionForm.description}
+                  onChange={(event) =>
+                    setSubmissionForm((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  rows={4}
+                  className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+                  required
+                />
+              </label>
+            </div>
+
+            {submissionForm.image && (
+              <img
+                src={submissionForm.image}
+                alt="Preview submission"
+                className="mt-5 h-48 w-full rounded-lg border border-slate-800 object-cover"
+              />
+            )}
+
+            <button
+              type="submit"
+              disabled={savingSubmission}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+            >
+              <Save className="h-5 w-5" />
+              {savingSubmission ? 'Menyimpan...' : 'Simpan Edit Submission'}
+            </button>
+          </form>
+        )}
+
         <SubmissionSection
           title="Event Saya"
           icon={<CalendarDays className="h-6 w-6 text-cyan-300" />}
@@ -408,6 +731,7 @@ export default function ProfilePage() {
           counts={eventCounts}
           activeFilter={eventFilter}
           onFilterChange={setEventFilter}
+          onEdit={startEditSubmission}
           emptyMessage="Belum ada event dengan status ini."
         />
 
@@ -419,6 +743,7 @@ export default function ProfilePage() {
           counts={tourismCounts}
           activeFilter={tourismFilter}
           onFilterChange={setTourismFilter}
+          onEdit={startEditSubmission}
           emptyMessage="Belum ada wisata dengan status ini."
         />
 
@@ -430,6 +755,7 @@ export default function ProfilePage() {
           counts={culinaryCounts}
           activeFilter={culinaryFilter}
           onFilterChange={setCulinaryFilter}
+          onEdit={startEditSubmission}
           emptyMessage="Belum ada kuliner dengan status ini."
         />
       </main>
@@ -446,6 +772,7 @@ function SubmissionSection({
   counts,
   activeFilter,
   onFilterChange,
+  onEdit,
   emptyMessage,
 }: {
   title: string;
@@ -455,6 +782,7 @@ function SubmissionSection({
   counts: Record<SubmissionStatus, number>;
   activeFilter: SubmissionStatus;
   onFilterChange: (value: SubmissionStatus) => void;
+  onEdit: (item: ProfileSubmissionItem) => void;
   emptyMessage: string;
 }) {
   const accentClass =
@@ -506,7 +834,14 @@ function SubmissionSection({
             className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80"
           >
             {item.image ? (
-              <img src={item.image} alt={item.title} className="h-44 w-full object-cover" />
+              <img
+                src={item.image}
+                alt={item.title}
+                onError={(event) => {
+                  event.currentTarget.src = fallbackSubmissionImage;
+                }}
+                className="h-44 w-full object-cover"
+              />
             ) : (
               <div className="flex h-44 items-center justify-center bg-slate-900 text-slate-600">
                 <ImagePlus className="h-8 w-8" />
@@ -544,6 +879,13 @@ function SubmissionSection({
                   </p>
                 )}
 
+                {item.rating !== undefined && item.rating !== null && (
+                  <p className="flex gap-2">
+                    <Star className="mt-0.5 h-4 w-4 shrink-0 fill-amber-300 text-amber-300" />
+                    <span>Rating {Number(item.rating).toFixed(1)}</span>
+                  </p>
+                )}
+
                 {item.location && (
                   <p className="flex gap-2">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
@@ -553,6 +895,15 @@ function SubmissionSection({
               </div>
 
               <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
+
+              <button
+                type="button"
+                onClick={() => onEdit(item)}
+                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 hover:border-cyan-300"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </button>
             </div>
           </article>
         ))}
@@ -564,5 +915,41 @@ function SubmissionSection({
         </p>
       )}
     </section>
+  );
+}
+
+function ProfileField({
+  label,
+  value,
+  onChange,
+  type = 'text',
+  required = false,
+  min,
+  max,
+  step,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+  min?: string;
+  max?: string;
+  step?: string;
+}) {
+  return (
+    <label className="block text-sm font-semibold text-slate-200">
+      {label}
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        required={required}
+        min={min}
+        max={max}
+        step={step}
+        className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+      />
+    </label>
   );
 }

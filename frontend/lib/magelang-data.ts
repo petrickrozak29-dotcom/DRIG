@@ -1,4 +1,4 @@
-export type MapCategory = 'event' | 'wisata' | 'kuliner';
+export type MapCategory = 'event' | 'wisata' | 'kuliner' | 'budaya' | 'sejarah';
 export type EventStatus = 'approved' | 'pending' | 'rejected';
 export type EventScope = 'city' | 'around';
 export type EventCategory = 'Konser Musik' | 'Seni & Budaya' | 'Pameran & Expo' | 'Agenda Lokal';
@@ -87,6 +87,7 @@ export interface CommunityCulinaryInput {
   location: string;
   description: string;
   priceRange?: string;
+  rating?: number;
   image?: string;
   link?: string;
   submittedBy?: string;
@@ -103,6 +104,7 @@ export interface CommunityTourismInput {
   title: string;
   location: string;
   description: string;
+  rating?: number;
   image?: string;
   link?: string;
   submittedBy?: string;
@@ -190,6 +192,16 @@ function slugify(value: string) {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
+}
+
+function normalizeImageUrl(value: unknown, fallback: string) {
+  const raw = String(value || '').trim();
+
+  if (!raw || raw.includes('fakepath')) return fallback;
+  if (raw.startsWith('/uploads/')) return `${getApiBaseUrl()}${raw}`;
+  if (raw.startsWith('uploads/')) return `${getApiBaseUrl()}/${raw}`;
+
+  return raw;
 }
 
 export function resolveLocation(location: string) {
@@ -473,7 +485,7 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
         description: String(item.description || 'Event komunitas Magelang.'),
         latitude: Number(item.latitude ?? resolved.latitude),
         longitude: Number(item.longitude ?? resolved.longitude),
-        image: String(item.image || photo.event),
+        image: normalizeImageUrl(item.image, photo.event),
         link: item.link ? String(item.link) : item.sourceUrl ? String(item.sourceUrl) : undefined,
         sourceUrl: item.sourceUrl ? String(item.sourceUrl) : undefined,
         detailUrl: `/smart-map?focus=${id}`,
@@ -569,7 +581,7 @@ export function submitCommunityTourism(input: CommunityTourismInput) {
     source: 'user',
     createdAt: new Date().toISOString(),
     submittedBy: input.submittedBy,
-    rating: 4.5,
+    rating: input.rating || 4.5,
     tags: ['Spot Populer', 'Menunggu Review'],
   };
 
@@ -589,6 +601,7 @@ export function submitCommunityTourism(input: CommunityTourismInput) {
           description: newItem.description,
           image: newItem.image,
           link: newItem.link,
+          rating: newItem.rating,
           featureType: 'WISATA',
           categoryName: newItem.typeLabel,
         }),
@@ -625,7 +638,7 @@ export function submitCommunityCulinary(input: CommunityCulinaryInput) {
     createdAt: new Date().toISOString(),
     submittedBy: input.submittedBy,
     priceRange: input.priceRange?.trim() || 'Bervariasi',
-    rating: 4.5,
+    rating: input.rating || 4.5,
     tags: [typeLabel, 'Menunggu Review'],
   };
 
@@ -646,6 +659,7 @@ export function submitCommunityCulinary(input: CommunityCulinaryInput) {
           image: newItem.image,
           link: newItem.link,
           priceRange: newItem.priceRange,
+          rating: newItem.rating,
           featureType: 'KULINER',
           categoryName: newItem.typeLabel,
         }),
@@ -771,20 +785,35 @@ export function formatDate(date?: string) {
 function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[] {
   if (!Array.isArray(records)) return [];
 
-    return records.map((item) => {
+  return records.map((item) => {
     const resolved = resolveLocation(String(item.location || item.title || ''));
-    const id = `${featureType ? featureType.toLowerCase() : 'api'}-${item.id || slugify(String(item.title || 'item'))}`;
-      const rawImage = String(item.image || item.imageUrl || photo.event);
-      const image = rawImage.startsWith('/uploads/') ? `${getApiBaseUrl()}${rawImage}` : rawImage;
+    const prefix =
+      featureType === 'KULINER'
+        ? 'kuliner'
+        : featureType === 'WISATA'
+          ? 'wisata'
+          : featureType === 'CULTURE'
+            ? 'budaya'
+            : featureType === 'HISTORY'
+              ? 'sejarah'
+              : 'api';
+    const id = `${prefix}-${item.id || slugify(String(item.title || 'item'))}`;
+    const fallback =
+      featureType === 'KULINER'
+        ? photo.food
+        : featureType === 'WISATA'
+          ? photo.nature
+          : featureType === 'CULTURE'
+            ? photo.museum
+            : featureType === 'HISTORY'
+              ? photo.museum
+              : photo.event;
+    const image = normalizeImageUrl(item.image || item.imageUrl, fallback);
 
       return {
         id,
         title: String(item.title || item.name || ''),
-        category: (featureType === 'KULINER'
-          ? 'kuliner'
-          : featureType === 'WISATA'
-            ? 'wisata'
-            : 'event') as MapCategory,
+        category: prefix as MapCategory,
         typeLabel: String(item.category || item.typeLabel || item.type || 'Lainnya'),
         description: String(item.description || item.content || ''),
         location: String(item.location || ''),
@@ -802,7 +831,7 @@ function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[]
         priceRange: item.priceRange,
         openingHours: item.openingHours,
         tags: Array.isArray(item.tags) ? item.tags : ['API'],
-      } as SmartMapItem;
+    } as SmartMapItem;
   });
 }
 
@@ -842,6 +871,30 @@ export async function fetchCulinaryItems(includePending = false): Promise<SmartM
   }
 }
 
+export async function fetchCultureItems(includePending = false): Promise<SmartMapItem[]> {
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/culture?includePending=${includePending}`);
+    if (!res.ok) return [];
+    const payload = await res.json();
+    const records = Array.isArray(payload) ? payload : (payload.items ?? []);
+    return normalizeApiItems(records, 'CULTURE');
+  } catch (err) {
+    return [];
+  }
+}
+
+export async function fetchHistoryItems(includePending = false): Promise<SmartMapItem[]> {
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/history?includePending=${includePending}`);
+    if (!res.ok) return [];
+    const payload = await res.json();
+    const records = Array.isArray(payload) ? payload : (payload.items ?? []);
+    return normalizeApiItems(records, 'HISTORY');
+  } catch (err) {
+    return [];
+  }
+}
+
 export async function fetchUserSubmissions(
   userId: string,
   featureType?: 'EVENT' | 'WISATA' | 'KULINER'
@@ -868,6 +921,7 @@ export async function submitCommunityCulinaryAsync(input: CommunityCulinaryInput
       image: input.image,
       link: input.link,
       priceRange: input.priceRange,
+      rating: input.rating,
       featureType: 'KULINER',
       categoryName: input.typeLabel,
     };
@@ -896,8 +950,9 @@ export async function submitCommunityTourismAsync(input: CommunityTourismInput, 
       description: input.description,
       image: input.image,
       link: input.link,
+      rating: input.rating,
       featureType: 'WISATA',
-      categoryName: input.submittedBy, // note: keep category optional
+      categoryName: 'Spot Populer',
     };
 
     const res = await fetch(`${getApiBaseUrl()}/api/submissions`, {
@@ -946,14 +1001,16 @@ export async function submitCommunityEventAsync(input: CommunityEventInput, toke
 }
 
 export async function buildSmartMapItemsAsync() {
-  const [events, tourism, culinary] = await Promise.all([
+  const [events, tourism, culinary, culture, history] = await Promise.all([
     fetchEvents(false),
     fetchTourismItems(false),
     fetchCulinaryItems(false),
+    fetchCultureItems(false),
+    fetchHistoryItems(false),
   ]);
 
   const approvedEvents = events
     .filter((e) => e.status === 'approved')
     .map((event) => ({ ...event, detailUrl: `/smart-map?focus=${event.id}` }));
-  return [...approvedEvents, ...tourism, ...culinary];
+  return [...approvedEvents, ...tourism, ...culinary, ...culture, ...history];
 }

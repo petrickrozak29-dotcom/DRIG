@@ -9,6 +9,7 @@ import {
   Link as LinkIcon,
   MapPin,
   ShieldCheck,
+  Star,
   XCircle,
   CalendarDays,
   Ticket,
@@ -45,6 +46,7 @@ export default function CommunityFormPage() {
     link: '',
     date: '',
     priceRange: '',
+    rating: '',
   });
 
   const [preview, setPreview] = useState(false);
@@ -189,6 +191,7 @@ export default function CommunityFormPage() {
         link: '',
         date: '',
         priceRange: '',
+        rating: '',
       });
       setPreview(false);
       window.dispatchEvent(new Event('magelangverse-submissions-updated'));
@@ -324,6 +327,17 @@ export default function CommunityFormPage() {
                   />
                 )}
 
+                <Field
+                  label="Rating"
+                  type="number"
+                  placeholder="Contoh: 4.8"
+                  value={formState.rating}
+                  onChange={(v) => setFormState({ ...formState, rating: v })}
+                  min="1"
+                  max="5"
+                  step="0.1"
+                />
+
                 <label className="block text-sm font-semibold text-slate-200 md:col-span-2">
                   Deskripsi
                   <textarea
@@ -426,6 +440,12 @@ export default function CommunityFormPage() {
                         <Ticket className="h-4 w-4 text-emerald-300" /> {formState.priceRange}
                       </p>
                     )}
+                    {formState.rating && (
+                      <p className="flex items-center gap-2">
+                        <Star className="h-4 w-4 fill-amber-300 text-amber-300" />
+                        {Number(formState.rating).toFixed(1)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </article>
@@ -470,6 +490,9 @@ function Field({
   placeholder,
   required = false,
   type = 'text',
+  min,
+  max,
+  step,
 }: {
   label: string;
   value: string;
@@ -477,6 +500,9 @@ function Field({
   placeholder?: string;
   required?: boolean;
   type?: string;
+  min?: string;
+  max?: string;
+  step?: string;
 }) {
   return (
     <label className="block text-sm font-semibold text-slate-200">
@@ -487,6 +513,9 @@ function Field({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         required={required}
+        min={min}
+        max={max}
+        step={step}
         className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
       />
     </label>

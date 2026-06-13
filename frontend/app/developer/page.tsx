@@ -10,6 +10,7 @@ import {
   MapPin,
   Pencil,
   Save,
+  Star,
   Trash2,
   Users,
   XCircle,
@@ -60,6 +61,7 @@ const defaultForm = {
   image: '',
   link: '',
   priceRange: '',
+  rating: '',
   date: '',
 };
 
@@ -106,6 +108,7 @@ function toFormState(item?: ManagedContentItem | null) {
     image: item.image || '',
     link: item.link || '',
     priceRange: item.priceRange || '',
+    rating: item.rating !== undefined && item.rating !== null ? String(item.rating) : '',
     date: item.date ? String(item.date).slice(0, 10) : '',
   };
 }
@@ -207,25 +210,15 @@ export default function DeveloperPage() {
 
   const activeFeature = currentSection ? sectionToFeature(currentSection) : null;
 
-  const statCards = useMemo<Array<[string, number]>>(
+  const systemStatCards = useMemo<Array<[string, number]>>(
     () =>
       overview
         ? [
             ['Total User', overview.stats.totalUser],
-            ['Total Wisata', overview.stats.totalWisata],
-            ['Total Kuliner', overview.stats.totalKuliner],
-            ['Total Event', overview.stats.totalEvent],
-            ['Total Budaya', overview.stats.totalBudaya],
-            ['Total Sejarah', overview.stats.totalSejarah],
             ['Total Artikel', overview.stats.totalArtikel],
             ['Total Lokasi', overview.stats.totalLokasi],
             ['Total Kategori', overview.stats.totalKategori],
             ['Total Submission', overview.stats.totalSubmission],
-            ['Total Pending', overview.stats.totalPending],
-            ['Total Approved', overview.stats.totalApproved],
-            ['Total Rejected', overview.stats.totalRejected],
-            ['Published Content', overview.stats.totalPublishedContent],
-            ['Draft Content', overview.stats.totalDraftContent],
           ]
         : [],
     [overview]
@@ -292,6 +285,7 @@ export default function DeveloperPage() {
         image: formState.image.trim() || undefined,
         link: formState.link.trim() || undefined,
         priceRange: formState.priceRange.trim() || undefined,
+        rating: formState.rating ? Number(formState.rating) : undefined,
         date: formState.date || undefined,
       };
 
@@ -418,10 +412,26 @@ export default function DeveloperPage() {
             )}
 
             {active === 'overview' && (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {statCards.map(([label, value]) => (
-                  <StatCard key={label} label={label} value={Number(value)} />
-                ))}
+              <div className="space-y-6">
+                <section>
+                  <h2 className="mb-4 text-2xl font-semibold text-white">
+                    Statistik Per Fitur
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {(overview?.featureDetails || []).map((item) => (
+                      <FeatureStatCard key={item.key} item={item} />
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <h2 className="mb-4 text-2xl font-semibold text-white">Detail Sistem</h2>
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {systemStatCards.map(([label, value]) => (
+                      <StatCard key={label} label={label} value={Number(value)} />
+                    ))}
+                  </div>
+                </section>
               </div>
             )}
 
@@ -537,6 +547,46 @@ function StatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
+function FeatureStatCard({
+  item,
+}: {
+  item: {
+    label: string;
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    categories: number;
+  };
+}) {
+  return (
+    <article className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
+            {item.label}
+          </p>
+          <p className="mt-2 text-3xl font-bold text-white">{item.total}</p>
+        </div>
+        <span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-300">
+          {item.categories} kategori
+        </span>
+      </div>
+      <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs font-semibold">
+        <div className="rounded-lg bg-amber-500/15 px-3 py-2 text-amber-200">
+          Pending {item.pending}
+        </div>
+        <div className="rounded-lg bg-emerald-500/15 px-3 py-2 text-emerald-200">
+          Published {item.approved}
+        </div>
+        <div className="rounded-lg bg-rose-500/15 px-3 py-2 text-rose-200">
+          Rejected {item.rejected}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function ContentFormCard({
   section,
   formState,
@@ -556,9 +606,15 @@ function ContentFormCard({
   onReset: () => void;
   saving: boolean;
 }) {
-  const isPlace = section === 'tourism' || section === 'culinary' || section === 'event';
+  const isPlace =
+    section === 'tourism' ||
+    section === 'culinary' ||
+    section === 'event' ||
+    section === 'culture' ||
+    section === 'history';
   const isEvent = section === 'event';
   const isCulinary = section === 'culinary';
+  const hasRating = section === 'tourism' || section === 'culinary' || section === 'event';
 
   return (
     <form
@@ -659,6 +715,19 @@ function ContentFormCard({
           />
         )}
 
+        {hasRating && (
+          <Field
+            label="Rating"
+            type="number"
+            value={formState.rating}
+            onChange={(value) => setFormState((current) => ({ ...current, rating: value }))}
+            placeholder="Contoh: 4.8"
+            min="1"
+            max="5"
+            step="0.1"
+          />
+        )}
+
         <Field
           label="URL Gambar"
           value={formState.image}
@@ -724,7 +793,14 @@ function ContentCard({
 }) {
   return (
     <article className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80">
-      <img src={item.image || fallbackImage} alt={item.title} className="h-44 w-full object-cover" />
+      <img
+        src={item.image || fallbackImage}
+        alt={item.title}
+        onError={(event) => {
+          event.currentTarget.src = fallbackImage;
+        }}
+        className="h-44 w-full object-cover"
+      />
       <div className="p-4">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
@@ -762,6 +838,12 @@ function ContentCard({
             </span>
           )}
           {item.priceRange && <span>Harga: {item.priceRange}</span>}
+          {item.rating !== undefined && item.rating !== null && (
+            <span className="flex items-center gap-2">
+              <Star className="h-4 w-4 fill-amber-300 text-amber-300" />
+              Rating: {Number(item.rating).toFixed(1)}
+            </span>
+          )}
           {item.submittedBy && <span>Pengirim: {item.submittedBy}</span>}
           {item.publishedAt && <span>Publish: {formatDate(item.publishedAt)}</span>}
         </div>
@@ -820,6 +902,9 @@ function Field({
   type = 'text',
   required = false,
   placeholder,
+  min,
+  max,
+  step,
 }: {
   label: string;
   value: string;
@@ -827,6 +912,9 @@ function Field({
   type?: string;
   required?: boolean;
   placeholder?: string;
+  min?: string;
+  max?: string;
+  step?: string;
 }) {
   return (
     <label className="block text-sm font-semibold text-slate-200">
@@ -838,7 +926,9 @@ function Field({
         className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
         required={required}
         placeholder={placeholder}
-        step={type === 'number' ? 'any' : undefined}
+        min={min}
+        max={max}
+        step={step || (type === 'number' ? 'any' : undefined)}
       />
     </label>
   );

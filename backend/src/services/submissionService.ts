@@ -18,8 +18,25 @@ export interface CreateSubmissionInput {
   image?: string;
   link?: string;
   priceRange?: string;
+  rating?: number;
   date?: Date;
   submittedById?: string;
+}
+
+export interface UpdateSubmissionInput {
+  title?: string;
+  description?: string;
+  featureType?: SubmissionFeatureType;
+  categoryName?: string;
+  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  image?: string | null;
+  link?: string | null;
+  priceRange?: string | null;
+  rating?: number | null;
+  date?: Date | null;
+  resetToPending?: boolean;
 }
 
 export const submissionService = {
@@ -36,14 +53,24 @@ export const submissionService = {
         data: { name: categoryName, featureType },
       });
     }
-    const newSubmission = (await prisma.submission.create({
-      data: {
-        ...rest,
-        featureType,
-        status: 'PENDING',
-        categoryId: category.id,
-      },
-    })) as SubmissionRecord;
+    let newSubmission: SubmissionRecord;
+    const data = {
+      ...rest,
+      featureType,
+      status: 'PENDING',
+      categoryId: category.id,
+    } as any;
+
+    try {
+      newSubmission = (await prisma.submission.create({ data })) as SubmissionRecord;
+    } catch (err) {
+      if ('rating' in data) {
+        const { rating: _rating, ...retryData } = data;
+        newSubmission = (await prisma.submission.create({ data: retryData })) as SubmissionRecord;
+      } else {
+        throw err;
+      }
+    }
 
     try {
       log('info', 'New submission created', { id: newSubmission.id, title: newSubmission.title, featureType });
@@ -63,6 +90,65 @@ export const submissionService = {
     }
 
     return newSubmission;
+  },
+
+  async updateSubmission(id: string, input: UpdateSubmissionInput): Promise<SubmissionRecord> {
+    const current = await prisma.submission.findUnique({ where: { id } });
+
+    if (!current) {
+      throw new Error('Submission not found');
+    }
+
+    const featureType = input.featureType || (current.featureType as SubmissionFeatureType);
+    const data: any = {};
+
+    if (input.title !== undefined) data.title = input.title;
+    if (input.description !== undefined) data.description = input.description;
+    if (input.location !== undefined) data.location = input.location;
+    if (input.latitude !== undefined) data.latitude = input.latitude;
+    if (input.longitude !== undefined) data.longitude = input.longitude;
+    if (input.image !== undefined) data.image = input.image;
+    if (input.link !== undefined) data.link = input.link;
+    if (input.priceRange !== undefined) data.priceRange = input.priceRange;
+    if (input.rating !== undefined) data.rating = input.rating;
+    if (input.date !== undefined) data.date = input.date;
+    if (input.featureType !== undefined) data.featureType = featureType;
+
+    if (input.categoryName !== undefined) {
+      let category = await prisma.category.findFirst({
+        where: { name: input.categoryName || 'Lainnya', featureType },
+      });
+
+      if (!category) {
+        category = await prisma.category.create({
+          data: { name: input.categoryName || 'Lainnya', featureType },
+        });
+      }
+
+      data.categoryId = category.id;
+    }
+
+    if (input.resetToPending) {
+      data.status = 'PENDING';
+      data.publishedAt = null;
+    }
+
+    try {
+      return (await prisma.submission.update({
+        where: { id },
+        data,
+      })) as SubmissionRecord;
+    } catch (err) {
+      if ('publishedAt' in data || 'rating' in data) {
+        const { publishedAt: _publishedAt, rating: _rating, ...retryData } = data;
+        return (await prisma.submission.update({
+          where: { id },
+          data: retryData,
+        })) as SubmissionRecord;
+      }
+
+      throw err;
+    }
   },
 
   async getSubmissions(filters?: {

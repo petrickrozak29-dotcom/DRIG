@@ -22,6 +22,7 @@ export interface ManagedContentItem {
   image?: string;
   link?: string | null;
   priceRange?: string | null;
+  rating?: number | null;
   date?: string | null;
   status: ContentStatus;
   submittedBy?: string | null;
@@ -55,6 +56,15 @@ export interface OverviewPayload {
     isActive: boolean;
     createdAt: string;
     lastLogin?: string | null;
+  }>;
+  featureDetails?: Array<{
+    key: string;
+    label: string;
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    categories: number;
   }>;
 }
 

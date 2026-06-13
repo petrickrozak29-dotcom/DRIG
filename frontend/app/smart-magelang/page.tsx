@@ -7,6 +7,7 @@ import {
   Building2,
   Clock,
   Cpu,
+  History,
   Lightbulb,
   MapPin,
   Navigation,
@@ -14,6 +15,7 @@ import {
   Rocket,
   Send,
   Sparkles,
+  ScrollText,
   Utensils,
   Wifi,
 } from 'lucide-react';
@@ -138,6 +140,8 @@ const interestOptions = [
   { value: 'wisata', label: 'Wisata', icon: MapPin },
   { value: 'kuliner', label: 'Kuliner', icon: Utensils },
   { value: 'event', label: 'Event', icon: Sparkles },
+  { value: 'sejarah', label: 'Sejarah', icon: History },
+  { value: 'budaya', label: 'Budaya', icon: ScrollText },
 ];
 
 function timeLabel(value: string) {

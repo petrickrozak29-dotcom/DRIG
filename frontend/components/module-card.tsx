@@ -45,7 +45,7 @@ export default function ModuleCard({
           href={href as any}
           className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/20 px-6 py-3 text-sm font-semibold text-white transition backdrop-blur-sm hover:bg-white/30 hover:shadow-lg"
         >
-          Jelajahi →
+          {'Explore ->'}
         </Link>
       </div>
 

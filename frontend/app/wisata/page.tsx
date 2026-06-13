@@ -166,6 +166,10 @@ export default function WisataPage() {
                   'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80'
                 }
                 alt={item.title}
+                onError={(event) => {
+                  event.currentTarget.src =
+                    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80';
+                }}
                 className="h-48 w-full object-cover"
               />
               <div className="p-6">

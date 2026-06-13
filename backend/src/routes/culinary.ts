@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { submissionService } from '../services/submissionService';
 import type { SubmissionWithRelations } from '../types/models';
+import { serializeSubmission } from '../utils/media';
 
 const router = Router();
 
@@ -18,29 +19,12 @@ router.get('/', async (req, res) => {
 
     const culinaryList = await submissionService.getSubmissions(filters);
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-
     const mappedCulinary = culinaryList.map((item: SubmissionWithRelations) => {
-      const rawImage = String(item.image || '');
-      const image = rawImage.startsWith('/uploads/') ? `${baseUrl}${rawImage}` : rawImage || undefined;
+      const serialized = serializeSubmission(req, item);
 
       return {
-        id: item.id,
-        title: item.title,
+        ...serialized,
         name: item.title, // For backwards compatibility
-        description: item.description,
-        location: item.location,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        image,
-        link: item.link,
-        priceRange: item.priceRange,
-        category: item.category?.name,
-        typeLabel: item.category?.name,
-        status: item.status.toLowerCase(),
-        submittedBy: item.submittedBy?.email || item.submittedById,
-        createdAt: item.createdAt.toISOString(),
-        publishedAt: (item as any).publishedAt ? (item as any).publishedAt.toISOString() : undefined,
       };
     });
 

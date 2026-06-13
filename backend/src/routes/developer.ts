@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../services/prismaClient';
 import * as authService from '../services/authService';
 import { submissionService } from '../services/submissionService';
+import { serializeSubmission } from '../utils/media';
 import type {
   SubmissionFeatureType,
   SubmissionStatus,
@@ -41,6 +42,14 @@ async function authenticateDeveloper(req: Request, res: Response, next: NextFunc
 router.use(authenticateDeveloper);
 
 router.get('/overview', async (_req, res) => {
+  const featureTypes: Array<{ key: string; label: string }> = [
+    { key: 'WISATA', label: 'Wisata' },
+    { key: 'KULINER', label: 'Kuliner' },
+    { key: 'EVENT', label: 'Event' },
+    { key: 'CULTURE', label: 'Budaya' },
+    { key: 'HISTORY', label: 'Sejarah' },
+  ];
+
   const [
     totalUser,
     totalWisata,
@@ -56,6 +65,7 @@ router.get('/overview', async (_req, res) => {
     totalApproved,
     totalRejected,
     users,
+    featureDetails,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.submission.count({ where: { featureType: 'WISATA' } }),
@@ -82,6 +92,27 @@ router.get('/overview', async (_req, res) => {
         lastLogin: true,
       },
     }),
+    Promise.all(
+      featureTypes.map(async (feature) => {
+        const [total, pending, approved, rejected, categories] = await Promise.all([
+          prisma.submission.count({ where: { featureType: feature.key } }),
+          prisma.submission.count({ where: { featureType: feature.key, status: 'PENDING' } }),
+          prisma.submission.count({ where: { featureType: feature.key, status: 'APPROVED' } }),
+          prisma.submission.count({ where: { featureType: feature.key, status: 'REJECTED' } }),
+          prisma.category.count({ where: { featureType: feature.key } }),
+        ]);
+
+        return {
+          key: feature.key,
+          label: feature.label,
+          total,
+          pending,
+          approved,
+          rejected,
+          categories,
+        };
+      })
+    ),
   ]);
 
   res.json({
@@ -102,6 +133,7 @@ router.get('/overview', async (_req, res) => {
       totalPublishedContent: totalApproved,
       totalDraftContent: totalPending,
     },
+    featureDetails,
     users,
   });
 });
@@ -181,22 +213,7 @@ router.get('/content/:type', async (req, res) => {
     const featureType = getFeatureType(type);
 
     const records = await submissionService.getSubmissions({ featureType });
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-
-    res.json(
-      records.map((r: SubmissionWithRelations) => {
-        const rawImage = String(r.image || '');
-        const image = rawImage.startsWith('/uploads/') ? `${baseUrl}${rawImage}` : rawImage || undefined;
-
-        return {
-          ...r,
-          image,
-          status: r.status.toLowerCase(),
-          typeLabel: r.category?.name,
-          publishedAt: (r as any).publishedAt ? (r as any).publishedAt.toISOString() : undefined,
-        };
-      })
-    );
+    res.json(records.map((r: SubmissionWithRelations) => serializeSubmission(req, r)));
   } catch (err) {
     res.status(500).json({ error: 'Gagal mengambil konten' });
   }
@@ -229,13 +246,7 @@ router.get('/submissions', async (req, res) => {
       orderBy: { createdAt: 'desc' },
     })) as SubmissionWithRelations[];
 
-    res.json(
-      submissions.map((s: SubmissionWithRelations) => ({
-        ...s,
-        status: s.status.toLowerCase(),
-        typeLabel: s.category?.name,
-      }))
-    );
+    res.json(submissions.map((s: SubmissionWithRelations) => serializeSubmission(req, s)));
   } catch (err) {
     res.status(500).json({ error: 'Gagal mengambil submissions' });
   }
@@ -263,6 +274,7 @@ router.post('/content/:type', async (req, res) => {
       image: payload.image,
       link: payload.link,
       priceRange: payload.priceRange,
+      rating: payload.rating !== undefined && payload.rating !== '' ? Number(payload.rating) : undefined,
       date: payload.date ? new Date(payload.date) : undefined,
     });
 
@@ -282,22 +294,22 @@ router.put('/content/:type/:id', async (req, res) => {
     const id = req.params.id;
     const payload = req.body;
 
-    const updated = await prisma.submission.update({
-      where: { id },
-      data: {
-        title: payload.title || payload.name,
-        description: payload.description || payload.content,
-        location: payload.location,
-        latitude: payload.latitude,
-        longitude: payload.longitude,
-        image: payload.image,
-        link: payload.link,
-        priceRange: payload.priceRange,
-        date: payload.date ? new Date(payload.date) : undefined,
-      },
+    const updated = await submissionService.updateSubmission(id, {
+      title: payload.title || payload.name,
+      description: payload.description || payload.content,
+      categoryName: payload.category || payload.typeLabel,
+      location: payload.location ?? null,
+      latitude: payload.latitude !== undefined && payload.latitude !== '' ? Number(payload.latitude) : null,
+      longitude:
+        payload.longitude !== undefined && payload.longitude !== '' ? Number(payload.longitude) : null,
+      image: payload.image ?? null,
+      link: payload.link ?? null,
+      priceRange: payload.priceRange ?? null,
+      rating: payload.rating !== undefined && payload.rating !== '' ? Number(payload.rating) : null,
+      date: payload.date ? new Date(payload.date) : null,
     });
 
-    res.json({ ...updated, status: updated.status.toLowerCase() });
+    res.json(serializeSubmission(req, updated));
   } catch (err) {
     res.status(500).json({ error: 'Gagal update konten' });
   }
@@ -316,7 +328,7 @@ router.patch('/content/:type/:id/status', async (req, res) => {
       req.params.id,
       upperStatus as SubmissionStatus
     );
-    res.json({ ...updated, status: updated.status.toLowerCase() });
+    res.json(serializeSubmission(req, updated));
   } catch (err) {
     res.status(500).json({ error: 'Gagal mengubah status konten' });
   }
@@ -344,7 +356,7 @@ router.patch('/events/:id/status', async (req, res) => {
       req.params.id,
       upperStatus as SubmissionStatus
     );
-    res.json({ ...event, status: event.status.toLowerCase() });
+    res.json(serializeSubmission(req, event));
   } catch (err) {
     res.status(500).json({ error: 'Gagal ubah status' });
   }

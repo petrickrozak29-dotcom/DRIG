@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { submissionService } from '../services/submissionService';
 import type { SubmissionStatus, SubmissionWithRelations } from '../types/models';
+import { serializeSubmission } from '../utils/media';
 
 const router = Router();
 
@@ -18,29 +19,8 @@ router.get('/', async (req, res) => {
 
     const events = await submissionService.getSubmissions(filters);
 
-    // Map Prisma Submission back to what the frontend expects
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-
     const mappedEvents = events.map((event: SubmissionWithRelations) => {
-      const rawImage = String(event.image || '');
-      const image = rawImage.startsWith('/uploads/') ? `${baseUrl}${rawImage}` : rawImage || undefined;
-
-      return {
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        location: event.location,
-        latitude: event.latitude,
-        longitude: event.longitude,
-        image,
-        link: event.link,
-        date: event.date ? event.date.toISOString() : undefined,
-        category: event.category?.name,
-        typeLabel: event.category?.name,
-        status: event.status.toLowerCase(), // Frontend expects 'approved', 'pending', 'rejected'
-        submittedBy: event.submittedBy?.email || event.submittedById,
-        createdAt: event.createdAt.toISOString(),
-      };
+      return serializeSubmission(req, event);
     });
 
     res.json(mappedEvents);
@@ -84,6 +64,7 @@ router.post('/', async (req, res) => {
         image ||
         'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1000&q=80',
       link,
+      rating: Number(req.body.rating) || undefined,
       date: new Date(date),
       submittedById,
     });

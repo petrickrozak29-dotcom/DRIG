@@ -61,6 +61,7 @@ export default function Navbar() {
               <Link href="/budaya">Budaya</Link>
               <Link href="/sejarah">Sejarah</Link>
               <Link href="/event">Event</Link>
+              <Link href="/smart-magelang">Smart Magelang</Link>
               <Link href="/smart-map">Smart Map</Link>
             </>
           )}

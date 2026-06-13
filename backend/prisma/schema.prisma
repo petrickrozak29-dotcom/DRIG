@@ -189,6 +189,7 @@ model Submission {
   image      String?
   link       String?
   priceRange String?
+  rating     Float?
   date       DateTime?
   publishedAt DateTime?
 

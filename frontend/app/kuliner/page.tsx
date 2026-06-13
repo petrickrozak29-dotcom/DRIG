@@ -140,31 +140,21 @@ export default function KulinerPage() {
           </a>
         </section>
 
-        <section className="mb-10 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="flex flex-wrap gap-3">
-            {filters.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                onClick={() => setSelectedFilter(filter)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                  selectedFilter === filter
-                    ? 'bg-amber-400 text-slate-950'
-                    : 'border border-slate-700 bg-slate-900/70 text-slate-300 hover:border-amber-300/60'
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-
-          <aside className="rounded-lg border border-slate-800 bg-slate-900/80 p-5">
-            <h2 className="text-lg font-semibold text-white">Alur Publish Kuliner</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400">
-              Gunakan tombol tambah kuliner untuk mengirim foto, deskripsi, kategori, dan lokasi.
-              Setelah disetujui developer, data otomatis tampil di halaman ini.
-            </p>
-          </aside>
+        <section className="mb-8 flex flex-wrap gap-3">
+          {filters.map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              onClick={() => setSelectedFilter(filter)}
+              className={`rounded-lg px-5 py-3 text-sm font-semibold transition ${
+                selectedFilter === filter
+                  ? 'bg-amber-400 text-slate-950'
+                  : 'border border-slate-700 bg-slate-900/70 text-slate-300 hover:border-amber-300/60'
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
         </section>
 
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -176,7 +166,10 @@ export default function KulinerPage() {
               <img
                 src={item.image || fallbackImage}
                 alt={item.title}
-                className="h-44 w-full object-cover"
+                onError={(event) => {
+                  event.currentTarget.src = fallbackImage;
+                }}
+                className="h-48 w-full object-cover"
               />
               <div className="p-5">
                 <div className="mb-3 flex items-start justify-between gap-3">

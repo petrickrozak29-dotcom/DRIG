@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { submissionService } from '../services/submissionService';
 import type { SubmissionWithRelations } from '../types/models';
+import { serializeSubmission } from '../utils/media';
 
 const router = Router();
 
@@ -17,28 +18,18 @@ router.get('/', async (req, res) => {
     if (q) filters.q = q;
 
     const records = await submissionService.getSubmissions(filters);
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     res.json(
       records.map((item: SubmissionWithRelations) => {
-        const rawImage = String(item.image || '');
-        const image = rawImage.startsWith('/uploads/') ? `${baseUrl}${rawImage}` : rawImage || undefined;
+        const serialized = serializeSubmission(req, item);
 
         return {
-          id: item.id,
-          title: item.title,
+          ...serialized,
           period: item.title,
           year: item.date ? new Date(item.date).getFullYear().toString() : 'Periode Baru',
-          description: item.description,
-          image,
-          link: item.link,
           source: item.link,
-          category: item.category?.name || 'Sejarah',
-          typeLabel: item.category?.name || 'Sejarah',
-          status: item.status.toLowerCase(),
-          submittedBy: item.submittedBy?.email || item.submittedById,
-          createdAt: item.createdAt.toISOString(),
-          publishedAt: item.publishedAt ? item.publishedAt.toISOString() : undefined,
+          category: serialized.category || 'Sejarah',
+          typeLabel: serialized.typeLabel || 'Sejarah',
         };
       })
     );

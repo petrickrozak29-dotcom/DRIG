@@ -38,8 +38,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/ai-assistant" className="hover:text-cyan-400">
-                  AI Assistant
+                <Link href="/smart-magelang" className="hover:text-cyan-400">
+                  Smart Magelang
                 </Link>
               </li>
               <li>
@@ -55,7 +55,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t border-slate-800 pt-8 text-center text-sm text-slate-500">
-          <p>© 2026 MAGELANGVERSE.ID. All rights reserved.</p>
+          <p>(c) 2026 MAGELANGVERSE.ID. All rights reserved.</p>
         </div>
       </div>
     </footer>

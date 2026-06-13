@@ -45,11 +45,15 @@ const categoryFilters: Array<{ value: CategoryFilter; label: string }> = [
   { value: 'event', label: 'Event' },
   { value: 'wisata', label: 'Wisata' },
   { value: 'kuliner', label: 'Kuliner' },
+  { value: 'budaya', label: 'Budaya' },
+  { value: 'sejarah', label: 'Sejarah' },
 ];
 
 function categoryClass(category: string) {
   if (category === 'event') return 'border-rose-400/40 bg-rose-500/10 text-rose-200';
   if (category === 'kuliner') return 'border-amber-400/40 bg-amber-500/10 text-amber-200';
+  if (category === 'budaya') return 'border-violet-400/40 bg-violet-500/10 text-violet-200';
+  if (category === 'sejarah') return 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200';
   return 'border-cyan-400/40 bg-cyan-500/10 text-cyan-200';
 }
 
@@ -224,11 +228,11 @@ export default function SmartMapPage() {
                 Smart Map Magelang
               </p>
               <h1 className="mt-3 text-4xl font-bold text-white sm:text-5xl">
-                Event, wisata, dan kuliner dalam satu peta
+                Event, wisata, kuliner, sejarah, dan budaya dalam satu peta
               </h1>
               <p className="mt-4 max-w-3xl text-slate-300">
                 Radius diperbesar 30-50 km untuk menjangkau Kota Magelang, Borobudur, Ketep, dan
-                titik sekitar. Marker event komunitas muncul setelah disetujui developer.
+                titik sekitar. Marker dari semua fitur muncul setelah disetujui developer.
               </p>
             </div>
 

@@ -120,6 +120,20 @@ router.post('/run', authenticateAdmin, async (_req: Request, res: Response) => {
     // Additional system events migrated from frontend mocks
     const systemSeedEvents = [
       {
+        id: 'seed-event-kab-magelang-2026',
+        title: 'Agenda Event Kabupaten Magelang 2026',
+        description:
+          'Kumpulan agenda event Kabupaten Magelang tahun 2026 dari sumber publik resmi/terkurasi.',
+        categoryName: 'Agenda Lokal',
+        location: 'Kabupaten Magelang',
+        date: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 14),
+        latitude: -7.6079,
+        longitude: 110.2038,
+        image:
+          'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1000&q=80',
+        link: 'https://s.id/EventKabMagelang2026',
+      },
+      {
         id: 'seed-event-bestieval-2026',
         title: 'BESTIEVAL Magelang 2026',
         description:
@@ -218,6 +232,7 @@ router.post('/run', authenticateAdmin, async (_req: Request, res: Response) => {
           latitude: ev.latitude,
           longitude: ev.longitude,
           image: ev.image,
+          link: (ev as any).link,
           createdAt: now,
           updatedAt: now,
         },

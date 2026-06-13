@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { submissionService } from '../services/submissionService';
 import type { SubmissionWithRelations } from '../types/models';
+import { serializeSubmission } from '../utils/media';
 
 const router = Router();
 
@@ -17,25 +18,15 @@ router.get('/', async (req, res) => {
     if (q) filters.q = q;
 
     const records = await submissionService.getSubmissions(filters);
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     res.json(
       records.map((item: SubmissionWithRelations) => {
-        const rawImage = String(item.image || '');
-        const image = rawImage.startsWith('/uploads/') ? `${baseUrl}${rawImage}` : rawImage || undefined;
+        const serialized = serializeSubmission(req, item);
 
         return {
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          image,
-          link: item.link,
-          category: item.category?.name || 'Budaya',
-          typeLabel: item.category?.name || 'Budaya',
-          status: item.status.toLowerCase(),
-          submittedBy: item.submittedBy?.email || item.submittedById,
-          createdAt: item.createdAt.toISOString(),
-          publishedAt: item.publishedAt ? item.publishedAt.toISOString() : undefined,
+          ...serialized,
+          category: serialized.category || 'Budaya',
+          typeLabel: serialized.typeLabel || 'Budaya',
           details: item.link ? ['Sumber terkait tersedia'] : ['Konten budaya Magelang'],
         };
       })

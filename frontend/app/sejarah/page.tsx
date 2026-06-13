@@ -74,6 +74,9 @@ export default function SejarahPage() {
               <img
                 src={item.image || fallbackImage}
                 alt={item.title}
+                onError={(event) => {
+                  event.currentTarget.src = fallbackImage;
+                }}
                 className="h-52 w-full object-cover"
               />
               <div className="p-6">

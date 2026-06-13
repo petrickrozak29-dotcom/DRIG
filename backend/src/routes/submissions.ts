@@ -3,6 +3,7 @@ import prisma from '../services/prismaClient';
 import * as authService from '../services/authService';
 import { submissionService } from '../services/submissionService';
 import type { SubmissionStatus, SubmissionWithRelations } from '../types/models';
+import { serializeSubmission } from '../utils/media';
 const router = Router();
 
 function optionalAuth(req: Request) {
@@ -42,19 +43,7 @@ router.get('/', async (req: Request, res: Response) => {
     if (submittedById) filters.submittedById = submittedById;
 
     const submissions = await submissionService.getSubmissions(filters);
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    res.json(
-      submissions.map((s: SubmissionWithRelations) => ({
-        ...(s),
-        image:
-          s.image && s.image.startsWith('/uploads/')
-            ? `${baseUrl}${s.image}`
-            : s.image,
-        status: s.status.toLowerCase(),
-        typeLabel: s.category?.name,
-        publishedAt: (s as any).publishedAt ? (s as any).publishedAt.toISOString() : undefined,
-      }))
-    );
+    res.json(submissions.map((s: SubmissionWithRelations) => serializeSubmission(req, s)));
   } catch (err) {
     res.status(500).json({ error: 'Gagal mengambil submissions' });
   }
@@ -77,12 +66,13 @@ router.post('/', async (req: Request, res: Response) => {
       image: body.image,
       link: body.link,
       priceRange: body.priceRange,
+      rating: body.rating !== undefined && body.rating !== '' ? Number(body.rating) : undefined,
       date: body.date ? new Date(body.date) : undefined,
       submittedById: userId ?? body.submittedById,
     };
 
     const created = await submissionService.createSubmission(input as any);
-    res.status(201).json(created);
+    res.status(201).json(serializeSubmission(req, created));
   } catch (err) {
     console.error('Failed create submission', err);
     res.status(500).json({ error: 'Gagal membuat submission' });
@@ -97,9 +87,55 @@ router.patch('/:id/status', authenticateAdmin, async (req: Request, res: Respons
     if (!['APPROVED', 'PENDING', 'REJECTED'].includes(upper))
       return res.status(400).json({ error: 'Status invalid' });
     const updated = await submissionService.updateStatus(req.params.id, upper as SubmissionStatus);
-    res.json(updated);
+    res.json(serializeSubmission(req, updated));
   } catch (err) {
     res.status(500).json({ error: 'Gagal update status' });
+  }
+});
+
+// PUT /api/submissions/:id (owner can edit and resend to developer review)
+router.put('/:id', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+
+    const decoded = authService.verifyToken(token);
+    const requester = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    const submission = await prisma.submission.findUnique({ where: { id: req.params.id } });
+
+    if (!requester || !submission) {
+      return res.status(404).json({ error: 'Submission tidak ditemukan' });
+    }
+
+    const isAdmin = requester.role === 'ADMIN';
+
+    if (!isAdmin && submission.submittedById !== requester.id) {
+      return res.status(403).json({ error: 'Tidak berhak mengedit submission ini' });
+    }
+
+    const body = req.body || {};
+    const updated = await submissionService.updateSubmission(req.params.id, {
+      title: body.title ?? body.name,
+      description: body.description ?? body.content,
+      featureType: body.featureType,
+      categoryName: body.categoryName || body.category || body.typeLabel,
+      location: body.location ?? null,
+      latitude: body.latitude !== undefined && body.latitude !== '' ? Number(body.latitude) : null,
+      longitude:
+        body.longitude !== undefined && body.longitude !== '' ? Number(body.longitude) : null,
+      image: body.image ?? null,
+      link: body.link ?? null,
+      priceRange: body.priceRange ?? null,
+      rating: body.rating !== undefined && body.rating !== '' ? Number(body.rating) : null,
+      date: body.date ? new Date(body.date) : null,
+      resetToPending: !isAdmin,
+    });
+
+    res.json(serializeSubmission(req, updated));
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal update submission' });
   }
 });
 

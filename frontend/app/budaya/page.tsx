@@ -74,6 +74,9 @@ export default function BudayaPage() {
               <img
                 src={item.image || fallbackImage}
                 alt={item.title}
+                onError={(event) => {
+                  event.currentTarget.src = fallbackImage;
+                }}
                 className="h-48 w-full object-cover"
               />
               <div className="p-6">

@@ -28,6 +28,8 @@ const markerColor: Record<string, string> = {
   event: '#f43f5e',
   wisata: '#06b6d4',
   kuliner: '#f59e0b',
+  budaya: '#8b5cf6',
+  sejarah: '#10b981',
   lokasi: '#22c55e',
 };
 

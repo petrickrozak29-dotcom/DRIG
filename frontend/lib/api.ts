@@ -1,7 +1,5 @@
 export function getApiBaseUrl() {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-  
-  console.log('NEXT_PUBLIC_API_URL =', configuredUrl);
 
   const defaultProductionUrl = 'https://rd-production-ff32.up.railway.app';
 

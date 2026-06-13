@@ -24,8 +24,8 @@ const modules = [
   {
     title: 'Smart Tourism',
     description:
-      'Jelajahi destinasi wisata Magelang terbaik dengan informasi tiket, jam buka, dan rating.',
-    icon: '🏛️',
+      'Discover Magelang destinations with location details, ratings, routes, and travel context.',
+    icon: 'TO',
     href: '/wisata',
     gradient: 'from-blue-600 via-blue-500 to-blue-400',
     bgPattern:
@@ -33,8 +33,8 @@ const modules = [
   },
   {
     title: 'Smart Culinary',
-    description: 'Temukan kuliner khas Magelang dengan rekomendasi lokasi dan harga terbaik.',
-    icon: '🍜',
+    description: 'Find local food, UMKM spots, price ranges, ratings, and map-ready directions.',
+    icon: 'CU',
     href: '/kuliner',
     gradient: 'from-orange-600 via-amber-500 to-yellow-400',
     bgPattern:
@@ -43,7 +43,7 @@ const modules = [
   {
     title: 'Cultural Heritage',
     description: 'Explore Magelang cultural stories, traditions, and local creative communities.',
-    icon: '📚',
+    icon: 'CH',
     href: '/budaya',
     gradient: 'from-fuchsia-600 via-rose-500 to-orange-400',
     bgPattern:
@@ -52,7 +52,7 @@ const modules = [
   {
     title: 'Historical Timeline',
     description: 'Read the major milestones, legacy sites, and historical identity of Magelang.',
-    icon: '🗺️',
+    icon: 'HI',
     href: '/sejarah',
     gradient: 'from-violet-700 via-purple-600 to-indigo-400',
     bgPattern:
@@ -60,8 +60,8 @@ const modules = [
   },
   {
     title: 'Smart Interactive Map',
-    description: 'Navigasi peta interaktif dengan semua fasilitas kota.',
-    icon: '🤖',
+    description: 'Navigate approved tourism, culinary, and event locations in one interactive map.',
+    icon: 'MP',
     href: '/smart-map',
     gradient: 'from-green-600 via-emerald-500 to-teal-400',
     bgPattern:
@@ -69,10 +69,29 @@ const modules = [
   },
   {
     title: 'Event & Festival',
-    description: 'Pantau event dan festival terbaru di Kota Magelang.',
-    icon: '🎉',
+    description: 'Track city events, festivals, expos, and community agendas approved by developer.',
+    icon: 'EV',
     href: '/event',
     gradient: 'from-pink-600 via-rose-500 to-red-400',
+    bgPattern:
+      'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="20"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+  },
+  {
+    title: 'Smart Magelang',
+    description:
+      'Plan AI itineraries and explore technology, smart city ideas, investment, tourism, and creative economy potential.',
+    icon: 'SM',
+    href: '/smart-magelang',
+    gradient: 'from-cyan-600 via-sky-500 to-emerald-400',
+    bgPattern:
+      'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" stroke="%23ffffff" stroke-opacity="0.18" stroke-width="2"%3E%3Cpath d="M8 30h44M30 8v44"/%3E%3C/g%3E%3C/svg%3E")',
+  },
+  {
+    title: 'Community Form',
+    description: 'Submit tourism, culinary, and event recommendations for developer approval.',
+    icon: 'CF',
+    href: '/community-form',
+    gradient: 'from-teal-600 via-lime-500 to-yellow-400',
     bgPattern:
       'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="20"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
   },
@@ -91,7 +110,7 @@ const modernPotentials = [
     description:
       'Magelang punya potensi layanan publik berbasis aplikasi, data kota, kanal darurat, dan integrasi kebutuhan warga.',
     icon: Cpu,
-    href: 'https://magesty.magelangkota.go.id/',
+    href: '/smart-magelang',
   },
   {
     title: 'UMKM, Kuliner, dan Ekonomi Kreatif',
@@ -197,7 +216,7 @@ export default function Home() {
             variants={itemVariants}
             className="mb-4 inline-block rounded-full border border-cyan-400/50 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-4 py-2 text-sm font-semibold text-cyan-300"
           >
-            🌟 Transformasi Digital Kota Magelang
+            Transformasi Digital Kota Magelang
           </motion.p>
 
           <motion.h1
@@ -227,14 +246,14 @@ export default function Home() {
               href="/wisata"
               className="group relative rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white transition hover:shadow-2xl hover:shadow-cyan-500/50 overflow-hidden"
             >
-              <span className="relative z-10">🚀 Mulai Jelajah</span>
+              <span className="relative z-10">Mulai Jelajah</span>
               <span className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 opacity-0 transition group-hover:opacity-30" />
             </Link>
             <Link
               href="/smart-map"
               className="rounded-full border-2 border-cyan-400/50 px-8 py-4 font-semibold text-white transition hover:border-cyan-300 hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20"
             >
-              📍 Lihat Peta
+              Lihat Peta
             </Link>
           </motion.div>
         </motion.div>
@@ -267,10 +286,10 @@ export default function Home() {
           className="mb-16 text-center"
         >
           <h2 className="text-5xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text text-transparent sm:text-6xl">
-            Fitur Unggulan
+            Featured Modules
           </h2>
           <p className="mt-4 text-xl text-slate-300">
-            Jelajahi semua fitur untuk pengalaman smart tourism terbaik
+            Explore every feature built for Magelang smart tourism
           </p>
         </motion.div>
 
@@ -372,7 +391,7 @@ export default function Home() {
             href="/smart-map"
             className="mt-8 inline-block rounded-full bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 px-8 py-4 font-semibold text-white transition hover:shadow-2xl hover:shadow-purple-500/50"
           >
-            Jelajahi Smart Map →
+            {'Jelajahi Smart Map ->'}
           </Link>
         </motion.div>
       </section>
