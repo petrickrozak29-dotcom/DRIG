@@ -3,6 +3,7 @@ import cors from 'cors';
 import tourismRouter from './routes/tourism';
 import culinaryRouter from './routes/culinary';
 import cultureRouter from './routes/culture';
+import historyRouter from './routes/history';
 import eventRouter from './routes/event';
 import articlesRouter from './routes/articles';
 import aiRouter from './routes/ai';
@@ -91,6 +92,7 @@ app.use((err: any, _req: any, res: any, next: any) => {
 app.use('/api/tourism', tourismRouter);
 app.use('/api/culinary', culinaryRouter);
 app.use('/api/culture', cultureRouter);
+app.use('/api/history', historyRouter);
 app.use('/api/events', eventRouter);
 app.use('/api/articles', articlesRouter);
 app.use('/api/ai', aiRouter);
@@ -126,7 +128,7 @@ app.get('/api/health', async (_req, res) => {
 
   res.json({
     status: 'ok',
-    service: 'MAGELANGVERSE-ID backend',
+    service: 'Future Magelang backend',
     redis: {
       connected: redisStatus.isConnected,
       usesFallback: redisStatus.usesFallback,
@@ -144,12 +146,13 @@ app.get('/api/health', async (_req, res) => {
 // Helpful root endpoint to avoid "Cannot GET /" and provide available routes
 app.get('/', (_req, res) => {
   res.json({
-    message: 'MAGELANGVERSE-ID backend running',
+    message: 'Future Magelang backend running',
     endpoints: [
       '/api/health',
       '/api/tourism',
       '/api/culinary',
       '/api/culture',
+      '/api/history',
       '/api/events',
       '/api/articles',
       '/api/ai',

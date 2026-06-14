@@ -38,6 +38,8 @@ export interface SubmissionRecord {
   image: string | null;
   link: string | null;
   priceRange: string | null;
+  ticketPrice: string | null;
+  openingHours: string | null;
   rating: number | null;
   date: Date | null;
   publishedAt: Date | null;

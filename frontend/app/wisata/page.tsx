@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Camera, ExternalLink, MapPin, Mountain, PlusCircle, Star, Ticket } from 'lucide-react';
+import { Camera, Clock, ExternalLink, MapPin, Mountain, PlusCircle, Star, Ticket } from 'lucide-react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
@@ -18,6 +18,7 @@ interface TourismItem {
   typeLabel: string;
   rating?: number;
   openingHours?: string;
+  ticketPrice?: string;
   tags?: string[];
 }
 
@@ -39,6 +40,7 @@ export default function WisataPage() {
           ...item,
           rating: item.rating || 4.5,
           openingHours: item.openingHours || '08:00 - 17:00',
+          ticketPrice: item.ticketPrice || 'Harga menyesuaikan',
           tags: item.tags || [item.typeLabel],
         }));
 
@@ -191,8 +193,12 @@ export default function WisataPage() {
                     <span>{item.location}</span>
                   </p>
                   <p className="flex gap-2">
-                    <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
                     <span>{item.openingHours}</span>
+                  </p>
+                  <p className="flex gap-2">
+                    <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    <span>{item.ticketPrice}</span>
                   </p>
                 </div>
 
@@ -214,18 +220,21 @@ export default function WisataPage() {
                   >
                     Lihat di Smart Map
                   </a>
-                  <a
-                    href={
-                      item.link ||
-                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title)}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                  >
-                    Rute
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
+                  {item.link ? (
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                    >
+                      Sumber
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  ) : (
+                    <span className="rounded-lg border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-500">
+                      Sumber
+                    </span>
+                  )}
                 </div>
               </div>
             </article>

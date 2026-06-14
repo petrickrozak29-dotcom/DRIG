@@ -18,6 +18,8 @@ export interface CreateSubmissionInput {
   image?: string;
   link?: string;
   priceRange?: string;
+  ticketPrice?: string;
+  openingHours?: string;
   rating?: number;
   date?: Date;
   submittedById?: string;
@@ -34,6 +36,8 @@ export interface UpdateSubmissionInput {
   image?: string | null;
   link?: string | null;
   priceRange?: string | null;
+  ticketPrice?: string | null;
+  openingHours?: string | null;
   rating?: number | null;
   date?: Date | null;
   resetToPending?: boolean;
@@ -64,8 +68,13 @@ export const submissionService = {
     try {
       newSubmission = (await prisma.submission.create({ data })) as SubmissionRecord;
     } catch (err) {
-      if ('rating' in data) {
-        const { rating: _rating, ...retryData } = data;
+      if ('rating' in data || 'ticketPrice' in data || 'openingHours' in data) {
+        const {
+          rating: _rating,
+          ticketPrice: _ticketPrice,
+          openingHours: _openingHours,
+          ...retryData
+        } = data;
         newSubmission = (await prisma.submission.create({ data: retryData })) as SubmissionRecord;
       } else {
         throw err;
@@ -110,6 +119,8 @@ export const submissionService = {
     if (input.image !== undefined) data.image = input.image;
     if (input.link !== undefined) data.link = input.link;
     if (input.priceRange !== undefined) data.priceRange = input.priceRange;
+    if (input.ticketPrice !== undefined) data.ticketPrice = input.ticketPrice;
+    if (input.openingHours !== undefined) data.openingHours = input.openingHours;
     if (input.rating !== undefined) data.rating = input.rating;
     if (input.date !== undefined) data.date = input.date;
     if (input.featureType !== undefined) data.featureType = featureType;
@@ -139,8 +150,14 @@ export const submissionService = {
         data,
       })) as SubmissionRecord;
     } catch (err) {
-      if ('publishedAt' in data || 'rating' in data) {
-        const { publishedAt: _publishedAt, rating: _rating, ...retryData } = data;
+      if ('publishedAt' in data || 'rating' in data || 'ticketPrice' in data || 'openingHours' in data) {
+        const {
+          publishedAt: _publishedAt,
+          rating: _rating,
+          ticketPrice: _ticketPrice,
+          openingHours: _openingHours,
+          ...retryData
+        } = data;
         return (await prisma.submission.update({
           where: { id },
           data: retryData,

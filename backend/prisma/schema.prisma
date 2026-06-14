@@ -189,6 +189,8 @@ model Submission {
   image      String?
   link       String?
   priceRange String?
+  ticketPrice String?
+  openingHours String?
   rating     Float?
   date       DateTime?
   publishedAt DateTime?

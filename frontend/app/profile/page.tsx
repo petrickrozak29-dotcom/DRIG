@@ -39,6 +39,8 @@ interface ProfileSubmissionItem {
   image?: string | null;
   link?: string | null;
   priceRange?: string | null;
+  ticketPrice?: string | null;
+  openingHours?: string | null;
   rating?: number | null;
   date?: string | null;
   submittedById?: string | null;
@@ -70,6 +72,8 @@ export default function ProfilePage() {
     image: '',
     link: '',
     priceRange: '',
+    ticketPrice: '',
+    openingHours: '',
     rating: '',
     date: '',
   });
@@ -243,6 +247,8 @@ export default function ProfilePage() {
       image: item.image || '',
       link: item.link || '',
       priceRange: item.priceRange || '',
+      ticketPrice: item.ticketPrice || '',
+      openingHours: item.openingHours || '',
       rating: item.rating !== undefined && item.rating !== null ? String(item.rating) : '',
       date: item.date ? String(item.date).slice(0, 10) : '',
     });
@@ -648,7 +654,18 @@ export default function ProfilePage() {
                   }
                 />
               )}
-              {String(editingSubmission.featureType).toUpperCase() === 'KULINER' && (
+              <ProfileField
+                label={
+                  String(editingSubmission.featureType).toUpperCase() === 'EVENT'
+                    ? 'Jam Buka / Open Gate'
+                    : 'Jam Buka - Tutup'
+                }
+                value={submissionForm.openingHours}
+                onChange={(value) =>
+                  setSubmissionForm((current) => ({ ...current, openingHours: value }))
+                }
+              />
+              {String(editingSubmission.featureType).toUpperCase() === 'KULINER' ? (
                 <ProfileField
                   label="Rentang Harga"
                   value={submissionForm.priceRange}
@@ -656,9 +673,17 @@ export default function ProfilePage() {
                     setSubmissionForm((current) => ({ ...current, priceRange: value }))
                   }
                 />
+              ) : (
+                <ProfileField
+                  label="Harga / Tiket Masuk"
+                  value={submissionForm.ticketPrice}
+                  onChange={(value) =>
+                    setSubmissionForm((current) => ({ ...current, ticketPrice: value }))
+                  }
+                />
               )}
               <ProfileField
-                label="Link Terkait"
+                label="Link/Sumber (Opsional)"
                 value={submissionForm.link}
                 onChange={(value) =>
                   setSubmissionForm((current) => ({ ...current, link: value }))
@@ -675,17 +700,6 @@ export default function ProfilePage() {
                     className="w-full text-sm"
                   />
                 </span>
-              </label>
-              <label className="block text-sm font-semibold text-slate-200 md:col-span-2">
-                URL Gambar
-                <input
-                  type="text"
-                  value={submissionForm.image}
-                  onChange={(event) =>
-                    setSubmissionForm((current) => ({ ...current, image: event.target.value }))
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
-                />
               </label>
               <label className="block text-sm font-semibold text-slate-200 md:col-span-2">
                 Deskripsi
@@ -876,6 +890,18 @@ function SubmissionSection({
                   <p className="flex gap-2">
                     <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
                     <span>{item.priceRange}</span>
+                  </p>
+                )}
+                {item.ticketPrice && (
+                  <p className="flex gap-2">
+                    <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    <span>{item.ticketPrice}</span>
+                  </p>
+                )}
+                {item.openingHours && (
+                  <p className="flex gap-2">
+                    <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+                    <span>{item.openingHours}</span>
                   </p>
                 )}
 

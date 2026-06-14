@@ -15,6 +15,8 @@ const FEATURE_TYPES: { value: string; label: string }[] = [
   { value: 'WISATA', label: 'Wisata' },
   { value: 'KULINER', label: 'Kuliner' },
   { value: 'EVENT', label: 'Event' },
+  { value: 'CULTURE', label: 'Budaya' },
+  { value: 'HISTORY', label: 'Sejarah' },
 ];
 
 export default function CategoryManager({ token }: { token?: string | null }) {

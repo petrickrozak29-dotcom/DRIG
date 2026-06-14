@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, ExternalLink, Sparkles } from 'lucide-react';
+import { BookOpen, Clock, ExternalLink, MapPin, Sparkles, Ticket } from 'lucide-react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
@@ -85,6 +85,26 @@ export default function BudayaPage() {
                 </span>
                 <h2 className="mt-4 text-2xl font-bold text-white">{item.title}</h2>
                 <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
+                <div className="mt-5 space-y-2 text-sm text-slate-400">
+                  {item.location && (
+                    <p className="flex gap-2">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+                      <span>{item.location}</span>
+                    </p>
+                  )}
+                  {item.openingHours && (
+                    <p className="flex gap-2">
+                      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+                      <span>{item.openingHours}</span>
+                    </p>
+                  )}
+                  {item.ticketPrice && (
+                    <p className="flex gap-2">
+                      <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                      <span>{item.ticketPrice}</span>
+                    </p>
+                  )}
+                </div>
                 <div className="mt-6 flex gap-3">
                   {item.link && (
                     <a

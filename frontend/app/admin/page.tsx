@@ -46,6 +46,8 @@ export default function CommunityFormPage() {
     link: '',
     date: '',
     priceRange: '',
+    ticketPrice: '',
+    openingHours: '',
     rating: '',
   });
 
@@ -191,6 +193,8 @@ export default function CommunityFormPage() {
         link: '',
         date: '',
         priceRange: '',
+        ticketPrice: '',
+        openingHours: '',
         rating: '',
       });
       setPreview(false);
@@ -317,13 +321,28 @@ export default function CommunityFormPage() {
                   />
                 )}
 
-                {featureType === 'KULINER' && (
+                <Field
+                  label={featureType === 'EVENT' ? 'Jam Buka / Open Gate' : 'Jam Buka - Tutup'}
+                  placeholder={featureType === 'EVENT' ? 'Contoh: Open gate 18.00 WIB' : 'Contoh: 08.00 - 17.00 WIB'}
+                  value={formState.openingHours}
+                  onChange={(v) => setFormState({ ...formState, openingHours: v })}
+                />
+
+                {featureType === 'KULINER' ? (
                   <Field
                     label="Rentang Harga"
                     placeholder="Contoh: Rp 15.000 - Rp 50.000"
                     value={formState.priceRange}
                     onChange={(v) => setFormState({ ...formState, priceRange: v })}
                     required
+                  />
+                ) : (
+                  <Field
+                    label="Harga Tiket Masuk"
+                    placeholder="Contoh: Rp 25.000 atau Gratis"
+                    value={formState.ticketPrice}
+                    onChange={(v) => setFormState({ ...formState, ticketPrice: v })}
+                    required={featureType === 'EVENT' || featureType === 'WISATA'}
                   />
                 )}
 
@@ -438,6 +457,16 @@ export default function CommunityFormPage() {
                     {featureType === 'KULINER' && (
                       <p className="flex items-center gap-2">
                         <Ticket className="h-4 w-4 text-emerald-300" /> {formState.priceRange}
+                      </p>
+                    )}
+                    {featureType !== 'KULINER' && formState.ticketPrice && (
+                      <p className="flex items-center gap-2">
+                        <Ticket className="h-4 w-4 text-emerald-300" /> {formState.ticketPrice}
+                      </p>
+                    )}
+                    {formState.openingHours && (
+                      <p className="flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4 text-cyan-300" /> {formState.openingHours}
                       </p>
                     )}
                     {formState.rating && (

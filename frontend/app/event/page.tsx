@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
+  Clock,
   ExternalLink,
   Link as LinkIcon,
   MapPin,
@@ -183,7 +184,7 @@ export default function EventPage() {
                     {item.typeLabel}
                   </span>
                   <span className="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs text-slate-300">
-                    {item.scope === 'around' ? 'Sekitar' : 'Kota'}
+                    {item.scope === 'around' ? 'Sekitar' : 'Magelang'}
                   </span>
                 </div>
                 <h2 className="text-2xl font-bold text-white">{item.title}</h2>
@@ -203,10 +204,14 @@ export default function EventPage() {
                   </p>
                   <p className="flex gap-2">
                     <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                    <span>
-                      {item.source === 'user' ? 'Dikirim komunitas' : 'Agenda sistem Magelang'}
-                    </span>
+                    <span>{item.ticketPrice || 'Harga tiket menyesuaikan'}</span>
                   </p>
+                  {item.openingHours && (
+                    <p className="flex gap-2">
+                      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+                      <span>{item.openingHours}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
@@ -216,20 +221,22 @@ export default function EventPage() {
                   >
                     Lihat Detail
                   </a>
-                  <a
-                    href={
-                      item.link ||
-                      item.sourceUrl ||
-                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-rose-300"
-                  >
-                    <LinkIcon className="h-4 w-4" />
-                    Open Link
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  {item.link || item.sourceUrl ? (
+                    <a
+                      href={item.link || item.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-rose-300"
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                      Sumber
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <span className="rounded-lg border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-500">
+                      Sumber
+                    </span>
+                  )}
                 </div>
               </div>
             </article>

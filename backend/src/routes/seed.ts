@@ -84,7 +84,7 @@ router.post('/run', authenticateAdmin, async (_req: Request, res: Response) => {
           featureType: 'KULINER',
           status: 'APPROVED',
           categoryId: kulinerCatId,
-          location: 'Pusat Kota Magelang',
+          location: 'Pusat Magelang',
           image:
             'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80',
           priceRange: 'Rp 10.000 - Rp 25.000',

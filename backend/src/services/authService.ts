@@ -14,6 +14,12 @@ interface RegisterInput {
   name: string;
 }
 
+interface CreateDeveloperInput {
+  email: string;
+  password: string;
+  name: string;
+}
+
 interface LoginResponse {
   token: string;
   refreshToken: string;
@@ -44,6 +50,83 @@ export function validatePasswordStrength(password: string): boolean {
 function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+export function generateDeveloperPassword() {
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `MagelangDev45#${suffix}`;
+}
+
+export async function createDeveloperAccount(input: CreateDeveloperInput) {
+  const email = input.email.trim().toLowerCase();
+  const name = input.name.trim();
+
+  if (!validateEmail(email)) {
+    throw new Error('Format email tidak valid.');
+  }
+
+  if (name.length < 2) {
+    throw new Error('Nama developer minimal 2 karakter.');
+  }
+
+  if (!validatePasswordStrength(input.password)) {
+    throw new Error(
+      'Password harus minimal 8 karakter dan berisi huruf besar, huruf kecil, angka, serta simbol.'
+    );
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  const passwordHash = await bcrypt.hash(input.password, 10);
+
+  if (existing) {
+    return prisma.user.update({
+      where: { email },
+      data: {
+        name,
+        passwordHash,
+        role: 'ADMIN',
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        lastLogin: true,
+      },
+    });
+  }
+
+  return prisma.user.create({
+    data: {
+      email,
+      name,
+      passwordHash,
+      role: 'ADMIN',
+      isActive: true,
+      preferences: {
+        create: {
+          interests: '',
+          budgetLevel: 'moderate',
+          mobilityLevel: 5,
+          maxSpendPerDay: 0,
+          distancePreference: 5,
+          language: 'id',
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      lastLogin: true,
+    },
+  });
 }
 
 export async function register(input: RegisterInput): Promise<LoginResponse> {

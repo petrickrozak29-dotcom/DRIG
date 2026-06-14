@@ -23,6 +23,7 @@ export interface DeveloperContentItem {
   link?: string;
   rating?: number;
   priceRange?: string;
+  ticketPrice?: string;
   openingHours?: string;
   category?: string;
   details?: string[];
@@ -53,6 +54,7 @@ export interface SmartMapItem {
   scope?: EventScope;
   rating?: number;
   priceRange?: string;
+  ticketPrice?: string;
   openingHours?: string;
   tags?: string[];
   source?: 'system' | 'user' | 'api';
@@ -71,6 +73,8 @@ export interface CommunityEventInput {
   description: string;
   image?: string;
   link?: string;
+  ticketPrice?: string;
+  openingHours?: string;
   submittedBy?: string;
 }
 
@@ -90,6 +94,7 @@ export interface CommunityCulinaryInput {
   rating?: number;
   image?: string;
   link?: string;
+  openingHours?: string;
   submittedBy?: string;
 }
 
@@ -107,6 +112,8 @@ export interface CommunityTourismInput {
   rating?: number;
   image?: string;
   link?: string;
+  ticketPrice?: string;
+  openingHours?: string;
   submittedBy?: string;
 }
 
@@ -387,11 +394,11 @@ function toManagedMapItem(type: 'tourism' | 'culinary', item: DeveloperContentIt
     latitude: Number(item.latitude ?? resolved.latitude),
     longitude: Number(item.longitude ?? resolved.longitude),
     image: item.image || (type === 'tourism' ? photo.nature : photo.food),
-    link:
-      item.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(title)}`,
+    link: item.link,
     detailUrl: `/smart-map?focus=${item.id}`,
     rating: Number(item.rating || 4.5),
     priceRange: item.priceRange,
+    ticketPrice: item.ticketPrice,
     openingHours: item.openingHours,
     tags: item.details?.length
       ? item.details
@@ -488,6 +495,8 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
         image: normalizeImageUrl(item.image, photo.event),
         link: item.link ? String(item.link) : item.sourceUrl ? String(item.sourceUrl) : undefined,
         sourceUrl: item.sourceUrl ? String(item.sourceUrl) : undefined,
+        ticketPrice: item.ticketPrice ? String(item.ticketPrice) : undefined,
+        openingHours: item.openingHours ? String(item.openingHours) : undefined,
         detailUrl: `/smart-map?focus=${id}`,
         status: (item.status || 'approved') as EventStatus,
         scope: (item.scope || resolved.scope) as EventScope,
@@ -518,6 +527,8 @@ export function submitCommunityEvent(input: CommunityEventInput) {
     longitude: resolved.longitude,
     image: input.image?.trim() || photo.event,
     link: input.link?.trim() || undefined,
+    ticketPrice: input.ticketPrice?.trim() || undefined,
+    openingHours: input.openingHours?.trim() || undefined,
     detailUrl: `/smart-map?focus=${id}`,
     status: 'pending',
     scope: resolved.scope,
@@ -545,6 +556,8 @@ export function submitCommunityEvent(input: CommunityEventInput) {
           description: newEvent.description,
           image: newEvent.image,
           link: newEvent.link,
+          ticketPrice: newEvent.ticketPrice,
+          openingHours: newEvent.openingHours,
           featureType: 'EVENT',
           categoryName: newEvent.typeLabel,
         }),
@@ -572,9 +585,9 @@ export function submitCommunityTourism(input: CommunityTourismInput) {
     latitude: resolved.latitude,
     longitude: resolved.longitude,
     image: input.image?.trim() || photo.nature,
-    link:
-      input.link?.trim() ||
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanTitle)}`,
+    link: input.link?.trim() || undefined,
+    ticketPrice: input.ticketPrice?.trim() || undefined,
+    openingHours: input.openingHours?.trim() || undefined,
     detailUrl: `/smart-map?focus=${id}`,
     status: 'pending',
     scope: resolved.scope,
@@ -601,6 +614,8 @@ export function submitCommunityTourism(input: CommunityTourismInput) {
           description: newItem.description,
           image: newItem.image,
           link: newItem.link,
+          ticketPrice: newItem.ticketPrice,
+          openingHours: newItem.openingHours,
           rating: newItem.rating,
           featureType: 'WISATA',
           categoryName: newItem.typeLabel,
@@ -628,9 +643,8 @@ export function submitCommunityCulinary(input: CommunityCulinaryInput) {
     latitude: resolved.latitude,
     longitude: resolved.longitude,
     image: input.image?.trim() || photo.food,
-    link:
-      input.link?.trim() ||
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanTitle)}`,
+    link: input.link?.trim() || undefined,
+    openingHours: input.openingHours?.trim() || undefined,
     detailUrl: `/smart-map?focus=${id}`,
     status: 'pending',
     scope: resolved.scope,
@@ -659,6 +673,7 @@ export function submitCommunityCulinary(input: CommunityCulinaryInput) {
           image: newItem.image,
           link: newItem.link,
           priceRange: newItem.priceRange,
+          openingHours: newItem.openingHours,
           rating: newItem.rating,
           featureType: 'KULINER',
           categoryName: newItem.typeLabel,
@@ -829,8 +844,11 @@ function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[]
         source: 'api',
         rating: Number(item.rating ?? 4.5),
         priceRange: item.priceRange,
+        ticketPrice: item.ticketPrice,
         openingHours: item.openingHours,
-        tags: Array.isArray(item.tags) ? item.tags : ['API'],
+        tags: Array.isArray(item.tags)
+          ? item.tags
+          : [String(item.category || item.typeLabel || item.type || 'Lainnya')],
     } as SmartMapItem;
   });
 }
@@ -921,6 +939,7 @@ export async function submitCommunityCulinaryAsync(input: CommunityCulinaryInput
       image: input.image,
       link: input.link,
       priceRange: input.priceRange,
+      openingHours: input.openingHours,
       rating: input.rating,
       featureType: 'KULINER',
       categoryName: input.typeLabel,
@@ -950,6 +969,8 @@ export async function submitCommunityTourismAsync(input: CommunityTourismInput, 
       description: input.description,
       image: input.image,
       link: input.link,
+      ticketPrice: input.ticketPrice,
+      openingHours: input.openingHours,
       rating: input.rating,
       featureType: 'WISATA',
       categoryName: 'Spot Populer',
@@ -980,6 +1001,8 @@ export async function submitCommunityEventAsync(input: CommunityEventInput, toke
       description: input.description,
       image: input.image,
       link: input.link,
+      ticketPrice: input.ticketPrice,
+      openingHours: input.openingHours,
       featureType: 'EVENT',
       categoryName: input.typeLabel,
     };

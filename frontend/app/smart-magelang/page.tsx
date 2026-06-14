@@ -9,6 +9,7 @@ import {
   Cpu,
   History,
   Lightbulb,
+  LocateFixed,
   MapPin,
   Navigation,
   Network,
@@ -161,11 +162,12 @@ export default function SmartMagelangPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [location, setLocation] = useState<{ lat: number; lng: number }>(MAGELANG_CENTER);
-  const [locationStatus, setLocationStatus] = useState('Memakai titik pusat Kota Magelang');
+  const [locationStatus, setLocationStatus] = useState('Aktifkan lokasi untuk rekomendasi terdekat');
 
-  useEffect(() => {
+  const requestLocation = () => {
     if (!('geolocation' in navigator)) return;
 
+    setLocationStatus('Meminta izin lokasi perangkat...');
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setLocation({
@@ -174,9 +176,13 @@ export default function SmartMagelangPage() {
         });
         setLocationStatus('Lokasi perangkat aktif');
       },
-      () => setLocationStatus('Izin lokasi belum aktif, memakai pusat Kota Magelang'),
+      () => setLocationStatus('Izin lokasi belum aktif, memakai pusat Magelang'),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
+  };
+
+  useEffect(() => {
+    requestLocation();
   }, []);
 
   const tripWindow = useMemo(() => {
@@ -366,6 +372,14 @@ export default function SmartMagelangPage() {
                     <MapPin className="h-4 w-4 text-emerald-300" />
                     {locationStatus}
                   </p>
+                  <button
+                    type="button"
+                    onClick={requestLocation}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg border border-cyan-400/40 px-3 py-2 text-xs font-semibold text-cyan-100 hover:border-cyan-300"
+                  >
+                    <LocateFixed className="h-4 w-4" />
+                    Aktifkan Lokasi
+                  </button>
                 </div>
 
                 {error && <p className="text-sm text-rose-300">{error}</p>}
@@ -461,7 +475,7 @@ export default function SmartMagelangPage() {
                             className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-cyan-200 hover:border-cyan-300"
                           >
                             <Navigation className="h-4 w-4" />
-                            Rute Maps
+                            Sumber
                           </a>
                         </div>
                       </article>

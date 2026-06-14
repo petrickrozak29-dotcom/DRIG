@@ -1,0 +1,2 @@
+ALTER TABLE "Submission" ADD COLUMN IF NOT EXISTS "ticketPrice" TEXT;
+ALTER TABLE "Submission" ADD COLUMN IF NOT EXISTS "openingHours" TEXT;

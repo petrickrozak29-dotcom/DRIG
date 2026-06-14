@@ -21,24 +21,15 @@ import {
   MAGELANG_CENTER,
   buildSmartMapItems,
   buildSmartMapItemsAsync,
-  eventCategories,
   formatDate,
   fetchEvents,
   withDistances,
   type CommunityEvent,
-  type EventCategory,
   type MapCategory,
   type SmartMapItemWithDistance,
 } from '../../lib/magelang-data';
 
-type SmartFilter = 'semua' | 'event-nearby' | EventCategory;
 type CategoryFilter = 'semua' | MapCategory;
-
-const smartFilters: Array<{ value: SmartFilter; label: string }> = [
-  { value: 'semua', label: 'Semua marker' },
-  { value: 'event-nearby', label: 'Event dekat saya' },
-  ...eventCategories.map((category) => ({ value: category, label: category })),
-];
 
 const categoryFilters: Array<{ value: CategoryFilter; label: string }> = [
   { value: 'semua', label: 'Semua kategori' },
@@ -60,17 +51,17 @@ function categoryClass(category: string) {
 export default function SmartMapPage() {
   const { token, isAuthenticated } = useAuth();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>(MAGELANG_CENTER);
-  const [locationStatus, setLocationStatus] = useState('Mode pusat Kota Magelang aktif');
+  const [locationStatus, setLocationStatus] = useState('Mode pusat Magelang aktif');
   const [radius, setRadius] = useState(40);
-  const [smartFilter, setSmartFilter] = useState<SmartFilter>('semua');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('semua');
+  const [typeFilter, setTypeFilter] = useState('semua');
   const [apiEvents, setApiEvents] = useState<CommunityEvent[]>([]);
   const [dataVersion, setDataVersion] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
 
   const requestLocation = () => {
     if (!('geolocation' in navigator)) {
-      setLocationStatus('Geolocation tidak tersedia, memakai pusat Kota Magelang');
+      setLocationStatus('Geolocation tidak tersedia, memakai pusat Magelang');
       return;
     }
 
@@ -105,7 +96,7 @@ export default function SmartMapPage() {
         }
       },
       () => {
-        setLocationStatus('Izin lokasi belum aktif, memakai pusat Kota Magelang');
+        setLocationStatus('Izin lokasi belum aktif, memakai pusat Magelang');
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
@@ -175,26 +166,43 @@ export default function SmartMapPage() {
   const filteredItems = useMemo(() => {
     let next: SmartMapItemWithDistance[] = allItems.filter((item) => item.distance <= radius);
 
-    if (smartFilter === 'event-nearby') {
-      next = next.filter((item) => item.category === 'event');
-    }
-
-    if (smartFilter !== 'semua' && smartFilter !== 'event-nearby') {
-      next = allItems.filter((item) => item.category === 'event' && item.typeLabel === smartFilter);
-    }
-
     if (categoryFilter !== 'semua') {
       next = next.filter((item) => item.category === categoryFilter);
     }
 
-    return next;
-  }, [allItems, radius, smartFilter, categoryFilter]);
+    if (typeFilter !== 'semua') {
+      next = next.filter((item) => item.typeLabel === typeFilter);
+    }
 
-  const nearestEvents = useMemo(
-    () =>
-      allItems.filter((item) => item.category === 'event' && item.distance <= radius).slice(0, 5),
-    [allItems, radius]
-  );
+    return next;
+  }, [allItems, radius, categoryFilter, typeFilter]);
+
+  const subcategoryOptions = useMemo(() => {
+    const scoped =
+      categoryFilter === 'semua'
+        ? allItems
+        : allItems.filter((item) => item.category === categoryFilter);
+    return Array.from(new Set(scoped.map((item) => item.typeLabel).filter(Boolean))).sort();
+  }, [allItems, categoryFilter]);
+
+  const monthlyAgenda = useMemo(() => {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+
+    return allItems
+      .filter((item) => {
+        if (!item.date) return false;
+        const date = new Date(item.date);
+        return (
+          date.getMonth() === month &&
+          date.getFullYear() === year &&
+          date.getTime() >= Date.now() - 86400000
+        );
+      })
+      .sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime())
+      .slice(0, 5);
+  }, [allItems]);
 
   const mapMarkers = useMemo(
     () => [
@@ -231,7 +239,7 @@ export default function SmartMapPage() {
                 Event, wisata, kuliner, sejarah, dan budaya dalam satu peta
               </h1>
               <p className="mt-4 max-w-3xl text-slate-300">
-                Radius diperbesar 30-50 km untuk menjangkau Kota Magelang, Borobudur, Ketep, dan
+                Radius diperbesar 30-50 km untuk menjangkau Magelang, Borobudur, Ketep, dan
                 titik sekitar. Marker dari semua fitur muncul setelah disetujui developer.
               </p>
             </div>
@@ -258,10 +266,10 @@ export default function SmartMapPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="space-y-6">
-            <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-5">
-              <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+        <section className="space-y-6">
+          <div className="grid gap-4 rounded-lg border border-slate-800 bg-slate-900/80 p-5 lg:grid-cols-[280px_minmax(0,1fr)_260px]">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
                 <SlidersHorizontal className="h-5 w-5 text-cyan-300" />
                 Radius
               </div>
@@ -281,23 +289,22 @@ export default function SmartMapPage() {
               />
             </div>
 
-            <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-5">
-              <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
                 <Filter className="h-5 w-5 text-cyan-300" />
-                Filter
+                Kategori
               </div>
-
-              <div className="grid gap-2">
-                {smartFilters.map((item) => (
+              <div className="flex flex-wrap gap-2">
+                {categoryFilters.map((item) => (
                   <button
                     key={item.value}
                     type="button"
                     onClick={() => {
-                      setSmartFilter(item.value);
-                      if (item.value !== 'semua') setCategoryFilter('semua');
+                      setCategoryFilter(item.value);
+                      setTypeFilter('semua');
                     }}
-                    className={`rounded-lg px-4 py-3 text-left text-sm font-semibold transition ${
-                      smartFilter === item.value
+                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                      categoryFilter === item.value
                         ? 'bg-cyan-400 text-slate-950'
                         : 'border border-slate-700 bg-slate-950/70 text-slate-300 hover:border-cyan-400/60'
                     }`}
@@ -306,123 +313,133 @@ export default function SmartMapPage() {
                   </button>
                 ))}
               </div>
+            </div>
 
+            <label className="block text-sm font-semibold text-slate-200">
+              Jenis kategori
               <select
-                value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value as CategoryFilter)}
-                className="mt-4 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
               >
-                {categoryFilters.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
+                <option value="semua">Semua jenis</option>
+                {subcategoryOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
                   </option>
                 ))}
               </select>
-            </div>
+            </label>
+          </div>
 
-            <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-5">
-              <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-                <CalendarDays className="h-5 w-5 text-rose-300" />
-                Event Terdekat
-              </div>
-              <div className="space-y-3">
-                {nearestEvents.map((item) => (
-                  <a
-                    key={item.id}
-                    href={`/smart-map?focus=${item.id}`}
-                    className="block rounded-lg border border-slate-800 bg-slate-950/70 p-4 transition hover:border-rose-300/60"
-                  >
-                    <p className="font-semibold text-white">{item.title}</p>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {formatDate(item.date)} - {item.distance.toFixed(1)} km
-                    </p>
-                  </a>
-                ))}
-                {nearestEvents.length === 0 && (
-                  <p className="text-sm text-slate-400">
-                    Belum ada event dalam radius {radius} km.
-                  </p>
-                )}
-              </div>
-            </div>
-          </aside>
+          <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80">
+            <LeafletMap markers={mapMarkers} center={userLocation} focusId={focusId} />
+          </div>
 
-          <section className="min-w-0">
-            <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80">
-              <LeafletMap markers={mapMarkers} center={userLocation} focusId={focusId} />
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
+            <span>{filteredItems.length} marker aktif dalam filter saat ini</span>
+            <a href="/community-form" className="font-semibold text-cyan-300 hover:text-cyan-200">
+              Tambah Konten Komunitas
+            </a>
+          </div>
 
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
-              <span>{filteredItems.length} marker aktif dalam filter saat ini</span>
-              <a href="/community-form" className="font-semibold text-cyan-300 hover:text-cyan-200">
-                Tambah Community Event
-              </a>
+          <section className="rounded-lg border border-slate-800 bg-slate-900/80 p-5">
+            <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+              <CalendarDays className="h-5 w-5 text-rose-300" />
+              Agenda Bulan Ini
             </div>
-
-            <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {filteredItems.map((item) => (
-                <article
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              {monthlyAgenda.map((item) => (
+                <a
                   key={item.id}
-                  className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
+                  href={`/smart-map?focus=${item.id}`}
+                  className="block rounded-lg border border-slate-800 bg-slate-950/70 p-4 transition hover:border-rose-300/60"
                 >
-                  <img src={item.image} alt={item.title} className="h-40 w-full object-cover" />
-                  <div className="p-5">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${categoryClass(item.category)}`}
-                      >
-                        {item.typeLabel}
-                      </span>
-                      <span className="text-xs text-slate-400">{item.distance.toFixed(1)} km</span>
-                    </div>
-                    <h2 className="text-xl font-bold text-white">{item.title}</h2>
-                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-300">
-                      {item.description}
+                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${categoryClass(item.category)}`}>
+                    {item.typeLabel}
+                  </span>
+                  <p className="mt-3 font-semibold text-white">{item.title}</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {formatDate(item.date)} - {item.distance.toFixed(1)} km
+                  </p>
+                </a>
+              ))}
+              {monthlyAgenda.length === 0 && (
+                <p className="text-sm text-slate-400">Belum ada agenda bulan ini.</p>
+              )}
+            </div>
+          </section>
+
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {filteredItems.map((item) => (
+              <article
+                key={item.id}
+                className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
+              >
+                <img src={item.image} alt={item.title} className="h-40 w-full object-cover" />
+                <div className="p-5">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${categoryClass(item.category)}`}
+                    >
+                      {item.typeLabel}
+                    </span>
+                    <span className="text-xs text-slate-400">{item.distance.toFixed(1)} km</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-white">{item.title}</h2>
+                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-300">
+                    {item.description}
+                  </p>
+                  <div className="mt-4 space-y-2 text-sm text-slate-400">
+                    <p className="flex gap-2">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+                      <span>{item.location || 'Magelang'}</span>
                     </p>
-                    <div className="mt-4 space-y-2 text-sm text-slate-400">
+                    {item.date && (
                       <p className="flex gap-2">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-                        <span>{item.location}</span>
+                        <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                        <span>
+                          {formatDate(item.date)}
+                          {item.time ? `, ${item.time}` : ''}
+                        </span>
                       </p>
-                      {item.date && (
-                        <p className="flex gap-2">
-                          <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
-                          <span>
-                            {formatDate(item.date)}
-                            {item.time ? `, ${item.time}` : ''}
-                          </span>
-                        </p>
-                      )}
-                      <p className="flex gap-2">
-                        <Navigation className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-                        <span>Estimasi {item.estimatedTravelTime} menit perjalanan</span>
-                      </p>
-                    </div>
-                    <div className="mt-5 grid grid-cols-2 gap-3">
+                    )}
+                    {item.openingHours && <p>Jam: {item.openingHours}</p>}
+                    {(item.ticketPrice || item.priceRange) && (
+                      <p>Harga: {item.ticketPrice || item.priceRange}</p>
+                    )}
+                    <p className="flex gap-2">
+                      <Navigation className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                      <span>Estimasi {item.estimatedTravelTime} menit perjalanan</span>
+                    </p>
+                  </div>
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <a
+                      href={`/smart-map?focus=${item.id}`}
+                      className="rounded-lg bg-slate-800 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
+                    >
+                      Lihat Detail
+                    </a>
+                    {item.link ? (
                       <a
-                        href={`/smart-map?focus=${item.id}`}
-                        className="rounded-lg bg-slate-800 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
-                      >
-                        Lihat Detail
-                      </a>
-                      <a
-                        href={
-                          item.link ||
-                          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`
-                        }
+                        href={item.link}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
                       >
-                        Open Link
+                        Sumber
                         <ExternalLink className="h-4 w-4" />
                       </a>
-                    </div>
+                    ) : (
+                      <span className="rounded-lg border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-500">
+                        Sumber
+                      </span>
+                    )}
                   </div>
-                </article>
-              ))}
-            </div>
-          </section>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
       </main>
       <Footer />

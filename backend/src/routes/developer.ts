@@ -157,6 +157,26 @@ router.get('/users', async (_req, res) => {
   res.json(users);
 });
 
+router.post('/users/developer', async (req, res) => {
+  try {
+    const { name, email } = req.body || {};
+    const password =
+      typeof req.body?.password === 'string' && req.body.password.trim()
+        ? req.body.password.trim()
+        : authService.generateDeveloperPassword();
+
+    const user = await authService.createDeveloperAccount({
+      name: String(name || '').trim(),
+      email: String(email || '').trim(),
+      password,
+    });
+
+    res.status(201).json({ user, password });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Gagal membuat akun developer.' });
+  }
+});
+
 router.patch('/users/:id/toggle-active', async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.params.id },
@@ -272,8 +292,10 @@ router.post('/content/:type', async (req, res) => {
       latitude: payload.latitude,
       longitude: payload.longitude,
       image: payload.image,
-      link: payload.link,
+      link: payload.link || undefined,
       priceRange: payload.priceRange,
+      ticketPrice: payload.ticketPrice,
+      openingHours: payload.openingHours,
       rating: payload.rating !== undefined && payload.rating !== '' ? Number(payload.rating) : undefined,
       date: payload.date ? new Date(payload.date) : undefined,
     });
@@ -305,6 +327,8 @@ router.put('/content/:type/:id', async (req, res) => {
       image: payload.image ?? null,
       link: payload.link ?? null,
       priceRange: payload.priceRange ?? null,
+      ticketPrice: payload.ticketPrice ?? null,
+      openingHours: payload.openingHours ?? null,
       rating: payload.rating !== undefined && payload.rating !== '' ? Number(payload.rating) : null,
       date: payload.date ? new Date(payload.date) : null,
     });

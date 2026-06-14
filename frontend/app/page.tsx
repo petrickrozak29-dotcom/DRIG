@@ -25,7 +25,7 @@ const modules = [
     title: 'Smart Tourism',
     description:
       'Discover Magelang destinations with location details, ratings, routes, and travel context.',
-    icon: 'TO',
+    icon: 'St ✨',
     href: '/wisata',
     gradient: 'from-blue-600 via-blue-500 to-blue-400',
     bgPattern:
@@ -34,7 +34,7 @@ const modules = [
   {
     title: 'Smart Culinary',
     description: 'Find local food, UMKM spots, price ranges, ratings, and map-ready directions.',
-    icon: 'CU',
+    icon: 'Sc 🍜',
     href: '/kuliner',
     gradient: 'from-orange-600 via-amber-500 to-yellow-400',
     bgPattern:
@@ -43,7 +43,7 @@ const modules = [
   {
     title: 'Cultural Heritage',
     description: 'Explore Magelang cultural stories, traditions, and local creative communities.',
-    icon: 'CH',
+    icon: 'Ch 🎭',
     href: '/budaya',
     gradient: 'from-fuchsia-600 via-rose-500 to-orange-400',
     bgPattern:
@@ -52,7 +52,7 @@ const modules = [
   {
     title: 'Historical Timeline',
     description: 'Read the major milestones, legacy sites, and historical identity of Magelang.',
-    icon: 'HI',
+    icon: 'Hi 📜',
     href: '/sejarah',
     gradient: 'from-violet-700 via-purple-600 to-indigo-400',
     bgPattern:
@@ -61,7 +61,7 @@ const modules = [
   {
     title: 'Smart Interactive Map',
     description: 'Navigate approved tourism, culinary, and event locations in one interactive map.',
-    icon: 'MP',
+    icon: 'Mp 🗺️',
     href: '/smart-map',
     gradient: 'from-green-600 via-emerald-500 to-teal-400',
     bgPattern:
@@ -70,7 +70,7 @@ const modules = [
   {
     title: 'Event & Festival',
     description: 'Track city events, festivals, expos, and community agendas approved by developer.',
-    icon: 'EV',
+    icon: 'Ev 🎟️',
     href: '/event',
     gradient: 'from-pink-600 via-rose-500 to-red-400',
     bgPattern:
@@ -80,7 +80,7 @@ const modules = [
     title: 'Smart Magelang',
     description:
       'Plan AI itineraries and explore technology, smart city ideas, investment, tourism, and creative economy potential.',
-    icon: 'SM',
+    icon: 'Sm 🤖',
     href: '/smart-magelang',
     gradient: 'from-cyan-600 via-sky-500 to-emerald-400',
     bgPattern:
@@ -89,7 +89,7 @@ const modules = [
   {
     title: 'Community Form',
     description: 'Submit tourism, culinary, and event recommendations for developer approval.',
-    icon: 'CF',
+    icon: 'Cf 📝',
     href: '/community-form',
     gradient: 'from-teal-600 via-lime-500 to-yellow-400',
     bgPattern:
@@ -216,14 +216,14 @@ export default function Home() {
             variants={itemVariants}
             className="mb-4 inline-block rounded-full border border-cyan-400/50 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-4 py-2 text-sm font-semibold text-cyan-300"
           >
-            Transformasi Digital Kota Magelang
+            Transformasi Digital Magelang
           </motion.p>
 
           <motion.h1
             variants={itemVariants}
             className="mt-6 bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text text-6xl font-bold text-transparent sm:text-7xl"
           >
-            MAGELANGVERSE.ID
+            Future Magelang
           </motion.h1>
 
           <motion.p

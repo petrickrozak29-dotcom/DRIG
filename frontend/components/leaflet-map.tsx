@@ -16,6 +16,9 @@ interface MarkerItem {
   detailUrl?: string;
   distance?: number;
   estimatedTravelTime?: number;
+  priceRange?: string;
+  ticketPrice?: string;
+  openingHours?: string;
 }
 
 interface LeafletMapProps {
@@ -49,9 +52,16 @@ function getPopupHtml(marker: MarkerItem) {
   const description = escapeHtml(marker.description);
   const distance = typeof marker.distance === 'number' ? `${marker.distance.toFixed(1)} km` : '';
   const detailUrl = marker.detailUrl || `/smart-map?focus=${encodeURIComponent(String(marker.id))}`;
-  const openUrl =
-    marker.link ||
-    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(marker.location || marker.title)}`;
+  const sourceButton = marker.link
+    ? `<a href="${escapeHtml(marker.link)}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;background:#0891b2;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</a>`
+    : `<span style="flex:1;text-align:center;background:#e2e8f0;color:#64748b;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</span>`;
+  const extra = [marker.openingHours, marker.ticketPrice || marker.priceRange]
+    .filter(Boolean)
+    .map(
+      (item) =>
+        `<p style="font-size:11px;line-height:1.35;margin:0 0 6px;color:#64748b;">${escapeHtml(item)}</p>`
+    )
+    .join('');
   const image = marker.image
     ? `<img src="${escapeHtml(marker.image)}" alt="${title}" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:10px;" />`
     : '';
@@ -63,9 +73,10 @@ function getPopupHtml(marker: MarkerItem) {
       <span style="display:inline-block;font-size:11px;font-weight:700;color:#075985;background:#e0f2fe;border-radius:999px;padding:3px 8px;margin-bottom:8px;">${typeLabel}</span>
       <p style="font-size:12px;line-height:1.45;margin:0 0 8px;color:#334155;">${description}</p>
       <p style="font-size:11px;line-height:1.35;margin:0 0 10px;color:#64748b;">${location}${distance ? ` • ${distance}` : ''}</p>
+      ${extra}
       <div style="display:flex;gap:8px;">
         <a href="${escapeHtml(detailUrl)}" style="flex:1;text-align:center;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Lihat Detail</a>
-        <a href="${escapeHtml(openUrl)}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;background:#0891b2;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Open Link</a>
+        ${sourceButton}
       </div>
     </div>
   `;

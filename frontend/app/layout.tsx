@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '../contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'MAGELANGVERSE.ID',
+  title: 'Future Magelang',
   description: 'Smart Tourism & Digital City Portal Magelang',
 };
 

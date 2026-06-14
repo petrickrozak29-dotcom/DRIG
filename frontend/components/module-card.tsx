@@ -38,7 +38,13 @@ export default function ModuleCard({
 
       {/* Content */}
       <div className="relative z-10 p-8">
-        <div className="mb-6 text-6xl drop-shadow-lg">{icon}</div>
+        <motion.div
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+          className="mb-6 text-5xl drop-shadow-lg"
+        >
+          {icon}
+        </motion.div>
         <h3 className="text-2xl font-bold text-white drop-shadow-md">{title}</h3>
         <p className="mt-3 text-white/90 drop-shadow-sm">{description}</p>
         <Link

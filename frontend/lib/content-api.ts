@@ -22,6 +22,8 @@ export interface ManagedContentItem {
   image?: string;
   link?: string | null;
   priceRange?: string | null;
+  ticketPrice?: string | null;
+  openingHours?: string | null;
   rating?: number | null;
   date?: string | null;
   status: ContentStatus;

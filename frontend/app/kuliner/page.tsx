@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, DollarSign, ExternalLink, MapPin, PlusCircle, Star, Utensils } from 'lucide-react';
+import { ChefHat, Clock, ExternalLink, MapPin, PlusCircle, Star, Utensils } from 'lucide-react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
@@ -19,6 +19,7 @@ type SmartMapItem = {
   image?: string;
   link?: string;
   rating?: number;
+  openingHours?: string;
   tags?: string[];
 };
 
@@ -43,6 +44,7 @@ export default function KulinerPage() {
           ...item,
           rating: item.rating || 4.5,
           priceRange: item.priceRange || 'Harga menyesuaikan',
+          openingHours: item.openingHours || 'Jam buka menyesuaikan',
           tags: item.tags || [item.typeLabel || 'Kuliner'],
         })) as SmartMapItem[];
 
@@ -190,8 +192,14 @@ export default function KulinerPage() {
                     <span>{item.location || 'Magelang'}</span>
                   </p>
                   <p className="flex gap-2">
-                    <DollarSign className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center text-xs font-bold text-emerald-300">
+                      Rp
+                    </span>
                     <span>{item.priceRange || 'Harga menyesuaikan'}</span>
+                  </p>
+                  <p className="flex gap-2">
+                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+                    <span>{item.openingHours}</span>
                   </p>
                 </div>
 
@@ -213,18 +221,21 @@ export default function KulinerPage() {
                   >
                     Smart Map
                   </a>
-                  <a
-                    href={
-                      item.link ||
-                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title)}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
-                  >
-                    Maps
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
+                  {item.link ? (
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
+                    >
+                      Sumber
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  ) : (
+                    <span className="rounded-lg border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-500">
+                      Sumber
+                    </span>
+                  )}
                 </div>
               </div>
             </article>

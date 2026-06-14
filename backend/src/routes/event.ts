@@ -44,6 +44,8 @@ router.post('/', async (req, res) => {
       category,
       typeLabel,
       submittedById,
+      ticketPrice,
+      openingHours,
     } = req.body;
 
     if (!title || !date || !location || !description) {
@@ -64,6 +66,8 @@ router.post('/', async (req, res) => {
         image ||
         'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1000&q=80',
       link,
+      ticketPrice,
+      openingHours,
       rating: Number(req.body.rating) || undefined,
       date: new Date(date),
       submittedById,

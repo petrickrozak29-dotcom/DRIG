@@ -5,13 +5,17 @@ import {
   BarChart3,
   CalendarDays,
   CheckCircle2,
+  Clock,
   Eye,
   ImagePlus,
+  KeyRound,
+  Link as LinkIcon,
   MapPin,
   Pencil,
   Save,
   Star,
   Trash2,
+  UserPlus,
   Users,
   XCircle,
 } from 'lucide-react';
@@ -36,11 +40,11 @@ import {
 } from '../../lib/content-api';
 
 type SectionKey = 'overview' | 'categories' | 'tourism' | 'culinary' | 'event' | 'culture' | 'history' | 'users';
-type CategoryFeatureKey = 'WISATA' | 'KULINER' | 'EVENT';
+type CategoryFeatureKey = 'WISATA' | 'KULINER' | 'EVENT' | 'CULTURE' | 'HISTORY';
 type StatusFilter = 'pending' | 'approved' | 'rejected';
 
 const sections: Array<{ key: SectionKey; label: string }> = [
-  { key: 'overview', label: 'Statistik Umum' },
+  { key: 'overview', label: 'Statistik Fitur' },
   { key: 'categories', label: 'Kelola Kategori' },
   { key: 'tourism', label: 'Kelola Wisata' },
   { key: 'culinary', label: 'Kelola Kuliner' },
@@ -56,11 +60,11 @@ const defaultForm = {
   description: '',
   typeLabel: '',
   location: '',
-  latitude: '',
-  longitude: '',
   image: '',
   link: '',
   priceRange: '',
+  ticketPrice: '',
+  openingHours: '',
   rating: '',
   date: '',
 };
@@ -76,6 +80,8 @@ function sectionToFeature(section: DeveloperType): CategoryFeatureKey | null {
   if (section === 'tourism') return 'WISATA';
   if (section === 'culinary') return 'KULINER';
   if (section === 'event') return 'EVENT';
+  if (section === 'culture') return 'CULTURE';
+  if (section === 'history') return 'HISTORY';
   return null;
 }
 
@@ -102,12 +108,11 @@ function toFormState(item?: ManagedContentItem | null) {
     description: item.description || '',
     typeLabel: item.typeLabel || item.category || '',
     location: item.location || '',
-    latitude: item.latitude !== undefined && item.latitude !== null ? String(item.latitude) : '',
-    longitude:
-      item.longitude !== undefined && item.longitude !== null ? String(item.longitude) : '',
     image: item.image || '',
     link: item.link || '',
     priceRange: item.priceRange || '',
+    ticketPrice: item.ticketPrice || '',
+    openingHours: item.openingHours || '',
     rating: item.rating !== undefined && item.rating !== null ? String(item.rating) : '',
     date: item.date ? String(item.date).slice(0, 10) : '',
   };
@@ -132,8 +137,12 @@ export default function DeveloperPage() {
     WISATA: [],
     KULINER: [],
     EVENT: [],
+    CULTURE: [],
+    HISTORY: [],
   });
   const [formState, setFormState] = useState(defaultForm);
+  const [developerForm, setDeveloperForm] = useState({ name: '', email: '', password: '' });
+  const [newDeveloperPassword, setNewDeveloperPassword] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -151,12 +160,14 @@ export default function DeveloperPage() {
   };
 
   const refreshCategories = async () => {
-    const [wisata, kuliner, event] = await Promise.all([
+    const [wisata, kuliner, event, culture, history] = await Promise.all([
       fetchCategories('WISATA'),
       fetchCategories('KULINER'),
       fetchCategories('EVENT'),
+      fetchCategories('CULTURE'),
+      fetchCategories('HISTORY'),
     ]);
-    setCategoryMap({ WISATA: wisata, KULINER: kuliner, EVENT: event });
+    setCategoryMap({ WISATA: wisata, KULINER: kuliner, EVENT: event, CULTURE: culture, HISTORY: history });
   };
 
   const refreshContent = async (section?: DeveloperType) => {
@@ -210,15 +221,16 @@ export default function DeveloperPage() {
 
   const activeFeature = currentSection ? sectionToFeature(currentSection) : null;
 
-  const systemStatCards = useMemo<Array<[string, number]>>(
+  const moderationStatCards = useMemo<Array<[string, number]>>(
     () =>
       overview
         ? [
-            ['Total User', overview.stats.totalUser],
-            ['Total Artikel', overview.stats.totalArtikel],
-            ['Total Lokasi', overview.stats.totalLokasi],
-            ['Total Kategori', overview.stats.totalKategori],
             ['Total Submission', overview.stats.totalSubmission],
+            ['Menunggu Review', overview.stats.totalPending],
+            ['Published', overview.stats.totalApproved],
+            ['Rejected', overview.stats.totalRejected],
+            ['Total Kategori', overview.stats.totalKategori],
+            ['Total User', overview.stats.totalUser],
           ]
         : [],
     [overview]
@@ -280,11 +292,11 @@ export default function DeveloperPage() {
         typeLabel: formState.typeLabel.trim(),
         category: formState.typeLabel.trim(),
         location: formState.location.trim() || undefined,
-        latitude: formState.latitude ? Number(formState.latitude) : undefined,
-        longitude: formState.longitude ? Number(formState.longitude) : undefined,
         image: formState.image.trim() || undefined,
         link: formState.link.trim() || undefined,
         priceRange: formState.priceRange.trim() || undefined,
+        ticketPrice: formState.ticketPrice.trim() || undefined,
+        openingHours: formState.openingHours.trim() || undefined,
         rating: formState.rating ? Number(formState.rating) : undefined,
         date: formState.date || undefined,
       };
@@ -358,6 +370,42 @@ export default function DeveloperPage() {
     }
   };
 
+  const handleCreateDeveloper = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!token) return;
+
+    setStatusMessage('Membuat akun developer...');
+    setNewDeveloperPassword('');
+
+    try {
+      const payload = await apiJson<{
+        user: OverviewPayload['users'][number];
+        password: string;
+      }>('/api/developer/users/developer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: developerForm.name,
+          email: developerForm.email,
+          password: developerForm.password || undefined,
+        }),
+      });
+
+      setUsers((current) => {
+        const withoutDuplicate = current.filter((item) => item.id !== payload.user.id);
+        return [payload.user, ...withoutDuplicate];
+      });
+      setDeveloperForm({ name: '', email: '', password: '' });
+      setNewDeveloperPassword(payload.password);
+      setStatusMessage(`Akun developer ${payload.user.email} siap digunakan.`);
+    } catch (error: any) {
+      setStatusMessage(error.message || 'Gagal membuat akun developer.');
+    }
+  };
+
   if (loading || !isDeveloper) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
@@ -375,7 +423,7 @@ export default function DeveloperPage() {
             <BarChart3 className="h-4 w-4" />
             Dashboard Developer
           </p>
-          <h1 className="mt-3 text-4xl font-bold">Kelola MAGELANGVERSE.ID</h1>
+          <h1 className="mt-3 text-4xl font-bold">Kelola Future Magelang</h1>
           <p className="mt-3 text-slate-300">{user?.email}</p>
         </section>
 
@@ -415,7 +463,7 @@ export default function DeveloperPage() {
               <div className="space-y-6">
                 <section>
                   <h2 className="mb-4 text-2xl font-semibold text-white">
-                    Statistik Per Fitur
+                    Statistik Fitur
                   </h2>
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {(overview?.featureDetails || []).map((item) => (
@@ -425,9 +473,9 @@ export default function DeveloperPage() {
                 </section>
 
                 <section>
-                  <h2 className="mb-4 text-2xl font-semibold text-white">Detail Sistem</h2>
+                  <h2 className="mb-4 text-2xl font-semibold text-white">Ringkasan Moderasi</h2>
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {systemStatCards.map(([label, value]) => (
+                    {moderationStatCards.map(([label, value]) => (
                       <StatCard key={label} label={label} value={Number(value)} />
                     ))}
                   </div>
@@ -481,17 +529,65 @@ export default function DeveloperPage() {
             )}
 
             {active === 'users' && (
-              <section className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
-                <h2 className="flex items-center gap-2 text-2xl font-semibold">
-                  <Users className="h-6 w-6 text-cyan-300" />
-                  Kelola Pengguna
-                </h2>
+              <section className="space-y-6">
+                <div className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
+                  <h2 className="flex items-center gap-2 text-2xl font-semibold">
+                    <UserPlus className="h-6 w-6 text-cyan-300" />
+                    Tambah Developer
+                  </h2>
+                  <form onSubmit={handleCreateDeveloper} className="mt-5 grid gap-4 md:grid-cols-3">
+                    <Field
+                      label="Nama"
+                      value={developerForm.name}
+                      onChange={(value) =>
+                        setDeveloperForm((current) => ({ ...current, name: value }))
+                      }
+                      required
+                    />
+                    <Field
+                      label="Email"
+                      type="email"
+                      value={developerForm.email}
+                      onChange={(value) =>
+                        setDeveloperForm((current) => ({ ...current, email: value }))
+                      }
+                      required
+                    />
+                    <Field
+                      label="Password Awal (Opsional)"
+                      value={developerForm.password}
+                      onChange={(value) =>
+                        setDeveloperForm((current) => ({ ...current, password: value }))
+                      }
+                      placeholder="Kosongkan untuk dibuat otomatis"
+                    />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950 hover:bg-cyan-300 md:col-span-3"
+                    >
+                      <KeyRound className="h-5 w-5" />
+                      Buat / Beri Akses Developer
+                    </button>
+                  </form>
+                  {newDeveloperPassword && (
+                    <div className="mt-4 rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                      Password awal: <span className="font-semibold">{newDeveloperPassword}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
+                  <h2 className="flex items-center gap-2 text-2xl font-semibold">
+                    <Users className="h-6 w-6 text-cyan-300" />
+                    Kelola Pengguna
+                  </h2>
                 <div className="mt-5 overflow-x-auto">
                   <table className="w-full min-w-[760px] text-left text-sm">
                     <thead className="text-slate-400">
                       <tr>
                         <th className="border-b border-slate-800 py-3 pr-4">Nama</th>
                         <th className="border-b border-slate-800 py-3 pr-4">Email</th>
+                        <th className="border-b border-slate-800 py-3 pr-4">Role</th>
                         <th className="border-b border-slate-800 py-3 pr-4">Status</th>
                         <th className="border-b border-slate-800 py-3 pr-4">Tanggal Daftar</th>
                         <th className="border-b border-slate-800 py-3 pr-4">Aksi</th>
@@ -502,6 +598,9 @@ export default function DeveloperPage() {
                         <tr key={item.id} className="border-b border-slate-800/70">
                           <td className="py-4 pr-4 font-semibold text-white">{item.name}</td>
                           <td className="py-4 pr-4 text-slate-300">{item.email}</td>
+                          <td className="py-4 pr-4 text-slate-300">
+                            {item.role === 'ADMIN' ? 'Developer' : 'User'}
+                          </td>
                           <td className="py-4 pr-4">
                             <span
                               className={`rounded-full border px-3 py-1 text-xs font-semibold ${
@@ -518,15 +617,21 @@ export default function DeveloperPage() {
                             <button
                               type="button"
                               onClick={() => toggleUser(item.id)}
+                              disabled={item.role === 'ADMIN'}
                               className="rounded-lg border border-rose-500/40 px-3 py-2 text-rose-200 hover:border-rose-300"
                             >
-                              {item.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                              {item.role === 'ADMIN'
+                                ? 'Developer'
+                                : item.isActive
+                                  ? 'Nonaktifkan'
+                                  : 'Aktifkan'}
                             </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                </div>
                 </div>
               </section>
             )}
@@ -680,21 +785,8 @@ function ContentFormCard({
               label="Lokasi"
               value={formState.location}
               onChange={(value) => setFormState((current) => ({ ...current, location: value }))}
+              placeholder="Contoh: Alun-alun Magelang"
             />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field
-                label="Latitude"
-                type="number"
-                value={formState.latitude}
-                onChange={(value) => setFormState((current) => ({ ...current, latitude: value }))}
-              />
-              <Field
-                label="Longitude"
-                type="number"
-                value={formState.longitude}
-                onChange={(value) => setFormState((current) => ({ ...current, longitude: value }))}
-              />
-            </div>
           </>
         )}
 
@@ -707,11 +799,26 @@ function ContentFormCard({
           />
         )}
 
-        {isCulinary && (
+        <Field
+          label={isEvent ? 'Jam Buka / Open Gate' : 'Jam Buka - Tutup'}
+          value={formState.openingHours}
+          onChange={(value) => setFormState((current) => ({ ...current, openingHours: value }))}
+          placeholder={isEvent ? 'Contoh: Open gate 18.00 WIB' : 'Contoh: 08.00 - 17.00 WIB'}
+        />
+
+        {isCulinary ? (
           <Field
             label="Rentang Harga"
             value={formState.priceRange}
             onChange={(value) => setFormState((current) => ({ ...current, priceRange: value }))}
+            placeholder="Contoh: Rp 15.000 - Rp 50.000"
+          />
+        ) : (
+          <Field
+            label="Harga / Tiket Masuk"
+            value={formState.ticketPrice}
+            onChange={(value) => setFormState((current) => ({ ...current, ticketPrice: value }))}
+            placeholder="Contoh: Rp 25.000 atau Gratis"
           />
         )}
 
@@ -727,12 +834,6 @@ function ContentFormCard({
             step="0.1"
           />
         )}
-
-        <Field
-          label="URL Gambar"
-          value={formState.image}
-          onChange={(value) => setFormState((current) => ({ ...current, image: value }))}
-        />
 
         <label className="block text-sm font-semibold text-slate-200">
           Upload Gambar
@@ -751,9 +852,10 @@ function ContentFormCard({
         )}
 
         <Field
-          label="Link/Sumber"
+          label="Link/Sumber (Opsional)"
           value={formState.link}
           onChange={(value) => setFormState((current) => ({ ...current, link: value }))}
+          placeholder="https://..."
         />
 
         <div className="flex gap-3">
@@ -837,7 +939,25 @@ function ContentCard({
               {formatDate(item.date)}
             </span>
           )}
-          {item.priceRange && <span>Harga: {item.priceRange}</span>}
+          {item.openingHours && (
+            <span className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-sky-300" />
+              {item.openingHours}
+            </span>
+          )}
+          {item.priceRange && <span>Rentang harga: {item.priceRange}</span>}
+          {item.ticketPrice && <span>Harga/tiket: {item.ticketPrice}</span>}
+          {item.link && (
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 text-cyan-200 hover:text-cyan-100"
+            >
+              <LinkIcon className="h-4 w-4" />
+              Sumber
+            </a>
+          )}
           {item.rating !== undefined && item.rating !== null && (
             <span className="flex items-center gap-2">
               <Star className="h-4 w-4 fill-amber-300 text-amber-300" />

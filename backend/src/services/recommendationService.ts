@@ -87,8 +87,30 @@ function matchesInterest(candidate: any, interests: string[]) {
   });
 }
 
-function hasCoordinates(item: SubmissionWithRelations) {
-  return Number.isFinite(item.latitude) && Number.isFinite(item.longitude);
+const knownLocations = [
+  { match: ['alun', 'alun-alun'], latitude: -7.4797, longitude: 110.2177 },
+  { match: ['aim artos', 'artos', 'grand artos'], latitude: -7.4912, longitude: 110.2265 },
+  { match: ['borobudur'], latitude: -7.6079, longitude: 110.2038 },
+  { match: ['taruna nusantara'], latitude: -7.5013, longitude: 110.1835 },
+  { match: ['ketep'], latitude: -7.4943, longitude: 110.3811 },
+  { match: ['kyai langgeng', 'taman kyai'], latitude: -7.4758, longitude: 110.2091 },
+  { match: ['tidar', 'gunung tidar', 'puncak tidar'], latitude: -7.4894, longitude: 110.2221 },
+  { match: ['mendut'], latitude: -7.6047, longitude: 110.2304 },
+  { match: ['getuk trio', 'gethuk trio'], latitude: -7.4725, longitude: 110.217 },
+  { match: ['kupat tahu'], latitude: -7.4812, longitude: 110.2229 },
+];
+
+function resolveSubmissionCoordinates(item: SubmissionWithRelations | any) {
+  if (Number.isFinite(item.latitude) && Number.isFinite(item.longitude)) {
+    return { latitude: Number(item.latitude), longitude: Number(item.longitude) };
+  }
+
+  const text = `${item.location || ''} ${item.title || item.name || ''}`.toLowerCase();
+  const found = knownLocations.find((location) =>
+    location.match.some((keyword) => text.includes(keyword))
+  );
+
+  return found || MAGELANG_CENTER;
 }
 
 function slugify(value: string) {
@@ -130,10 +152,7 @@ async function getRouteCandidates(
   });
 
   const tourismRecordsSub = submissions
-    .filter(
-      (item: SubmissionWithRelations) =>
-        item.featureType === 'WISATA' && hasCoordinates(item)
-    )
+    .filter((item: SubmissionWithRelations) => item.featureType === 'WISATA')
     .map((item: SubmissionWithRelations) => ({
       ...item,
       name: item.title,
@@ -142,10 +161,7 @@ async function getRouteCandidates(
     }));
 
   const culinaryRecords = submissions
-    .filter(
-      (item: SubmissionWithRelations) =>
-        item.featureType === 'KULINER' && hasCoordinates(item)
-    )
+    .filter((item: SubmissionWithRelations) => item.featureType === 'KULINER')
     .map((item: SubmissionWithRelations) => ({
       ...item,
       name: item.title,
@@ -154,10 +170,7 @@ async function getRouteCandidates(
     }));
 
   const eventRecords = submissions
-    .filter(
-      (item: SubmissionWithRelations) =>
-        item.featureType === 'EVENT' && hasCoordinates(item)
-    )
+    .filter((item: SubmissionWithRelations) => item.featureType === 'EVENT')
     .map((item: SubmissionWithRelations) => ({
       ...item,
       name: item.title,
@@ -166,7 +179,7 @@ async function getRouteCandidates(
     }));
 
   const historyRecords = submissions
-    .filter((item: SubmissionWithRelations) => item.featureType === 'HISTORY' && hasCoordinates(item))
+    .filter((item: SubmissionWithRelations) => item.featureType === 'HISTORY')
     .map((item: SubmissionWithRelations) => ({
       ...item,
       name: item.title,
@@ -175,7 +188,7 @@ async function getRouteCandidates(
     }));
 
   const cultureRecords = submissions
-    .filter((item: SubmissionWithRelations) => item.featureType === 'CULTURE' && hasCoordinates(item))
+    .filter((item: SubmissionWithRelations) => item.featureType === 'CULTURE')
     .map((item: SubmissionWithRelations) => ({
       ...item,
       name: item.title,
@@ -197,8 +210,9 @@ async function getRouteCandidates(
   return source
     .map((item) => {
       const record = item as any;
-      const latitude = Number(record.latitude);
-      const longitude = Number(record.longitude);
+      const coords = resolveSubmissionCoordinates(record);
+      const latitude = coords.latitude;
+      const longitude = coords.longitude;
       const distance = haversineDistance(origin.latitude, origin.longitude, latitude, longitude);
       const mapPrefix =
         record.kind === 'event'
@@ -232,6 +246,9 @@ async function getRouteCandidates(
           link:
             record.link ||
             `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(record.name || record.title)}`,
+          openingHours: record.openingHours,
+          ticketPrice: record.ticketPrice,
+          priceRange: record.priceRange,
           latitude,
           longitude,
         },

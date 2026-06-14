@@ -49,7 +49,7 @@ export default function Navbar() {
     <header className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 text-sm text-slate-100 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <Link href="/" className="font-semibold text-white">
-          MAGELANGVERSE.ID
+          Future Magelang
         </Link>
         <nav className="flex flex-wrap items-center gap-3 lg:justify-end">
           {isDeveloper ? (
