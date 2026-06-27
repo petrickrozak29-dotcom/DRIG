@@ -121,8 +121,7 @@ export default function KulinerPage() {
           </div>
           <h1 className="text-4xl font-bold sm:text-5xl">Kuliner Khas Magelang</h1>
           <p className="mx-auto mt-4 max-w-3xl text-slate-300">
-            Rekomendasi makanan khas, UMKM, dan titik kuliner Magelang yang sudah dipublish kini
-            muncul langsung dari backend.
+            Rekomendasi kuliner makanan dan minuman khas dari Magelang.
           </p>
         </section>
 

@@ -1,5 +1,6 @@
 import prisma from './prismaClient';
 import { log } from './logger';
+import { resolveCoordinates } from '../utils/geo';
 import type {
   SubmissionFeatureType,
   SubmissionRecord,
@@ -46,6 +47,13 @@ export interface UpdateSubmissionInput {
 export const submissionService = {
   async createSubmission(input: CreateSubmissionInput): Promise<SubmissionRecord> {
     const { categoryName, featureType, ...rest } = input;
+    const coordinates = resolveCoordinates({
+      latitude: input.latitude,
+      longitude: input.longitude,
+      location: input.location,
+      link: input.link,
+      title: input.title,
+    });
 
     // Find or create category
     let category = await prisma.category.findFirst({
@@ -60,6 +68,8 @@ export const submissionService = {
     let newSubmission: SubmissionRecord;
     const data = {
       ...rest,
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
       featureType,
       status: 'PENDING',
       categoryId: category.id,
@@ -90,8 +100,8 @@ export const submissionService = {
       await prisma.notification.create({
         data: {
           type: 'SUBMISSION_CREATED',
-          message: `New submission created: ${newSubmission.title}`,
-          payload: JSON.stringify({ submissionId: newSubmission.id, featureType }),
+          message: `Submission baru "${newSubmission.title}" menunggu review`,
+          payload: JSON.stringify({ status: newSubmission.status, featureType }),
         },
       });
     } catch (err) {
@@ -109,6 +119,9 @@ export const submissionService = {
     }
 
     const featureType = input.featureType || (current.featureType as SubmissionFeatureType);
+    const nextLocation = input.location !== undefined ? input.location : current.location;
+    const nextLink = input.link !== undefined ? input.link : current.link;
+    const nextTitle = input.title !== undefined ? input.title : current.title;
     const data: any = {};
 
     if (input.title !== undefined) data.title = input.title;
@@ -124,6 +137,24 @@ export const submissionService = {
     if (input.rating !== undefined) data.rating = input.rating;
     if (input.date !== undefined) data.date = input.date;
     if (input.featureType !== undefined) data.featureType = featureType;
+
+    if (
+      input.latitude !== undefined ||
+      input.longitude !== undefined ||
+      input.location !== undefined ||
+      input.link !== undefined ||
+      input.title !== undefined
+    ) {
+      const coordinates = resolveCoordinates({
+        latitude: input.latitude !== undefined ? input.latitude : current.latitude,
+        longitude: input.longitude !== undefined ? input.longitude : current.longitude,
+        location: nextLocation,
+        link: nextLink,
+        title: nextTitle,
+      });
+      data.latitude = coordinates.latitude;
+      data.longitude = coordinates.longitude;
+    }
 
     if (input.categoryName !== undefined) {
       let category = await prisma.category.findFirst({
@@ -230,8 +261,8 @@ export const submissionService = {
           data: {
             userId: updated.submittedById,
             type: 'SUBMISSION_STATUS_CHANGED',
-            message: `Submission \"${updated.title}\" status changed to ${updated.status.toLowerCase()}`,
-            payload: JSON.stringify({ submissionId: updated.id, status: updated.status }),
+            message: `Status submission "${updated.title}" menjadi ${updated.status.toLowerCase()}`,
+            payload: JSON.stringify({ status: updated.status }),
           },
         });
       }
@@ -241,8 +272,8 @@ export const submissionService = {
         await prisma.notification.create({
           data: {
             type: 'SUBMISSION_PUBLISHED',
-            message: `Submission \"${updated.title}\" has been published`,
-            payload: JSON.stringify({ submissionId: updated.id }),
+            message: `Submission "${updated.title}" sudah dipublikasikan`,
+            payload: JSON.stringify({ status: updated.status }),
           },
         });
         log('info', 'Submission published', { id: updated.id, title: updated.title });

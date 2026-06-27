@@ -8,7 +8,6 @@ import {
   LocateFixed,
   MapPin,
   Navigation,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/navbar';
@@ -31,6 +30,19 @@ import {
 
 type CategoryFilter = 'semua' | MapCategory;
 
+const fallbackMapImage: Record<string, string> = {
+  event:
+    'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1000&q=80',
+  wisata:
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80',
+  kuliner:
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80',
+  budaya:
+    'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1000&q=80',
+  sejarah:
+    'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1000&q=80',
+};
+
 const categoryFilters: Array<{ value: CategoryFilter; label: string }> = [
   { value: 'semua', label: 'Semua kategori' },
   { value: 'event', label: 'Event' },
@@ -52,7 +64,6 @@ export default function SmartMapPage() {
   const { token, isAuthenticated } = useAuth();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>(MAGELANG_CENTER);
   const [locationStatus, setLocationStatus] = useState('Mode pusat Magelang aktif');
-  const [radius, setRadius] = useState(40);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('semua');
   const [typeFilter, setTypeFilter] = useState('semua');
   const [apiEvents, setApiEvents] = useState<CommunityEvent[]>([]);
@@ -91,7 +102,7 @@ export default function SmartMapPage() {
               }),
             });
           } catch {
-            setLocationStatus('Lokasi aktif, sinkron backend belum tersedia');
+            setLocationStatus('Lokasi perangkat aktif');
           }
         }
       },
@@ -164,7 +175,7 @@ export default function SmartMapPage() {
   const allItems = asyncItems;
 
   const filteredItems = useMemo(() => {
-    let next: SmartMapItemWithDistance[] = allItems.filter((item) => item.distance <= radius);
+    let next: SmartMapItemWithDistance[] = allItems;
 
     if (categoryFilter !== 'semua') {
       next = next.filter((item) => item.category === categoryFilter);
@@ -175,7 +186,7 @@ export default function SmartMapPage() {
     }
 
     return next;
-  }, [allItems, radius, categoryFilter, typeFilter]);
+  }, [allItems, categoryFilter, typeFilter]);
 
   const subcategoryOptions = useMemo(() => {
     const scoped =
@@ -239,8 +250,8 @@ export default function SmartMapPage() {
                 Event, wisata, kuliner, sejarah, dan budaya dalam satu peta
               </h1>
               <p className="mt-4 max-w-3xl text-slate-300">
-                Radius diperbesar 30-50 km untuk menjangkau Magelang, Borobudur, Ketep, dan
-                titik sekitar. Marker dari semua fitur muncul setelah disetujui developer.
+                Jelajahi titik wisata, kuliner, budaya, sejarah, dan event Magelang dengan foto,
+                sumber informasi, serta estimasi jarak dari lokasi Anda.
               </p>
             </div>
 
@@ -267,28 +278,7 @@ export default function SmartMapPage() {
         </section>
 
         <section className="space-y-6">
-          <div className="grid gap-4 rounded-lg border border-slate-800 bg-slate-900/80 p-5 lg:grid-cols-[280px_minmax(0,1fr)_260px]">
-            <div>
-              <div className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
-                <SlidersHorizontal className="h-5 w-5 text-cyan-300" />
-                Radius
-              </div>
-              <div className="flex items-center justify-between text-sm text-slate-300">
-                <span>30 km</span>
-                <span className="font-semibold text-cyan-300">{radius} km</span>
-                <span>50 km</span>
-              </div>
-              <input
-                type="range"
-                min={30}
-                max={50}
-                step={5}
-                value={radius}
-                onChange={(event) => setRadius(Number(event.target.value))}
-                className="mt-4 w-full accent-cyan-400"
-              />
-            </div>
-
+          <div className="grid gap-4 rounded-lg border border-slate-800 bg-slate-900/80 p-5 lg:grid-cols-[minmax(0,1fr)_260px]">
             <div>
               <div className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
                 <Filter className="h-5 w-5 text-cyan-300" />
@@ -376,7 +366,14 @@ export default function SmartMapPage() {
                 key={item.id}
                 className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
               >
-                <img src={item.image} alt={item.title} className="h-40 w-full object-cover" />
+                <img
+                  src={item.image || fallbackMapImage[item.category]}
+                  alt={item.title}
+                  onError={(event) => {
+                    event.currentTarget.src = fallbackMapImage[item.category] || fallbackMapImage.wisata;
+                  }}
+                  className="h-40 w-full object-cover"
+                />
                 <div className="p-5">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <span

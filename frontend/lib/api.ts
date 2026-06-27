@@ -32,14 +32,14 @@ export function getApiConnectionLabel() {
   const baseUrl = getApiBaseUrl();
 
   if (baseUrl.startsWith('https://')) {
-    return 'HTTPS backend aktif';
+    return 'Koneksi HTTPS aktif';
   }
 
   if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
-    return 'Mode lokal development';
+    return 'Mode lokal';
   }
 
-  return 'Backend jaringan lokal';
+  return 'Koneksi jaringan lokal';
 }
 
 export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {

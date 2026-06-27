@@ -3,6 +3,7 @@ import { getUserLocation, haversineDistance } from './locationService';
 import OpenAI from 'openai';
 import { submissionService } from './submissionService';
 import type { SubmissionWithRelations, TourismRecord } from '../types/models';
+import { resolveCoordinates } from '../utils/geo';
 
 // OpenAI client - optional
 let openai: OpenAI | null = null;
@@ -87,30 +88,14 @@ function matchesInterest(candidate: any, interests: string[]) {
   });
 }
 
-const knownLocations = [
-  { match: ['alun', 'alun-alun'], latitude: -7.4797, longitude: 110.2177 },
-  { match: ['aim artos', 'artos', 'grand artos'], latitude: -7.4912, longitude: 110.2265 },
-  { match: ['borobudur'], latitude: -7.6079, longitude: 110.2038 },
-  { match: ['taruna nusantara'], latitude: -7.5013, longitude: 110.1835 },
-  { match: ['ketep'], latitude: -7.4943, longitude: 110.3811 },
-  { match: ['kyai langgeng', 'taman kyai'], latitude: -7.4758, longitude: 110.2091 },
-  { match: ['tidar', 'gunung tidar', 'puncak tidar'], latitude: -7.4894, longitude: 110.2221 },
-  { match: ['mendut'], latitude: -7.6047, longitude: 110.2304 },
-  { match: ['getuk trio', 'gethuk trio'], latitude: -7.4725, longitude: 110.217 },
-  { match: ['kupat tahu'], latitude: -7.4812, longitude: 110.2229 },
-];
-
 function resolveSubmissionCoordinates(item: SubmissionWithRelations | any) {
-  if (Number.isFinite(item.latitude) && Number.isFinite(item.longitude)) {
-    return { latitude: Number(item.latitude), longitude: Number(item.longitude) };
-  }
-
-  const text = `${item.location || ''} ${item.title || item.name || ''}`.toLowerCase();
-  const found = knownLocations.find((location) =>
-    location.match.some((keyword) => text.includes(keyword))
-  );
-
-  return found || MAGELANG_CENTER;
+  return resolveCoordinates({
+    latitude: item.latitude,
+    longitude: item.longitude,
+    location: item.location,
+    link: item.link,
+    title: item.title || item.name,
+  });
 }
 
 function slugify(value: string) {

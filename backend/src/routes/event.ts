@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { submissionService } from '../services/submissionService';
 import type { SubmissionStatus, SubmissionWithRelations } from '../types/models';
 import { serializeSubmission } from '../utils/media';
+import { resolveCoordinates } from '../utils/geo';
 
 const router = Router();
 
@@ -54,14 +55,15 @@ router.post('/', async (req, res) => {
         .json({ error: 'Judul, tanggal, lokasi, dan deskripsi event harus diisi.' });
     }
 
+    const coordinates = resolveCoordinates({ latitude, longitude, location, link, title });
     const newEvent = await submissionService.createSubmission({
       title,
       description,
       featureType: 'EVENT',
       categoryName: category || typeLabel || 'Agenda Lokal',
       location,
-      latitude: typeof latitude === 'number' ? latitude : -7.4797,
-      longitude: typeof longitude === 'number' ? longitude : 110.2177,
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
       image:
         image ||
         'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1000&q=80',

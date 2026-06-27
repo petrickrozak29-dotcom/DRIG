@@ -69,7 +69,7 @@ const modules = [
   },
   {
     title: 'Event & Festival',
-    description: 'Track city events, festivals, expos, and community agendas approved by developer.',
+    description: 'Track city events, festivals, expos, and community agendas around Magelang.',
     icon: 'Ev 🎟️',
     href: '/event',
     gradient: 'from-pink-600 via-rose-500 to-red-400',
@@ -79,7 +79,7 @@ const modules = [
   {
     title: 'Smart Magelang',
     description:
-      'Plan AI itineraries and explore technology, smart city ideas, investment, tourism, and creative economy potential.',
+      'Plan AI itineraries and explore technology, smart city ideas, tourism, and creative economy potential.',
     icon: 'Sm 🤖',
     href: '/smart-magelang',
     gradient: 'from-cyan-600 via-sky-500 to-emerald-400',
@@ -88,7 +88,7 @@ const modules = [
   },
   {
     title: 'Community Form',
-    description: 'Submit tourism, culinary, and event recommendations for developer approval.',
+    description: 'Submit tourism, culinary, event, culture, and history recommendations.',
     icon: 'Cf 📝',
     href: '/community-form',
     gradient: 'from-teal-600 via-lime-500 to-yellow-400',
@@ -129,7 +129,7 @@ const modernPotentials = [
   {
     title: 'Partisipasi Komunitas',
     description:
-      'Community Event memberi ruang warga untuk mengirim agenda, lalu masuk map setelah disetujui developer.',
+      'Community Form memberi ruang warga untuk mengirim agenda, wisata, kuliner, budaya, dan sejarah Magelang.',
     icon: ShieldCheck,
     href: '/community-form',
   },
@@ -154,7 +154,7 @@ const faqs = [
   {
     question: 'Apakah saya dapat melihat lokasi saya di peta?',
     answer:
-      'Ya. Jika Anda mengizinkan akses lokasi pada perangkat, sistem dapat menampilkan posisi Anda untuk membantu navigasi.',
+      'Ya. Jika Anda mengizinkan akses lokasi pada perangkat, peta dapat menampilkan posisi Anda untuk membantu navigasi.',
   },
   {
     question: 'Apakah saya harus login untuk menggunakan website?',
@@ -221,9 +221,9 @@ export default function Home() {
 
           <motion.h1
             variants={itemVariants}
-            className="mt-6 bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text text-6xl font-bold text-transparent sm:text-7xl"
+            className="mt-6 overflow-visible pb-3 bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text text-5xl font-bold uppercase leading-tight text-transparent sm:text-7xl"
           >
-            Future Magelang
+            FUTURE MAGELANG
           </motion.h1>
 
           <motion.p

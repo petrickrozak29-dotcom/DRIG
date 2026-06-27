@@ -15,8 +15,8 @@ import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
 import { fetchCategories } from '../../lib/content-api';
-import { getApiBaseUrl } from '../../lib/api';
 import {
+  fetchEvents,
   formatDate,
   type CommunityEvent,
   type EventCategory,
@@ -46,13 +46,23 @@ export default function EventPage() {
     let timer: any;
     async function load(q?: string) {
       try {
-        const params = new URLSearchParams();
-        params.set('includePending', 'false');
-        if (q) params.set('q', q);
-        const res = await fetch(`${getApiBaseUrl()}/api/events?${params.toString()}`);
-        if (!res.ok) return setApiEvents([]);
-        const records = await res.json();
-        if (mounted) setApiEvents(records as CommunityEvent[]);
+        const records = await fetchEvents(false);
+        if (!mounted) return;
+
+        if (!q) {
+          setApiEvents(records);
+          return;
+        }
+
+        const lower = q.toLowerCase();
+        setApiEvents(
+          records.filter(
+            (item) =>
+              item.title.toLowerCase().includes(lower) ||
+              item.description.toLowerCase().includes(lower) ||
+              item.typeLabel.toLowerCase().includes(lower)
+          )
+        );
       } catch {
         if (mounted) setApiEvents([]);
       }
@@ -121,8 +131,8 @@ export default function EventPage() {
                 Agenda festival, konser, expo, dan event warga
               </h1>
               <p className="mt-4 max-w-3xl text-slate-300">
-                Event sistem, sumber publik, dan community event yang sudah disetujui developer
-                tampil di sini dan otomatis tersedia di Smart Map.
+                Temukan agenda publik, festival, konser, expo, dan event warga Magelang yang
+                terhubung dengan Smart Map.
               </p>
             </div>
             <div className="flex items-center gap-3">

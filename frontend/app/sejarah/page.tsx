@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Clock, ExternalLink, History, MapPin, ScrollText, Ticket } from 'lucide-react';
+import { Clock, ExternalLink, History, MapPin, PlusCircle, ScrollText, Ticket } from 'lucide-react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
@@ -52,16 +52,25 @@ export default function SejarahPage() {
           </div>
           <h1 className="text-4xl font-bold sm:text-5xl">Perjalanan Sejarah Magelang</h1>
           <p className="mx-auto mt-4 max-w-3xl text-slate-300">
-            Konten sejarah yang ditambahkan developer akan tampil otomatis untuk seluruh user
-            lengkap dengan foto dan sumber bacaan.
+            Telusuri jejak sejarah, tokoh, bangunan, dan peristiwa penting Magelang lengkap
+            dengan foto, lokasi, dan sumber bacaan.
           </p>
           <div className="mt-4 flex justify-center">
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Cari sejarah..."
-              className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-rose-400"
-            />
+            <div className="flex w-full max-w-2xl flex-col gap-3 sm:flex-row">
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Cari sejarah..."
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-rose-400"
+              />
+              <a
+                href="/community-form?feature=HISTORY"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-rose-400 px-5 py-3 font-semibold text-slate-950 hover:bg-rose-300"
+              >
+                <PlusCircle className="h-5 w-5" />
+                Tambah Sejarah
+              </a>
+            </div>
           </div>
         </section>
 
@@ -123,7 +132,7 @@ export default function SejarahPage() {
 
         {filteredItems.length === 0 && (
           <section className="mt-8 rounded-lg border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-300">
-            Belum ada konten sejarah yang dipublish.
+            Belum ada konten sejarah yang tersedia.
           </section>
         )}
       </main>

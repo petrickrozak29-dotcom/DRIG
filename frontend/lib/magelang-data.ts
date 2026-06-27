@@ -107,6 +107,7 @@ export interface CommunityCulinary extends SmartMapItem {
 
 export interface CommunityTourismInput {
   title: string;
+  typeLabel?: string;
   location: string;
   description: string;
   rating?: number;
@@ -207,11 +208,64 @@ function normalizeImageUrl(value: unknown, fallback: string) {
   if (!raw || raw.includes('fakepath')) return fallback;
   if (raw.startsWith('/uploads/')) return `${getApiBaseUrl()}${raw}`;
   if (raw.startsWith('uploads/')) return `${getApiBaseUrl()}/${raw}`;
+  if (raw.startsWith('data:image/')) return raw;
 
   return raw;
 }
 
-export function resolveLocation(location: string) {
+function isValidCoordinate(latitude: number, longitude: number) {
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
+
+function extractCoordinates(value?: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  const decoded = (() => {
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  })();
+
+  const patterns = [
+    /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
+    /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
+    /(?:q|query|ll|center)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i,
+    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = decoded.match(pattern);
+    if (!match) continue;
+
+    const latitude = Number(match[1]);
+    const longitude = Number(match[2]);
+    if (isValidCoordinate(latitude, longitude)) {
+      return { latitude, longitude };
+    }
+  }
+
+  return null;
+}
+
+export function resolveLocation(location: string, link?: string) {
+  const directCoordinates = extractCoordinates(location) || extractCoordinates(link);
+  if (directCoordinates) {
+    return {
+      ...directCoordinates,
+      scope: 'city' as EventScope,
+    };
+  }
+
   const normalized = location.toLowerCase();
   const found = locationIndex.find((item) => item.match.some((key) => normalized.includes(key)));
 
@@ -380,7 +434,7 @@ export function deleteDeveloperContent(type: DeveloperContentType, id: string) {
 }
 
 function toManagedMapItem(type: 'tourism' | 'culinary', item: DeveloperContentItem): SmartMapItem {
-  const resolved = resolveLocation(item.location || MAGELANG_CENTER.lat.toString());
+  const resolved = resolveLocation(item.location || '', item.link || item.sourceUrl);
   const category = type === 'tourism' ? 'wisata' : 'kuliner';
   const title = item.title.trim();
 
@@ -393,7 +447,7 @@ function toManagedMapItem(type: 'tourism' | 'culinary', item: DeveloperContentIt
     location: item.location || 'Magelang',
     latitude: Number(item.latitude ?? resolved.latitude),
     longitude: Number(item.longitude ?? resolved.longitude),
-    image: item.image || (type === 'tourism' ? photo.nature : photo.food),
+    image: normalizeImageUrl(item.image, type === 'tourism' ? photo.nature : photo.food),
     link: item.link,
     detailUrl: `/smart-map?focus=${item.id}`,
     rating: Number(item.rating || 4.5),
@@ -478,7 +532,7 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
   return records
     .filter((item) => item?.title && item?.date && item?.location)
     .map((item) => {
-      const resolved = resolveLocation(String(item.location));
+      const resolved = resolveLocation(String(item.location || ''), item.link || item.sourceUrl);
       const id = `api-${item.id || slugify(`${item.title}-${item.date}`)}`;
 
       return {
@@ -510,7 +564,7 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
 import { getApiBaseUrl } from './api';
 
 export function submitCommunityEvent(input: CommunityEventInput) {
-  const resolved = resolveLocation(input.location);
+  const resolved = resolveLocation(input.location, input.link);
   const cleanTitle = input.title.trim();
   const id = `user-${slugify(cleanTitle)}-${Date.now()}`;
   const typeLabel = input.typeLabel || 'Agenda Lokal';
@@ -571,15 +625,16 @@ export function submitCommunityEvent(input: CommunityEventInput) {
 }
 
 export function submitCommunityTourism(input: CommunityTourismInput) {
-  const resolved = resolveLocation(input.location);
+  const resolved = resolveLocation(input.location, input.link);
   const cleanTitle = input.title.trim();
   const id = `spot-${slugify(cleanTitle)}-${Date.now()}`;
+  const typeLabel = input.typeLabel?.trim() || 'Wisata';
 
   const newItem: CommunityTourism = {
     id,
     title: cleanTitle,
     category: 'wisata',
-    typeLabel: 'Spot Populer',
+    typeLabel,
     location: input.location.trim(),
     description: input.description.trim(),
     latitude: resolved.latitude,
@@ -595,7 +650,7 @@ export function submitCommunityTourism(input: CommunityTourismInput) {
     createdAt: new Date().toISOString(),
     submittedBy: input.submittedBy,
     rating: input.rating || 4.5,
-    tags: ['Spot Populer', 'Menunggu Review'],
+    tags: [typeLabel, 'Menunggu Review'],
   };
 
   writeStoredTourism([newItem, ...readStoredTourism()]);
@@ -618,7 +673,7 @@ export function submitCommunityTourism(input: CommunityTourismInput) {
           openingHours: newItem.openingHours,
           rating: newItem.rating,
           featureType: 'WISATA',
-          categoryName: newItem.typeLabel,
+          categoryName: typeLabel,
         }),
       });
     } catch {}
@@ -628,7 +683,7 @@ export function submitCommunityTourism(input: CommunityTourismInput) {
 }
 
 export function submitCommunityCulinary(input: CommunityCulinaryInput) {
-  const resolved = resolveLocation(input.location);
+  const resolved = resolveLocation(input.location, input.link);
   const cleanTitle = input.title.trim();
   const id = `umkm-${slugify(cleanTitle)}-${Date.now()}`;
   const typeLabel = input.typeLabel?.trim() || 'UMKM';
@@ -801,7 +856,10 @@ function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[]
   if (!Array.isArray(records)) return [];
 
   return records.map((item) => {
-    const resolved = resolveLocation(String(item.location || item.title || ''));
+    const resolved = resolveLocation(
+      String(item.location || item.title || ''),
+      item.link || item.sourceUrl
+    );
     const prefix =
       featureType === 'KULINER'
         ? 'kuliner'
@@ -915,7 +973,7 @@ export async function fetchHistoryItems(includePending = false): Promise<SmartMa
 
 export async function fetchUserSubmissions(
   userId: string,
-  featureType?: 'EVENT' | 'WISATA' | 'KULINER'
+  featureType?: 'EVENT' | 'WISATA' | 'KULINER' | 'CULTURE' | 'HISTORY'
 ) {
   try {
     const params = new URLSearchParams();
@@ -973,7 +1031,7 @@ export async function submitCommunityTourismAsync(input: CommunityTourismInput, 
       openingHours: input.openingHours,
       rating: input.rating,
       featureType: 'WISATA',
-      categoryName: 'Spot Populer',
+      categoryName: input.typeLabel || 'Wisata',
     };
 
     const res = await fetch(`${getApiBaseUrl()}/api/submissions`, {

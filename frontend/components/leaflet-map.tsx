@@ -36,6 +36,19 @@ const markerColor: Record<string, string> = {
   lokasi: '#22c55e',
 };
 
+const fallbackImage: Record<string, string> = {
+  event:
+    'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=800&q=80',
+  wisata:
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80',
+  kuliner:
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
+  budaya:
+    'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=800&q=80',
+  sejarah:
+    'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=800&q=80',
+};
+
 function escapeHtml(value?: string | number) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -62,9 +75,11 @@ function getPopupHtml(marker: MarkerItem) {
         `<p style="font-size:11px;line-height:1.35;margin:0 0 6px;color:#64748b;">${escapeHtml(item)}</p>`
     )
     .join('');
-  const image = marker.image
-    ? `<img src="${escapeHtml(marker.image)}" alt="${title}" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:10px;" />`
-    : '';
+  const imageUrl =
+    marker.image ||
+    fallbackImage[String(marker.category).toLowerCase()] ||
+    fallbackImage.wisata;
+  const image = `<img src="${escapeHtml(imageUrl)}" alt="${title}" onerror="this.onerror=null;this.src='${escapeHtml(fallbackImage[String(marker.category).toLowerCase()] || fallbackImage.wisata)}';" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:10px;background:#e2e8f0;" />`;
 
   return `
     <div style="width:240px;color:#0f172a;font-family:Inter,Arial,sans-serif;">

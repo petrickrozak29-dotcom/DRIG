@@ -21,7 +21,7 @@ import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
 import { getApiBaseUrl } from '../../lib/api';
 
-type FeatureType = 'EVENT' | 'WISATA' | 'KULINER';
+type FeatureType = 'EVENT' | 'WISATA' | 'KULINER' | 'CULTURE' | 'HISTORY';
 
 interface Category {
   id: string;
@@ -29,7 +29,7 @@ interface Category {
   featureType: string;
 }
 
-// Categories will be fetched from the backend so developers can manage them dynamically
+// Categories are loaded from the API so public forms follow the latest options.
 
 export default function CommunityFormPage() {
   const router = useRouter();
@@ -59,7 +59,13 @@ export default function CommunityFormPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const fromQuery = new URLSearchParams(window.location.search).get('feature')?.toUpperCase();
-    if (fromQuery === 'EVENT' || fromQuery === 'WISATA' || fromQuery === 'KULINER') {
+    if (
+      fromQuery === 'EVENT' ||
+      fromQuery === 'WISATA' ||
+      fromQuery === 'KULINER' ||
+      fromQuery === 'CULTURE' ||
+      fromQuery === 'HISTORY'
+    ) {
       setFeatureType(fromQuery);
     }
   }, []);
@@ -183,7 +189,7 @@ export default function CommunityFormPage() {
 
       if (!response.ok) throw new Error('Gagal menyimpan');
 
-      setStatus('Berhasil! Submission masuk antrean review developer.');
+      setStatus('Berhasil! Submission masuk antrean review pengelola.');
       setFormState({
         title: '',
         description: '',
@@ -220,7 +226,7 @@ export default function CommunityFormPage() {
           <section className="rounded-lg border border-slate-800 bg-slate-900/80 p-8">
             <h1 className="text-3xl font-bold text-cyan-300">Community Form</h1>
             <p className="mt-3 text-slate-300">
-              Login diperlukan untuk mengirim rekomendasi event, wisata, atau kuliner.
+            Login diperlukan untuk mengirim rekomendasi event, wisata, kuliner, budaya, atau sejarah.
             </p>
             <a
               href="/login"
@@ -250,14 +256,14 @@ export default function CommunityFormPage() {
           <h1 className="mt-3 text-4xl font-bold sm:text-5xl">Ajukan Konten ke Smart Map</h1>
           <p className="mx-auto mt-4 max-w-2xl text-slate-300">
             Pilih jenis konten, isi detailnya, lalu preview. Konten akan tampil publik setelah
-            disetujui.
+            disetujui pengelola.
           </p>
         </section>
 
         <section className="rounded-lg border border-slate-800 bg-slate-900/80 p-6 md:p-8">
           {!preview ? (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-5">
                 <button
                   type="button"
                   onClick={() => setFeatureType('EVENT')}
@@ -278,6 +284,20 @@ export default function CommunityFormPage() {
                   className={`rounded-lg border p-4 text-center transition ${featureType === 'KULINER' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
                 >
                   <h3 className="font-bold text-white">Kuliner</h3>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFeatureType('CULTURE')}
+                  className={`rounded-lg border p-4 text-center transition ${featureType === 'CULTURE' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
+                >
+                  <h3 className="font-bold text-white">Budaya</h3>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFeatureType('HISTORY')}
+                  className={`rounded-lg border p-4 text-center transition ${featureType === 'HISTORY' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
+                >
+                  <h3 className="font-bold text-white">Sejarah</h3>
                 </button>
               </div>
 
@@ -323,7 +343,11 @@ export default function CommunityFormPage() {
 
                 <Field
                   label={featureType === 'EVENT' ? 'Jam Buka / Open Gate' : 'Jam Buka - Tutup'}
-                  placeholder={featureType === 'EVENT' ? 'Contoh: Open gate 18.00 WIB' : 'Contoh: 08.00 - 17.00 WIB'}
+                  placeholder={
+                    featureType === 'EVENT'
+                      ? 'Contoh: Open gate 18.00 WIB'
+                      : 'Contoh: 08.00 - 17.00 WIB'
+                  }
                   value={formState.openingHours}
                   onChange={(v) => setFormState({ ...formState, openingHours: v })}
                 />
@@ -338,7 +362,7 @@ export default function CommunityFormPage() {
                   />
                 ) : (
                   <Field
-                    label="Harga Tiket Masuk"
+                    label={featureType === 'EVENT' || featureType === 'WISATA' ? 'Harga Tiket Masuk' : 'Biaya / Tiket'}
                     placeholder="Contoh: Rp 25.000 atau Gratis"
                     value={formState.ticketPrice}
                     onChange={(v) => setFormState({ ...formState, ticketPrice: v })}

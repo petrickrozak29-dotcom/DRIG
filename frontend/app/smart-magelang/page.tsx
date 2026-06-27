@@ -7,6 +7,7 @@ import {
   Building2,
   Clock,
   Cpu,
+  ExternalLink,
   History,
   Lightbulb,
   LocateFixed,
@@ -73,45 +74,49 @@ const technologyItems = [
   {
     title: 'Infrastruktur Teknologi',
     description:
-      'Fondasi perangkat, pusat data, sensor, dan sistem informasi kota untuk mendukung pengambilan keputusan berbasis data.',
+      'DataGO, big data, geoportal, dan tata kelola data menjadi fondasi pengambilan keputusan kota yang lebih cepat, terukur, dan berbasis kebutuhan warga.',
     icon: Building2,
+    href: 'https://pilarstatistik.magelangkota.go.id/artikel/sinergi-data-teknologi-dan-kebijakan-menuju-kota-magelang-yang-berkelanjutan',
     details: [
-      'Basis data wisata, event, kuliner',
-      'Integrasi koordinat dan marker Smart Map',
-      'Dashboard moderasi konten developer',
+      'Data terintegrasi lintas sektor',
+      'Geoportal untuk peta kondisi wilayah',
+      'Kebijakan berbasis bukti',
     ],
   },
   {
     title: 'Internet dan Jaringan Komunikasi',
     description:
-      'Konektivitas publik, akses informasi, dan jaringan komunikasi yang membantu wisatawan maupun masyarakat bergerak lebih mudah.',
+      'Konektivitas fiber dan layanan internet berkualitas mendukung aktivitas digital pemerintah, masyarakat, UMKM, hingga kebutuhan wisatawan.',
     icon: Wifi,
+    href: 'https://www.biznetnetworks.com/portfolio/kota-magelang',
     details: [
-      'Akses peta dan rute dari perangkat mobile',
-      'Kanal publikasi agenda komunitas',
-      'Tautan Google Maps dan sosial media usaha',
+      'Jaringan internet cepat',
+      'Dukungan aktivitas digital kota',
+      'Layanan untuk rumah, UMKM, dan bisnis',
     ],
   },
   {
     title: 'Digitalisasi Layanan Publik',
     description:
-      'Layanan administrasi, informasi kota, aduan, event, dan promosi lokal diarahkan agar bisa diakses dari kanal digital.',
+      'Pelayanan publik digital diarahkan agar lebih mudah diakses, berdampak nyata, dan membantu masyarakat mendapat informasi maupun layanan kota secara lebih cepat.',
     icon: Network,
+    href: 'https://magelangkota.go.id/view/wali-kota-magelang-pelayanan-publik-harus-berdampak-nyata-bagi-masyarakat-2',
     details: [
-      'Pengajuan event oleh user',
-      'Pengajuan kuliner/UMKM',
-      'Profil user dengan riwayat publish',
+      'Layanan yang dekat dengan warga',
+      'Akses informasi lebih cepat',
+      'Dampak nyata untuk masyarakat',
     ],
   },
   {
     title: 'Pengembangan Smart City',
     description:
-      'Integrasi Smart Map, event, kuliner, lokasi, dan rekomendasi perjalanan sebagai pondasi portal Smart Tourism & Smart City.',
+      'Smart city Magelang bertumpu pada data cerdas, layanan publik digital, ekonomi kreatif, pariwisata, infrastruktur kota, dan partisipasi masyarakat.',
     icon: Lightbulb,
+    href: 'https://pilarstatistik.magelangkota.go.id/artikel/smart-data-smart-city-bagaimana-membangun-daya-saing-kota-magelang',
     details: [
-      'AI itinerary berdasarkan minat',
-      'Event aktif otomatis tampil/hilang sesuai tanggal',
-      'Histori tetap tersedia untuk developer',
+      'Masterplan Smart City 2024-2033',
+      'Ekosistem ekonomi cerdas',
+      'Partisipasi warga berbasis data',
     ],
   },
 ];
@@ -124,15 +129,9 @@ const potentialItems = [
     href: '/wisata',
   },
   {
-    title: 'Potensi Investasi Magelang',
-    description:
-      'Kawasan Borobudur dan koridor pariwisata sekitarnya membuka peluang hospitality, MICE, transportasi wisata, produk lokal, dan layanan digital pendukung.',
-    href: 'https://bob.kemenparekraf.go.id/',
-  },
-  {
     title: 'Ekonomi Kreatif Magelang',
     description:
-      'UMKM kuliner dan produk kreatif bisa mengajukan promosi. Setelah disetujui developer, usaha tampil di kategori UMKM pada fitur kuliner dan Smart Map.',
+      'Kuliner khas, UMKM, produk kreatif, dan agenda komunitas menjadi ruang promosi lokal yang dapat ditemukan lewat fitur publik Magelang.',
     href: '/kuliner',
   },
 ];
@@ -268,7 +267,7 @@ export default function SmartMagelangPage() {
           <h1 className="mt-3 text-4xl font-bold sm:text-5xl">Smart Magelang</h1>
           <p className="mt-4 max-w-3xl text-slate-300">
             Pusat fitur digital Magelang untuk AI itinerary, teknologi kota, potensi pariwisata,
-            investasi, dan ekonomi kreatif berbasis UMKM.
+            dan ekonomi kreatif berbasis UMKM.
           </p>
         </section>
 
@@ -503,14 +502,20 @@ export default function SmartMagelangPage() {
             {technologyItems.map((item) => {
               const Icon = item.icon;
               return (
-                <article
+                <a
                   key={item.title}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
                   className="rounded-lg border border-slate-800 bg-slate-900/85 p-6"
                 >
                   <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-400/15 text-cyan-200">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <h2 className="text-2xl font-semibold text-white">{item.title}</h2>
+                  <h2 className="flex items-center gap-2 text-2xl font-semibold text-white">
+                    {item.title}
+                    <ExternalLink className="h-4 w-4 text-cyan-200" />
+                  </h2>
                   <p className="mt-3 leading-7 text-slate-300">{item.description}</p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {item.details.map((detail) => (
@@ -522,14 +527,14 @@ export default function SmartMagelangPage() {
                       </span>
                     ))}
                   </div>
-                </article>
+                </a>
               );
             })}
           </section>
         )}
 
         {activeTab === 'potential' && (
-          <section className="grid gap-5 md:grid-cols-3">
+          <section className="grid gap-5 md:grid-cols-2">
             {potentialItems.map((item) => (
               <a
                 key={item.title}

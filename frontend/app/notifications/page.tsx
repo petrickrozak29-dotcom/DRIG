@@ -73,13 +73,7 @@ export default function NotificationsPage() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-sm font-semibold text-slate-200">{n.type}</div>
-                    <div className="mt-1 text-white">{n.message}</div>
-                    {n.payload && (
-                      <pre className="mt-2 max-w-full overflow-auto text-xs text-slate-300">
-                        {JSON.stringify(n.payload, null, 2)}
-                      </pre>
-                    )}
+                    <div className="text-white">{n.message}</div>
                   </div>
                   {!n.isRead && (
                     <button

@@ -319,7 +319,7 @@ export default function ProfilePage() {
         throw new Error(payload.error || 'Gagal mengedit submission.');
       }
 
-      setSubmissionStatus('Submission berhasil diedit dan masuk antrean review developer.');
+      setSubmissionStatus('Submission berhasil diedit dan masuk antrean review pengelola.');
       setEditingSubmission(null);
       setDataVersion((version) => version + 1);
       window.dispatchEvent(new Event('magelangverse-submissions-updated'));
@@ -598,7 +598,7 @@ export default function ProfilePage() {
               <div>
                 <h2 className="text-2xl font-semibold">Edit Submission</h2>
                 <p className="mt-1 text-sm text-slate-400">
-                  Perubahan akan masuk lagi ke antrean review developer.
+                  Perubahan akan masuk lagi ke antrean review pengelola.
                 </p>
               </div>
               <button

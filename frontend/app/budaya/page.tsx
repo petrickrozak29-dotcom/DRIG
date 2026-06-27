@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Clock, ExternalLink, MapPin, Sparkles, Ticket } from 'lucide-react';
+import { BookOpen, Clock, ExternalLink, MapPin, PlusCircle, Sparkles, Ticket } from 'lucide-react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
@@ -52,16 +52,25 @@ export default function BudayaPage() {
           </div>
           <h1 className="text-4xl font-bold sm:text-5xl">Warisan Budaya Magelang</h1>
           <p className="mx-auto mt-4 max-w-3xl text-slate-300">
-            Konten budaya yang sudah dipublish developer akan tampil otomatis di sini lengkap
-            dengan foto dan tautan sumber.
+            Jelajahi tradisi, kesenian, ruang budaya, dan cerita masyarakat Magelang lengkap
+            dengan foto, lokasi, dan sumber informasi.
           </p>
           <div className="mt-4 flex justify-center">
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Cari budaya..."
-              className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-violet-400"
-            />
+            <div className="flex w-full max-w-2xl flex-col gap-3 sm:flex-row">
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Cari budaya..."
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-violet-400"
+              />
+              <a
+                href="/community-form?feature=CULTURE"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-400 px-5 py-3 font-semibold text-slate-950 hover:bg-violet-300"
+              >
+                <PlusCircle className="h-5 w-5" />
+                Tambah Budaya
+              </a>
+            </div>
           </div>
         </section>
 
@@ -125,7 +134,7 @@ export default function BudayaPage() {
 
         {filteredItems.length === 0 && (
           <section className="mt-8 rounded-lg border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-300">
-            Belum ada konten budaya yang dipublish.
+            Belum ada konten budaya yang tersedia.
           </section>
         )}
       </main>
