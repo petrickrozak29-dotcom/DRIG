@@ -55,11 +55,35 @@ export default function NotificationsPage() {
     } catch {}
   };
 
+  const deleteAll = async () => {
+    if (!confirm('Hapus semua notifikasi?')) return;
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/notifications`, {
+        method: 'DELETE',
+        headers: { Authorization: token ? `Bearer ${token}` : '' },
+      });
+      if (res.ok) {
+        setItems([]);
+        window.dispatchEvent(new Event('magelangverse-notifications-updated'));
+      }
+    } catch {}
+  };
+
   return (
     <GradientBg>
       <Navbar />
       <main className="mx-auto max-w-4xl px-4 py-12 text-white sm:px-6 lg:py-16">
-        <h1 className="mb-6 text-3xl font-bold">Notifikasi</h1>
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Notifikasi</h1>
+          {items.length > 0 && (
+            <button
+              onClick={deleteAll}
+              className="rounded-lg border border-rose-500/40 px-4 py-2 text-sm font-semibold text-rose-200 hover:border-rose-300"
+            >
+              Hapus Semua
+            </button>
+          )}
+        </div>
 
         {loading ? (
           <p className="text-slate-400">Memuat...</p>

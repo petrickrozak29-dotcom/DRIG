@@ -80,6 +80,20 @@ export const notificationService = {
       data: { isRead: true },
     })) as NotificationRecord;
   },
+
+  async deleteAllForUser(
+    userId: string,
+    options?: { includeSystem?: boolean }
+  ): Promise<{ count: number }> {
+    const where = options?.includeSystem
+      ? {
+          OR: [{ userId }, { userId: null }],
+        }
+      : { userId };
+
+    const result = await prisma.notification.deleteMany({ where });
+    return { count: result.count };
+  },
 };
 
 export default notificationService;

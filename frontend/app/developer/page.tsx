@@ -40,7 +40,7 @@ import {
   type OverviewPayload,
 } from '../../lib/content-api';
 
-type SectionKey = 'overview' | 'categories' | 'tourism' | 'culinary' | 'event' | 'culture' | 'history' | 'users';
+type SectionKey = 'overview' | 'categories' | 'tourism' | 'culinary' | 'event' | 'culture' | 'history' | 'users' | 'notifications';
 type CategoryFeatureKey = 'WISATA' | 'KULINER' | 'EVENT' | 'CULTURE' | 'HISTORY';
 type StatusFilter = 'pending' | 'approved' | 'rejected';
 
@@ -53,6 +53,7 @@ const sections: Array<{ key: SectionKey; label: string }> = [
   { key: 'culture', label: 'Kelola Budaya' },
   { key: 'history', label: 'Kelola Sejarah' },
   { key: 'users', label: 'Kelola Pengguna' },
+  { key: 'notifications', label: 'Notifikasi' },
 ];
 
 const defaultForm = {
@@ -531,6 +532,10 @@ export default function DeveloperPage() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {active === 'notifications' && (
+              <NotificationsSection token={token} />
             )}
 
             {active === 'users' && (
@@ -1039,6 +1044,74 @@ function ContentCard({
         </div>
       </div>
     </article>
+  );
+}
+
+function NotificationsSection({ token }: { token: string | null }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchNotifications() {
+      setLoading(true);
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/api/notifications`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (mounted) setItems(data);
+      } catch {
+        if (mounted) setItems([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    if (token) fetchNotifications();
+    else { setItems([]); setLoading(false); }
+    return () => { mounted = false; };
+  }, [token]);
+
+  const deleteAll = async () => {
+    if (!confirm('Hapus semua notifikasi? Aksi ini juga akan menghapus notifikasi sistem.')) return;
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/notifications`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setItems([]);
+    } catch {}
+  };
+
+  if (loading) return <p className="text-slate-400">Memuat notifikasi...</p>;
+
+  return (
+    <section className="rounded-lg border border-slate-800 bg-slate-900/85 p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Notifikasi ({items.length})</h2>
+        {items.length > 0 && (
+          <button
+            onClick={deleteAll}
+            className="rounded-lg border border-rose-500/40 px-4 py-2 text-sm font-semibold text-rose-200 hover:border-rose-300"
+          >
+            Hapus Semua
+          </button>
+        )}
+      </div>
+      {items.length === 0 && <p className="text-slate-400">Tidak ada notifikasi.</p>}
+      <div className="space-y-3">
+        {items.map((n: any) => (
+          <div
+            key={n.id}
+            className={`rounded-lg border p-4 text-sm ${n.isRead ? 'bg-slate-950/60' : 'border-emerald-400/30 bg-emerald-500/5'}`}
+          >
+            <p className="text-white">{n.message}</p>
+            <p className="mt-1 text-xs text-slate-400">{new Date(n.createdAt).toLocaleString()}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

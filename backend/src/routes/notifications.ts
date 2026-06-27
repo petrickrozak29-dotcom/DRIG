@@ -59,4 +59,17 @@ router.patch('/:id/read', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+// DELETE /api/notifications — hapus semua notifikasi milik user (admin: termasuk system)
+router.delete('/', authenticate, async (req: Request, res: Response) => {
+  try {
+    const authUser = (req as any).authUser as { id: string; role: string };
+    const result = await notificationService.deleteAllForUser(authUser.id, {
+      includeSystem: authUser.role === 'ADMIN',
+    });
+    res.json({ message: `${result.count} notifikasi berhasil dihapus`, count: result.count });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal menghapus notifikasi' });
+  }
+});
+
 export default router;
