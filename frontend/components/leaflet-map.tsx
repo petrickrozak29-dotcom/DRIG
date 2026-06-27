@@ -38,14 +38,18 @@ const markerColor: Record<string, string> = {
   lokasi: '#22c55e',
 };
 
-const TILE_CONFIGS: Record<TileStyle, { url: string; attribution: string }> = {
+const GOOGLE_SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
+
+const TILE_CONFIGS: Record<TileStyle, { url: string; attribution: string; subdomains: string[] }> = {
   street: {
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; CARTO',
+    url: 'http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps',
+    subdomains: GOOGLE_SUBDOMAINS,
   },
   satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+    url: 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps',
+    subdomains: GOOGLE_SUBDOMAINS,
   },
 };
 
@@ -139,6 +143,7 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
       const cfg = TILE_CONFIGS[tileStyle];
       L.tileLayer(cfg.url, {
         attribution: cfg.attribution,
+        subdomains: cfg.subdomains,
         maxZoom: 19,
       }).addTo(mapInstance.current);
 
@@ -175,6 +180,7 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
     leafletRef.current
       .tileLayer(cfg.url, {
         attribution: cfg.attribution,
+        subdomains: cfg.subdomains,
         maxZoom: 19,
       })
       .addTo(mapInstance.current);

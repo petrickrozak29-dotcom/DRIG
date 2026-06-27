@@ -224,6 +224,14 @@ function isValidCoordinate(latitude: number, longitude: number) {
   );
 }
 
+/**
+ * Extract coordinates from any string value (Google Maps URL, address, etc.).
+ * Checks these patterns in order:
+ *   1. @lat,lng (Google Maps @-notation)
+ *   2. !3dlat!4dlng (Google Maps encoded)
+ *   3. q=lat,lng / ll=lat,lng / center=lat,lng
+ *   4. lat,lng where lat has 2+ digits (avoids "Jalan 2, No 3" false matches)
+ */
 function extractCoordinates(value?: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return null;
