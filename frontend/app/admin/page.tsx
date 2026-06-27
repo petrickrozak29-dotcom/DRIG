@@ -63,9 +63,7 @@ export default function CommunityFormPage() {
     if (
       fromQuery === 'EVENT' ||
       fromQuery === 'WISATA' ||
-      fromQuery === 'KULINER' ||
-      fromQuery === 'CULTURE' ||
-      fromQuery === 'HISTORY'
+      fromQuery === 'KULINER'
     ) {
       setFeatureType(fromQuery);
     }
@@ -278,7 +276,7 @@ export default function CommunityFormPage() {
         <section className="rounded-lg border border-slate-800 bg-slate-900/80 p-6 md:p-8">
           {!preview ? (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid gap-4 md:grid-cols-3">
                 <button
                   type="button"
                   onClick={() => setFeatureType('EVENT')}
@@ -299,20 +297,6 @@ export default function CommunityFormPage() {
                   className={`rounded-lg border p-4 text-center transition ${featureType === 'KULINER' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
                 >
                   <h3 className="font-bold text-white">Kuliner</h3>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFeatureType('CULTURE')}
-                  className={`rounded-lg border p-4 text-center transition ${featureType === 'CULTURE' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
-                >
-                  <h3 className="font-bold text-white">Budaya</h3>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFeatureType('HISTORY')}
-                  className={`rounded-lg border p-4 text-center transition ${featureType === 'HISTORY' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
-                >
-                  <h3 className="font-bold text-white">Sejarah</h3>
                 </button>
               </div>
 

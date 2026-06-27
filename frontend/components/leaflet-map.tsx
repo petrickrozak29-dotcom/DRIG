@@ -137,8 +137,13 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
 
       leafletRef.current = L;
 
+      const initialCenter: [number, number] =
+        center && Number.isFinite(center.lat) && Number.isFinite(center.lng)
+          ? [center.lat, center.lng]
+          : [-7.4797, 110.2177];
+
       mapInstance.current = L.map(mapRef.current, {
-        center: center ? [center.lat, center.lng] : [-7.4797, 110.2177],
+        center: initialCenter,
         zoom: 12,
         scrollWheelZoom: true,
       });
@@ -166,7 +171,7 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
         mapInstance.current = null;
       }
     };
-  }, []);
+  }, [center?.lat, center?.lng]);
 
   // Switch tile layer when style changes
   useEffect(() => {
@@ -196,6 +201,10 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
     let focusMarker: any | null = null;
 
     markers.forEach((marker) => {
+      // Skip markers with invalid coordinates
+      if (!Number.isFinite(marker.latitude) || !Number.isFinite(marker.longitude)) return;
+      if (marker.latitude === 0 && marker.longitude === 0) return;
+
       const color = markerColor[String(marker.category).toLowerCase()] || '#38bdf8';
       const icon = leafletRef.current.divIcon({
         className: '',
@@ -217,7 +226,7 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
       }
     });
 
-    if (center) {
+    if (center && Number.isFinite(center.lat) && Number.isFinite(center.lng)) {
       bounds.push([center.lat, center.lng]);
     }
 
@@ -229,6 +238,8 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
 
     if (bounds.length > 1) {
       mapInstance.current.fitBounds(bounds, { padding: [36, 36], maxZoom: 13 });
+    } else if (bounds.length === 1) {
+      mapInstance.current.setView(bounds[0], 13, { animate: true });
     }
   }, [markers, center, focusId]);
 
