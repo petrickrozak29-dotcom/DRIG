@@ -68,8 +68,12 @@ export async function uploadToObjectStorage(
     }
   }
 
-  // Local fallback
-  return { url: `/uploads/${path.basename(localFilePath)}`, key: path.basename(localFilePath) };
+  const fileBuffer = await fs.promises.readFile(localFilePath);
+  const mimeType = contentType || 'application/octet-stream';
+  return {
+    url: `data:${mimeType};base64,${fileBuffer.toString('base64')}`,
+    key: path.basename(localFilePath),
+  };
 }
 
 export function ensureUploadsDir(baseDir: string) {

@@ -1,53 +1,36 @@
 Deployment checklist for MAGELANGVERSE-ID
 
-- Environment variables (backend):
-  - `DATABASE_URL` -> Prisma Postgres/SQLite connection string
-  - `REDIS_URL` -> Redis connection (optional but recommended)
-  - `OPENAI_API_KEY` -> For AI features (optional)
-  - `NEXT_PUBLIC_API_URL` -> Frontend runtime API base URL for SSR builds
-  - `JWT_SECRET` -> Signing key for auth tokens
-  - `NODE_ENV` -> production
+GitHub
+- Push the repository to GitHub.
+- Keep `.env` files out of git. Use `backend/.env.example` and `frontend/.env.example` as templates.
 
-- Storage:
- - Storage:
-  - `uploads/` directory persisted or use external object storage (S3, GCS) with rewrite of `/api/uploads` handlers
-  - Recommended env vars for object storage:
-    - `S3_BUCKET`
-    - `S3_REGION`
-    - `S3_ACCESS_KEY_ID`
-    - `S3_SECRET_ACCESS_KEY`
-    - `S3_ENDPOINT` (optional, for Spaces/MinIO)
-    - `S3_PUBLIC_URL` (optional, base URL for public assets)
-  - Configure CORS and allowed origins
+Railway Backend
+- Project root: `backend`
+- Start command: `npm run start`
+- Required variables:
+  - `DATABASE_URL`
+  - `JWT_SECRET`
+  - `NODE_ENV=production`
+  - `CORS_ORIGINS=https://your-vercel-app.vercel.app`
+- Optional variables:
+  - `OPENAI_API_KEY`
+  - `REDIS_URL`
+  - `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT`, `S3_PUBLIC_URL`
+- After deploy, open `https://your-railway-backend/api/health`.
 
-- Security:
-  - Rotate `JWT_SECRET` and keep secure
-  - Ensure HTTPS termination at load balancer
-  - Rate-limit public endpoints
-  - Configure CSP headers, XSS protections
+Vercel Frontend
+- Project root: `frontend`
+- Build command: `npm run build`
+- Output directory: leave default for Next.js
+- Required variable:
+  - `NEXT_PUBLIC_API_URL=https://your-railway-backend.up.railway.app`
 
-- Scaling:
-  - Run multiple backend instances behind a load balancer
-  - Use Redis instance for shared cache
-  - Use managed DB with pooling
+Storage
+- If S3 variables are configured, uploaded images use object storage.
+- If S3 is not configured, uploaded images are saved as data URLs so photos still persist after Railway redeploys.
 
-- CI/CD:
- - CI/CD:
-  - Run `npm test` for backend and `npm run build` for frontend in pipeline
-  - Run E2E smoke tests: create->approve->list
-  - Ensure workflow sets `DATABASE_URL` for migrations and `NEXT_PUBLIC_API_URL` for frontend build
-  - For Vercel: set `NEXT_PUBLIC_API_URL` to your backend URL and ensure `S3_*` envs are present for serverless uploads
-  - For Railway: set `DATABASE_URL` to a Postgres connection and run `npx prisma migrate deploy` on deploy
-
-- Rollback plan:
-  - Keep schema migrations reversible or support feature flags
-  - DB backups before schema changes
-
-- Post-deploy checks:
-  - Verify `/api/health` returns status ok
-  - Verify key pages load (/, /kuliner, /wisata, /admin)
-  - Check logs for errors
-
-- Notes:
-  - Large uploads are allowed by app but storage provider may impose limits; consider server-side streaming for very large files
-  - Consider using signed upload URLs for direct-to-object-storage uploads
+Post-Deploy Checks
+- Open `/`, `/wisata`, `/kuliner`, `/budaya`, `/sejarah`, `/event`, `/smart-map`, and `/smart-magelang`.
+- Submit one community item with a Google Maps link or coordinates.
+- Approve it from Developer Dashboard.
+- Confirm it appears with the uploaded photo in the relevant feature page, Smart Map, and AI itinerary recommendations.

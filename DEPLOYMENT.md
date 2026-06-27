@@ -13,10 +13,11 @@ Frontend (Vercel)
 
 Backend (Railway or Docker)
 Railway (recommended for quick deploy):
-1. Create a Railway project and add a Postgres plugin.
-2. Add environment variables in Railway with the keys above.
+1. Create a Railway project and add a Postgres database.
+2. Set the service root directory to `backend`.
+3. Add environment variables in Railway with the keys above.
    For CORS, set `CORS_ORIGINS` to your frontend HTTPS origin, for example `https://magelangverse.vercel.app`.
-3. Use Railway GitHub integration or run the manual deploy workflow in GitHub Actions.
+4. Deploy from GitHub. `backend/railway.json` tells Railway to run `npm run start`.
 
 Docker (self-host):
 1. Build the image:
@@ -29,7 +30,8 @@ docker run -e DATABASE_URL=... -e JWT_SECRET=... -p 4000:4000 magelangverse-back
 ```
 
 Prisma migrations in production
-1. On the production host or CI runner, run `npx prisma migrate deploy` before starting the backend to apply migrations safely.
+1. The current production start command runs `prisma db push` before `node dist/index.js`, so Railway will sync the schema on startup.
+2. For stricter production migration control later, change `backend/package.json` start to run `prisma migrate deploy` instead.
 
 GitHub Actions
 - A manual `Manual Deploy` workflow was added at `.github/workflows/deploy.yml` that builds both projects and supports Vercel and Railway deploys (requires repository Secrets).
