@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface MarkerItem {
   id: string | number;
@@ -27,6 +27,8 @@ interface LeafletMapProps {
   focusId?: string | null;
 }
 
+type TileStyle = 'street' | 'satellite';
+
 const markerColor: Record<string, string> = {
   event: '#f43f5e',
   wisata: '#06b6d4',
@@ -34,6 +36,17 @@ const markerColor: Record<string, string> = {
   budaya: '#8b5cf6',
   sejarah: '#10b981',
   lokasi: '#22c55e',
+};
+
+const TILE_CONFIGS: Record<TileStyle, { url: string; attribution: string }> = {
+  street: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; CARTO',
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+  },
 };
 
 const fallbackImage: Record<string, string> = {
@@ -103,6 +116,8 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
   const markerLayer = useRef<any | null>(null);
   const leafletRef = useRef<any | null>(null);
 
+  const [tileStyle, setTileStyle] = useState<TileStyle>('street');
+
   useEffect(() => {
     let mounted = true;
 
@@ -121,8 +136,10 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
         scrollWheelZoom: true,
       });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
+      const cfg = TILE_CONFIGS[tileStyle];
+      L.tileLayer(cfg.url, {
+        attribution: cfg.attribution,
+        maxZoom: 19,
       }).addTo(mapInstance.current);
 
       markerLayer.current = L.layerGroup().addTo(mapInstance.current);
@@ -142,6 +159,26 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
       }
     };
   }, []);
+
+  // Switch tile layer when style changes
+  useEffect(() => {
+    if (!mapInstance.current || !leafletRef.current) return;
+
+    // Clear existing tile layers
+    mapInstance.current.eachLayer((layer: any) => {
+      if (layer._url) {
+        mapInstance.current.removeLayer(layer);
+      }
+    });
+
+    const cfg = TILE_CONFIGS[tileStyle];
+    leafletRef.current
+      .tileLayer(cfg.url, {
+        attribution: cfg.attribution,
+        maxZoom: 19,
+      })
+      .addTo(mapInstance.current);
+  }, [tileStyle]);
 
   useEffect(() => {
     if (!markerLayer.current || !leafletRef.current) return;
@@ -187,5 +224,33 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
     }
   }, [markers, center, focusId]);
 
-  return <div ref={mapRef} className="h-[560px] w-full rounded-lg border border-slate-800" />;
+  return (
+    <div className="relative">
+      <div className="absolute right-3 top-3 z-[1000] flex gap-1">
+        <button
+          type="button"
+          onClick={() => setTileStyle('street')}
+          className={`rounded-lg px-3 py-1.5 text-xs font-bold shadow-lg transition ${
+            tileStyle === 'street'
+              ? 'bg-cyan-400 text-slate-950'
+              : 'bg-slate-800/80 text-white hover:bg-slate-700'
+          }`}
+        >
+          Jalan
+        </button>
+        <button
+          type="button"
+          onClick={() => setTileStyle('satellite')}
+          className={`rounded-lg px-3 py-1.5 text-xs font-bold shadow-lg transition ${
+            tileStyle === 'satellite'
+              ? 'bg-cyan-400 text-slate-950'
+              : 'bg-slate-800/80 text-white hover:bg-slate-700'
+          }`}
+        >
+          Satelit
+        </button>
+      </div>
+      <div ref={mapRef} className="h-[560px] w-full rounded-lg border border-slate-800" />
+    </div>
+  );
 }

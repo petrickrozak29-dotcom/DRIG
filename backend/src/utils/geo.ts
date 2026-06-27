@@ -46,7 +46,8 @@ export function extractCoordinates(value?: unknown) {
     /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
     /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
     /(?:q|query|ll|center)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i,
-    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
+    // Only match if at least one number has a decimal or numbers are large enough to be real coordinates
+    /(-?\d{2,}(?:\.\d+)?),\s*(-?\d{2,3}(?:\.\d+)?)/,
   ];
 
   for (const pattern of patterns) {
@@ -84,11 +85,12 @@ export function resolveCoordinates(input: {
     return { latitude, longitude };
   }
 
-  const fromLocation = extractCoordinates(input.location);
-  if (fromLocation) return fromLocation;
-
+  // Check link first — Google Maps URLs contain reliable coordinates
   const fromLink = extractCoordinates(input.link);
   if (fromLink) return fromLink;
+
+  const fromLocation = extractCoordinates(input.location);
+  if (fromLocation) return fromLocation;
 
   const text = `${input.location || ''} ${input.title || ''}`.toLowerCase();
   const found = knownLocations.find((location) =>

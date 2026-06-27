@@ -240,7 +240,8 @@ function extractCoordinates(value?: unknown) {
     /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
     /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
     /(?:q|query|ll|center)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i,
-    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
+    // Only match if lat has 2+ digits to avoid matching street numbers (Jalan 2, No 3)
+    /(-?\d{2,}(?:\.\d+)?),\s*(-?\d{2,3}(?:\.\d+)?)/,
   ];
 
   for (const pattern of patterns) {
@@ -258,7 +259,8 @@ function extractCoordinates(value?: unknown) {
 }
 
 export function resolveLocation(location: string, link?: string) {
-  const directCoordinates = extractCoordinates(location) || extractCoordinates(link);
+  // Check link first — Google Maps URLs contain reliable coordinates
+  const directCoordinates = extractCoordinates(link) || extractCoordinates(location);
   if (directCoordinates) {
     return {
       ...directCoordinates,
@@ -435,6 +437,9 @@ export function deleteDeveloperContent(type: DeveloperContentType, id: string) {
 
 function toManagedMapItem(type: 'tourism' | 'culinary', item: DeveloperContentItem): SmartMapItem {
   const resolved = resolveLocation(item.location || '', item.link || item.sourceUrl);
+  const linkCoords = extractCoordinates(item.link || item.sourceUrl);
+  const effectiveLat = linkCoords?.latitude ?? Number(item.latitude ?? resolved.latitude);
+  const effectiveLng = linkCoords?.longitude ?? Number(item.longitude ?? resolved.longitude);
   const category = type === 'tourism' ? 'wisata' : 'kuliner';
   const title = item.title.trim();
 
@@ -445,8 +450,8 @@ function toManagedMapItem(type: 'tourism' | 'culinary', item: DeveloperContentIt
     typeLabel: item.typeLabel || (type === 'tourism' ? 'Wisata' : 'Kuliner'),
     description: item.description,
     location: item.location || 'Magelang',
-    latitude: Number(item.latitude ?? resolved.latitude),
-    longitude: Number(item.longitude ?? resolved.longitude),
+    latitude: effectiveLat,
+    longitude: effectiveLng,
     image: normalizeImageUrl(item.image, type === 'tourism' ? photo.nature : photo.food),
     link: item.link,
     detailUrl: `/smart-map?focus=${item.id}`,
@@ -533,6 +538,10 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
     .filter((item) => item?.title && item?.date && item?.location)
     .map((item) => {
       const resolved = resolveLocation(String(item.location || ''), item.link || item.sourceUrl);
+      // If the item has a link with coordinates, override DB-stored coordinates
+      const linkCoords = extractCoordinates(item.link);
+      const effectiveLat = linkCoords?.latitude ?? Number(item.latitude ?? resolved.latitude);
+      const effectiveLng = linkCoords?.longitude ?? Number(item.longitude ?? resolved.longitude);
       const id = `api-${item.id || slugify(`${item.title}-${item.date}`)}`;
 
       return {
@@ -544,8 +553,8 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
         time: item.time ? String(item.time) : undefined,
         location: String(item.location),
         description: String(item.description || 'Event komunitas Magelang.'),
-        latitude: Number(item.latitude ?? resolved.latitude),
-        longitude: Number(item.longitude ?? resolved.longitude),
+        latitude: effectiveLat,
+        longitude: effectiveLng,
         image: normalizeImageUrl(item.image, photo.event),
         link: item.link ? String(item.link) : item.sourceUrl ? String(item.sourceUrl) : undefined,
         sourceUrl: item.sourceUrl ? String(item.sourceUrl) : undefined,
@@ -881,6 +890,12 @@ function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[]
             : featureType === 'HISTORY'
               ? photo.museum
               : photo.event;
+    // If the item has a link with coordinates, always use those instead of DB values
+    // This fixes existing submissions that were stored with wrong coords
+    const linkCoords = extractCoordinates(item.link);
+    const effectiveLat = linkCoords?.latitude ?? Number(item.latitude ?? resolved.latitude);
+    const effectiveLng = linkCoords?.longitude ?? Number(item.longitude ?? resolved.longitude);
+
     const image = normalizeImageUrl(item.image || item.imageUrl, fallback);
 
       return {
@@ -890,8 +905,8 @@ function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[]
         typeLabel: String(item.category || item.typeLabel || item.type || 'Lainnya'),
         description: String(item.description || item.content || ''),
         location: String(item.location || ''),
-        latitude: Number(item.latitude ?? resolved.latitude),
-        longitude: Number(item.longitude ?? resolved.longitude),
+        latitude: effectiveLat,
+        longitude: effectiveLng,
         image,
         link: item.link ? String(item.link) : item.sourceUrl ? String(item.sourceUrl) : undefined,
         detailUrl: `/smart-map?focus=${id}`,
