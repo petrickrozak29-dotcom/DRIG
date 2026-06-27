@@ -19,3 +19,38 @@
 {"ts":"2026-06-12T02:51:35.450Z","level":"info","message":"New submission created","meta":{"id":"sub-1","title":"Bukit Rhema","featureType":"WISATA"}}
 {"ts":"2026-06-12T02:51:35.460Z","level":"info","message":"New submission created","meta":{"id":"sub-2","title":"Kupat Tahu","featureType":"KULINER"}}
 {"ts":"2026-06-12T02:51:35.463Z","level":"info","message":"Submission published","meta":{"id":"sub-1"}}
+{"ts":"2026-06-27T17:15:22.553Z","level":"info","message":"New submission created","meta":{"id":"sub-1","title":"Bukit Rhema","featureType":"WISATA","hasCoords":true}}
+{"ts":"2026-06-27T17:15:22.645Z","level":"info","message":"New submission created","meta":{"id":"sub-2","title":"Kupat Tahu","featureType":"KULINER","hasCoords":true}}
+{"ts":"2026-06-27T17:15:22.658Z","level":"info","message":"Submission published","meta":{"id":"sub-1"}}
+{"ts":"2026-06-27T17:16:32.743Z","level":"info","message":"New submission created","meta":{"id":"cmqwmgjrb00043x8zhfjaq3mx","title":"SMOKE-1782580589-tourism","featureType":"WISATA","hasCoords":false}}
+{"ts":"2026-06-27T17:16:34.357Z","level":"info","message":"Submission published","meta":{"id":"cmqwmgjrb00043x8zhfjaq3mx","title":"SMOKE-1782580589-tourism"}}
+{"ts":"2026-06-27T17:16:36.020Z","level":"info","message":"New submission created","meta":{"id":"cmqwmgma800093x8z6ewle13r","title":"SMOKE-1782580589-culinary","featureType":"KULINER","hasCoords":false}}
+{"ts":"2026-06-27T17:16:36.870Z","level":"info","message":"Submission published","meta":{"id":"cmqwmgma800093x8z6ewle13r","title":"SMOKE-1782580589-culinary"}}
+{"ts":"2026-06-27T17:16:38.478Z","level":"info","message":"New submission created","meta":{"id":"cmqwmgo6h000e3x8zcp1h6tq5","title":"SMOKE-1782580589-event","featureType":"EVENT","hasCoords":false}}
+{"ts":"2026-06-27T17:16:39.336Z","level":"info","message":"Submission published","meta":{"id":"cmqwmgo6h000e3x8zcp1h6tq5","title":"SMOKE-1782580589-event"}}
+{"ts":"2026-06-27T17:16:40.525Z","level":"info","message":"New submission created","meta":{"id":"cmqwmgq06000j3x8zpv2fda2u","title":"SMOKE-1782580589-culture","featureType":"CULTURE","hasCoords":false}}
+{"ts":"2026-06-27T17:16:41.857Z","level":"info","message":"Submission published","meta":{"id":"cmqwmgq06000j3x8zpv2fda2u","title":"SMOKE-1782580589-culture"}}
+{"ts":"2026-06-27T17:16:43.189Z","level":"info","message":"New submission created","meta":{"id":"cmqwmgs1u000o3x8zvd85pjj3","title":"SMOKE-1782580589-history","featureType":"HISTORY","hasCoords":false}}
+{"ts":"2026-06-27T17:16:44.314Z","level":"info","message":"Submission published","meta":{"id":"cmqwmgs1u000o3x8zvd85pjj3","title":"SMOKE-1782580589-history"}}
+{"ts":"2026-06-27T17:19:34.571Z","level":"info","message":"New submission created","meta":{"id":"sub-1","title":"Bukit Rhema","featureType":"WISATA","hasCoords":true}}
+{"ts":"2026-06-27T17:19:34.637Z","level":"info","message":"New submission created","meta":{"id":"sub-2","title":"Kupat Tahu","featureType":"KULINER","hasCoords":true}}
+{"ts":"2026-06-27T17:19:34.645Z","level":"info","message":"New submission created","meta":{"id":"sub-map","title":"Festival","featureType":"EVENT","hasCoords":false}}
+{"ts":"2026-06-27T17:19:34.666Z","level":"info","message":"Submission published","meta":{"id":"sub-1"}}
+{"ts":"2026-06-27T17:20:30.800Z","level":"info","message":"New submission created","meta":{"id":"sub-1","title":"Bukit Rhema","featureType":"WISATA","hasCoords":true}}
+{"ts":"2026-06-27T17:20:30.863Z","level":"info","message":"New submission created","meta":{"id":"sub-2","title":"Kupat Tahu","featureType":"KULINER","hasCoords":true}}
+{"ts":"2026-06-27T17:20:30.868Z","level":"info","message":"New submission created","meta":{"id":"sub-map","title":"Festival","featureType":"EVENT","hasCoords":true}}
+{"ts":"2026-06-27T17:20:30.871Z","level":"info","message":"Submission published","meta":{"id":"sub-1"}}
+{"ts":"2026-06-27T17:21:31.464Z","level":"info","message":"New submission created","meta":{"id":"cmqwmmybe0003o5dxqzo2olhk","title":"SMOKE-COORD-1782580889-tourism","featureType":"WISATA","hasCoords":true}}
+{"ts":"2026-06-27T17:21:33.126Z","level":"info","message":"Submission published","meta":{"id":"cmqwmmybe0003o5dxqzo2olhk","title":"SMOKE-COORD-1782580889-tourism"}}
+{"ts":"2026-06-27T17:21:35.747Z","level":"info","message":"New submission created","meta":{"id":"cmqwmn1se0007o5dx5xtp03za","title":"SMOKE-COORD-1782580889-culinary","featureType":"KULINER","hasCoords":true}}
+{"ts":"2026-06-27T17:21:36.669Z","level":"info","message":"Submission published","meta":{"id":"cmqwmn1se0007o5dx5xtp03za","title":"SMOKE-COORD-1782580889-culinary"}}
+{"ts":"2026-06-27T17:21:40.356Z","level":"info","message":"New submission created","meta":{"id":"cmqwmn53z000bo5dxmuiex5ji","title":"SMOKE-COORD-1782580889-event","featureType":"EVENT","hasCoords":true}}
+{"ts":"2026-06-27T17:21:41.584Z","level":"info","message":"Submission published","meta":{"id":"cmqwmn53z000bo5dxmuiex5ji","title":"SMOKE-COORD-1782580889-event"}}
+{"ts":"2026-06-27T17:21:43.325Z","level":"info","message":"New submission created","meta":{"id":"cmqwmn7nk000fo5dxdtm3hn6i","title":"SMOKE-COORD-1782580889-culture","featureType":"CULTURE","hasCoords":true}}
+{"ts":"2026-06-27T17:21:44.246Z","level":"info","message":"Submission published","meta":{"id":"cmqwmn7nk000fo5dxdtm3hn6i","title":"SMOKE-COORD-1782580889-culture"}}
+{"ts":"2026-06-27T17:21:46.192Z","level":"info","message":"New submission created","meta":{"id":"cmqwmn9th000jo5dxsb5919o4","title":"SMOKE-COORD-1782580889-history","featureType":"HISTORY","hasCoords":true}}
+{"ts":"2026-06-27T17:21:47.114Z","level":"info","message":"Submission published","meta":{"id":"cmqwmn9th000jo5dxsb5919o4","title":"SMOKE-COORD-1782580889-history"}}
+{"ts":"2026-06-27T17:25:11.540Z","level":"info","message":"New submission created","meta":{"id":"sub-1","title":"Bukit Rhema","featureType":"WISATA","hasCoords":true}}
+{"ts":"2026-06-27T17:25:11.645Z","level":"info","message":"New submission created","meta":{"id":"sub-2","title":"Kupat Tahu","featureType":"KULINER","hasCoords":true}}
+{"ts":"2026-06-27T17:25:11.655Z","level":"info","message":"New submission created","meta":{"id":"sub-map","title":"Festival","featureType":"EVENT","hasCoords":true}}
+{"ts":"2026-06-27T17:25:11.663Z","level":"info","message":"Submission published","meta":{"id":"sub-1"}}

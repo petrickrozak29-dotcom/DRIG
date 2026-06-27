@@ -22,7 +22,6 @@ import {
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
-import MapPicker from '../../components/map-picker';
 import GradientBg from '../../components/gradient-bg';
 import CategoryManager from '../../components/category-manager';
 import { useAuth } from '../../contexts/AuthContext';
@@ -69,8 +68,6 @@ const defaultForm = {
   openingHours: '',
   rating: '',
   date: '',
-  latitude: '',
-  longitude: '',
 };
 
 const fallbackImage =
@@ -104,6 +101,15 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
+function isMapReference(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  return (
+    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/.test(trimmed) ||
+    /(maps\.google|google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl)/i.test(trimmed)
+  );
+}
+
 function toFormState(item?: ManagedContentItem | null) {
   if (!item) return defaultForm;
   return {
@@ -119,8 +125,6 @@ function toFormState(item?: ManagedContentItem | null) {
     openingHours: item.openingHours || '',
     rating: item.rating !== undefined && item.rating !== null ? String(item.rating) : '',
     date: item.date ? String(item.date).slice(0, 10) : '',
-    latitude: item.latitude !== undefined && item.latitude !== null ? String(item.latitude) : '',
-    longitude: item.longitude !== undefined && item.longitude !== null ? String(item.longitude) : '',
   };
 }
 
@@ -292,6 +296,10 @@ export default function DeveloperPage() {
 
     setSaving(true);
     try {
+      if (!isMapReference(formState.link)) {
+        throw new Error('Link Google Maps atau titik koordinat wajib diisi. Contoh: -7.458564688477663, 110.22222490358898');
+      }
+
       const payload: Record<string, unknown> = {
         title: formState.title.trim(),
         description: formState.description.trim(),
@@ -731,9 +739,6 @@ function ContentFormCard({
   const isCulinary = section === 'culinary';
   const hasRating = section === 'tourism' || section === 'culinary' || section === 'event';
 
-  const pickerLat = formState.latitude ? Number(formState.latitude) : null;
-  const pickerLng = formState.longitude ? Number(formState.longitude) : null;
-
   return (
     <form
       onSubmit={onSubmit}
@@ -793,33 +798,13 @@ function ContentFormCard({
         )}
 
         {isPlace && (
-          <>
-            <Field
-              label="Lokasi"
-              value={formState.location}
-              onChange={(value) => setFormState((current) => ({ ...current, location: value }))}
-              placeholder="Contoh: Alun-alun Magelang"
-            />
-          </>
-        )}
-
-        {/* Map Picker for developer content */}
-        {isPlace && (
-          <div className="rounded-lg border border-slate-700 bg-slate-950/50 p-3">
-            <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold text-cyan-200">
-              <MapPin className="h-3 w-3" />
-              Pilih Lokasi di Peta
-            </h4>
-            <MapPicker
-              latitude={pickerLat}
-              longitude={pickerLng}
-              locationText={formState.location}
-              onLocationChange={(loc) => setFormState((s) => ({ ...s, location: loc }))}
-              onCoordsChange={(lat, lng) => {
-                setFormState((s) => ({ ...s, latitude: String(lat), longitude: String(lng) }));
-              }}
-            />
-          </div>
+          <Field
+            label="Link Google Maps / Titik Koordinat"
+            value={formState.link}
+            onChange={(value) => setFormState((current) => ({ ...current, link: value }))}
+            placeholder="-7.458564688477663, 110.22222490358898"
+            required
+          />
         )}
 
         {isEvent && (
@@ -882,13 +867,6 @@ function ContentFormCard({
             className="h-40 w-full rounded-lg border border-slate-800 object-cover"
           />
         )}
-
-        <Field
-          label="Link/Sumber (Opsional)"
-          value={formState.link}
-          onChange={(value) => setFormState((current) => ({ ...current, link: value }))}
-          placeholder="https://..."
-        />
 
         <div className="flex gap-3">
           <button

@@ -61,20 +61,15 @@ const fallbackImage: Record<string, string> = {
   sejarah: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=800&q=80',
 };
 
-function escapeHtml(str: string): string {
-  const map: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' };
-  return str.replace(/[&<>"']/g, (c) => map[c] || c);
-}
-
 function getPopupHtml(marker: MarkerItem) {
   const title = escapeHtml(String(marker.title ?? ''));
   const typeLabel = escapeHtml(String(marker.typeLabel || marker.category));
   const location = escapeHtml(String(marker.location ?? ''));
   const description = escapeHtml(String(marker.description ?? ''));
   const distance = typeof marker.distance === 'number' ? `${marker.distance.toFixed(1)} km` : '';
-  const detailUrl = marker.detailUrl || `/smart-map?focus=${encodeURIComponent(String(marker.id))}`;
-  const linkUrl = marker.link ? escapeHtml(String(marker.link)) : '';
-  const sourceButton = marker.link
+  const detailUrl = escapeAttr(marker.detailUrl || `/smart-map?focus=${encodeURIComponent(String(marker.id))}`);
+  const linkUrl = getSafeMapHref(marker);
+  const sourceButton = linkUrl
     ? `<a href="${linkUrl}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;background:#0891b2;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</a>`
     : `<span style="flex:1;text-align:center;background:#e2e8f0;color:#64748b;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</span>`;
   const extra = [marker.openingHours, marker.ticketPrice || marker.priceRange]
@@ -84,7 +79,7 @@ function getPopupHtml(marker: MarkerItem) {
   const cat = String(marker.category).toLowerCase();
   const imgSrc = marker.image || fallbackImage[cat] || fallbackImage.wisata;
   const fallbackSrc = fallbackImage[cat] || fallbackImage.wisata;
-  const image = `<img src="${escapeHtml(imgSrc)}" alt="${title}" onerror="this.onerror=null;this.src='${escapeHtml(fallbackSrc)}';" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:10px;background:#e2e8f0;" />`;
+  const image = `<img src="${escapeAttr(imgSrc)}" alt="${title}" onerror="this.onerror=null;this.src='${escapeAttr(fallbackSrc)}';" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:10px;background:#e2e8f0;" />`;
 
   return `
     <div style="width:240px;color:#0f172a;font-family:Inter,Arial,sans-serif;">
@@ -92,14 +87,71 @@ function getPopupHtml(marker: MarkerItem) {
       <strong style="display:block;font-size:15px;line-height:1.25;margin-bottom:4px;">${title}</strong>
       <span style="display:inline-block;font-size:11px;font-weight:700;color:#075985;background:#e0f2fe;border-radius:999px;padding:3px 8px;margin-bottom:8px;">${typeLabel}</span>
       <p style="font-size:12px;line-height:1.45;margin:0 0 8px;color:#334155;">${description}</p>
-      <p style="font-size:11px;line-height:1.35;margin:0 0 10px;color:#64748b;">${location}${distance ? ` • ${distance}` : ''}</p>
+      <p style="font-size:11px;line-height:1.35;margin:0 0 10px;color:#64748b;">${location}${distance ? ` - ${distance}` : ''}</p>
       ${extra}
       <div style="display:flex;gap:8px;">
-        <a href="${escapeHtml(detailUrl)}" style="flex:1;text-align:center;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Lihat Detail</a>
+        <a href="${detailUrl}" style="flex:1;text-align:center;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Lihat Detail</a>
         ${sourceButton}
       </div>
     </div>
   `;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (char) => {
+    if (char === '&') return '&amp;';
+    if (char === '<') return '&lt;';
+    if (char === '>') return '&gt;';
+    if (char === '"') return '&quot;';
+    return '&#039;';
+  });
+}
+
+function escapeAttr(value: string) {
+  return escapeHtml(value).replace(/`/g, '&#096;');
+}
+
+function extractCoordinatePair(value?: string | null) {
+  const raw = String(value || '').trim();
+  const match = raw.match(/(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+  if (!match) return null;
+
+  const latitude = Number(match[1]);
+  const longitude = Number(match[2]);
+  if (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  ) {
+    return { latitude, longitude };
+  }
+
+  return null;
+}
+
+function getSafeMapHref(marker: MarkerItem) {
+  const rawLink = String(marker.link || '').trim();
+  const linkCoords = extractCoordinatePair(rawLink);
+  if (linkCoords) {
+    return escapeAttr(
+      `https://www.google.com/maps/search/?api=1&query=${linkCoords.latitude},${linkCoords.longitude}`
+    );
+  }
+
+  if (/^https?:\/\//i.test(rawLink)) {
+    return escapeAttr(rawLink);
+  }
+
+  if (Number.isFinite(marker.latitude) && Number.isFinite(marker.longitude)) {
+    return escapeAttr(
+      `https://www.google.com/maps/search/?api=1&query=${marker.latitude},${marker.longitude}`
+    );
+  }
+
+  return '';
 }
 
 export default function LeafletMap({ markers, center, focusId }: LeafletMapProps) {
@@ -107,12 +159,11 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
   const mapInstanceRef = useRef<any | null>(null);
   const markerLayerRef = useRef<any | null>(null);
   const leafletRef = useRef<any | null>(null);
-  const isReadyRef = useRef(false);
-
   const [tileStyle, setTileStyle] = useState<TileStyle>('street');
   const [mounted, setMounted] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  // SSR guard — only run on client after mount
+  // SSR guard: only run on client after mount
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -122,12 +173,14 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
     if (!mounted || mapInstanceRef.current || !mapContainerRef.current) return;
 
     let cancelled = false;
+    let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
 
     (async () => {
       const L = (await import('leaflet')).default;
       await import('leaflet/dist/leaflet.css');
 
-      if (cancelled || !mapContainerRef.current) return;
+      const container = mapContainerRef.current;
+      if (cancelled || !container || !container.isConnected) return;
 
       leafletRef.current = L;
 
@@ -136,7 +189,7 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
           ? [center.lat, center.lng]
           : [-7.4797, 110.2177];
 
-      const map = L.map(mapContainerRef.current, {
+      const map = L.map(container, {
         center: initCenter,
         zoom: 12,
         scrollWheelZoom: true,
@@ -153,11 +206,11 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
 
       mapInstanceRef.current = map;
       markerLayerRef.current = layerGroup;
-      isReadyRef.current = true;
+      setReady(true);
 
       // Invalidate size after mount to fix container-not-found issues
-      setTimeout(() => {
-        if (mapInstanceRef.current) {
+      invalidateTimer = setTimeout(() => {
+        if (mapInstanceRef.current && mapContainerRef.current?.isConnected) {
           mapInstanceRef.current.invalidateSize();
         }
       }, 100);
@@ -165,9 +218,11 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
 
     return () => {
       cancelled = true;
-      isReadyRef.current = false;
+      if (invalidateTimer) clearTimeout(invalidateTimer);
+      setReady(false);
       if (mapInstanceRef.current) {
         try {
+          mapInstanceRef.current.stop();
           mapInstanceRef.current.remove();
         } catch {
           // ignore
@@ -180,7 +235,7 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
 
   // Switch tile style
   useEffect(() => {
-    if (!mapInstanceRef.current || !leafletRef.current) return;
+    if (!mapInstanceRef.current || !leafletRef.current || !mapContainerRef.current?.isConnected) return;
 
     mapInstanceRef.current.eachLayer((layer: any) => {
       if (layer._url) {
@@ -198,9 +253,17 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
       .addTo(mapInstanceRef.current);
   }, [tileStyle]);
 
-  // Sync markers
+  // Sync markers (depends on `ready` so it re-runs after map init)
   useEffect(() => {
-    if (!markerLayerRef.current || !leafletRef.current || !mapInstanceRef.current) return;
+    if (
+      !ready ||
+      !markerLayerRef.current ||
+      !leafletRef.current ||
+      !mapInstanceRef.current ||
+      !mapContainerRef.current?.isConnected
+    ) {
+      return;
+    }
 
     markerLayerRef.current.clearLayers();
     const bounds: any[] = [];
@@ -236,21 +299,26 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
     }
 
     if (focusMarker) {
-      mapInstanceRef.current.setView(focusMarker.getLatLng(), 14, { animate: true });
+      if (!mapInstanceRef.current) return;
+      mapInstanceRef.current.setView(focusMarker.getLatLng(), 14, { animate: false });
       focusMarker.openPopup();
       return;
     }
 
     try {
-      if (bounds.length > 1) {
-        mapInstanceRef.current.fitBounds(bounds, { padding: [36, 36], maxZoom: 13 });
-      } else if (bounds.length === 1) {
-        mapInstanceRef.current.setView(bounds[0], 13, { animate: true });
+      if (mapInstanceRef.current && bounds.length > 1) {
+        mapInstanceRef.current.fitBounds(bounds, {
+          padding: [36, 36],
+          maxZoom: 13,
+          animate: false,
+        });
+      } else if (mapInstanceRef.current && bounds.length === 1) {
+        mapInstanceRef.current.setView(bounds[0], 13, { animate: false });
       }
     } catch {
       // Ignore fitBounds errors on empty bounds
     }
-  }, [markers, center, focusId]);
+  }, [markers, center, focusId, ready]);
 
   // If not mounted yet (SSR), render an invisible placeholder with the same dimensions
   if (!mounted) {

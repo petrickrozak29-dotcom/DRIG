@@ -48,6 +48,15 @@ interface ProfileSubmissionItem {
   createdAt?: string;
 }
 
+function isMapReference(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  return (
+    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/.test(trimmed) ||
+    /(maps\.google|google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl)/i.test(trimmed)
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isAuthenticated, loading, updateProfile, changePassword, token } = useAuth();
@@ -300,6 +309,10 @@ export default function ProfilePage() {
     setSubmissionStatus('');
 
     try {
+      if (!isMapReference(submissionForm.link)) {
+        throw new Error('Link Google Maps atau titik koordinat wajib diisi. Contoh: -7.458564688477663, 110.22222490358898');
+      }
+
       const response = await fetch(`${getApiBaseUrl()}/api/submissions/${editingSubmission.id}`, {
         method: 'PUT',
         headers: {
@@ -627,7 +640,7 @@ export default function ProfilePage() {
                 }
               />
               <ProfileField
-                label="Lokasi"
+                label="Nama Lokasi (Opsional)"
                 value={submissionForm.location}
                 onChange={(value) =>
                   setSubmissionForm((current) => ({ ...current, location: value }))
@@ -683,11 +696,12 @@ export default function ProfilePage() {
                 />
               )}
               <ProfileField
-                label="Link/Sumber (Opsional)"
+                label="Link Google Maps / Titik Koordinat"
                 value={submissionForm.link}
                 onChange={(value) =>
                   setSubmissionForm((current) => ({ ...current, link: value }))
                 }
+                required
               />
               <label className="block text-sm font-semibold text-slate-200">
                 Upload Gambar

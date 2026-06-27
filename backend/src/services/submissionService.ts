@@ -1,6 +1,6 @@
 import prisma from './prismaClient';
 import { log } from './logger';
-import { resolveCoordinates } from '../utils/geo';
+import { normalizeMapReference, resolveCoordinates } from '../utils/geo';
 import type {
   SubmissionFeatureType,
   SubmissionRecord,
@@ -44,17 +44,13 @@ export interface UpdateSubmissionInput {
   resetToPending?: boolean;
 }
 
-const GOOGLE_MAPS_LINK_REGEX = /maps\.google|goo\.gl|@/i;
 const MAX_LOCATION_LENGTH = 150;
 
 function validateSubmissionInput(input: CreateSubmissionInput | UpdateSubmissionInput): void {
   if (input.location && input.location.length > MAX_LOCATION_LENGTH) {
     throw new Error(`Lokasi maksimal ${MAX_LOCATION_LENGTH} karakter.`);
   }
-
-  if (input.link && !GOOGLE_MAPS_LINK_REGEX.test(input.link)) {
-    throw new Error('Link Google Maps wajib diisi dengan benar agar lokasi terhubung ke peta!');
-  }
+  // Link validation removed. Users can paste any link or coordinate text like "-7.4585,110.2222"
 }
 
 export const submissionService = {
@@ -88,6 +84,7 @@ export const submissionService = {
       featureType,
       status: 'PENDING',
       categoryId: category.id,
+      link: normalizeMapReference(input.link),
     };
 
     // Only set coordinates if we resolved them
@@ -99,10 +96,9 @@ export const submissionService = {
       data.longitude = null;
     }
 
-    // location should always be set from input
-    if (input.location) {
-      data.location = input.location;
-    }
+    data.location =
+      input.location?.trim() ||
+      (coordinates ? `${coordinates.latitude}, ${coordinates.longitude}` : null);
 
     let newSubmission: SubmissionRecord;
 
@@ -166,7 +162,7 @@ export const submissionService = {
     if (input.description !== undefined) data.description = input.description;
     if (input.location !== undefined) data.location = input.location;
     if (input.image !== undefined) data.image = input.image;
-    if (input.link !== undefined) data.link = input.link;
+    if (input.link !== undefined) data.link = normalizeMapReference(input.link) ?? null;
     if (input.priceRange !== undefined) data.priceRange = input.priceRange;
     if (input.ticketPrice !== undefined) data.ticketPrice = input.ticketPrice;
     if (input.openingHours !== undefined) data.openingHours = input.openingHours;
@@ -193,6 +189,13 @@ export const submissionService = {
       if (coordinates) {
         data.latitude = coordinates.latitude;
         data.longitude = coordinates.longitude;
+
+        if (
+          (input.location !== undefined && !String(input.location || '').trim()) ||
+          (input.location === undefined && !current.location && input.link !== undefined)
+        ) {
+          data.location = `${coordinates.latitude}, ${coordinates.longitude}`;
+        }
       } else {
         data.latitude = null;
         data.longitude = null;

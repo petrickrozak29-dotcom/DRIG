@@ -57,7 +57,7 @@ export function extractCoordinates(value?: unknown) {
     /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
     /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
     /(?:q|query|ll|center)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i,
-    /(-?\d{2,}(?:\.\d+)?),\s*(-?\d{2,3}(?:\.\d+)?)/,
+    /(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/,
   ];
 
   for (const pattern of patterns) {
@@ -74,10 +74,73 @@ export function extractCoordinates(value?: unknown) {
   return null;
 }
 
+export function normalizeMapReference(value?: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return undefined;
+
+  const coordinates = extractCoordinates(raw);
+  if (coordinates && !/^https?:\/\//i.test(raw)) {
+    return `https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}`;
+  }
+
+  return raw;
+}
+
+function isGoogleMapsHost(hostname: string) {
+  const host = hostname.toLowerCase();
+  return (
+    host === 'goo.gl' ||
+    host === 'maps.app.goo.gl' ||
+    host === 'maps.google.com' ||
+    host.endsWith('.google.com') ||
+    /^(?:www\.|maps\.)google\.[a-z.]+$/.test(host)
+  );
+}
+
+async function resolveCoordinatesFromMapLink(value?: unknown) {
+  const direct = extractCoordinates(value);
+  if (direct) return direct;
+
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  try {
+    const url = new URL(raw);
+    if (!['http:', 'https:'].includes(url.protocol) || !isGoogleMapsHost(url.hostname)) {
+      return null;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow',
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'FutureMagelang/1.0',
+          'Accept-Language': 'id',
+        },
+      });
+
+      return extractCoordinates(response.url);
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch {
+    return null;
+  }
+}
+
 export async function geocodeAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&accept-language=id`;
     const response = await fetch(url, {
+      signal: controller.signal,
       headers: {
         'User-Agent': 'FutureMagelang/1.0',
         'Accept-Language': 'id',
@@ -97,6 +160,8 @@ export async function geocodeAddress(address: string): Promise<{ latitude: numbe
     return { latitude: lat, longitude: lng };
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -120,7 +185,7 @@ export async function resolveCoordinates(input: {
   }
 
   // 2. Try extracting coordinates from link (Google Maps URLs)
-  const fromLink = extractCoordinates(input.link);
+  const fromLink = await resolveCoordinatesFromMapLink(input.link);
   if (fromLink) return fromLink;
 
   // 3. Try extracting from location text

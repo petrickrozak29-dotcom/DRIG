@@ -243,7 +243,7 @@ function extractCoordinates(value?: unknown) {
     /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
     /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
     /(?:q|query|ll|center)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i,
-    /(-?\d{2,}(?:\.\d+)?),\s*(-?\d{2,3}(?:\.\d+)?)/,
+    /(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/,
   ];
 
   for (const pattern of patterns) {

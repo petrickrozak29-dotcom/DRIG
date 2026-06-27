@@ -85,6 +85,31 @@ describe('Submission Service', () => {
       });
       expect(result).toEqual(mockSubmission);
     });
+
+    it('should resolve a raw coordinate pair and store a valid Google Maps link', async () => {
+      const mockCategory = { id: 'cat-map', name: 'Event', featureType: 'EVENT' };
+      const mockSubmission = { id: 'sub-map', title: 'Festival', status: 'PENDING' };
+
+      prisma.category.findFirst.mockResolvedValue(mockCategory);
+      prisma.submission.create.mockResolvedValue(mockSubmission);
+
+      await submissionService.createSubmission({
+        title: 'Festival',
+        description: 'Event dengan titik Google Maps',
+        featureType: 'EVENT',
+        categoryName: 'Event',
+        link: '-7.458564688477663, 110.22222490358898',
+      });
+
+      expect(prisma.submission.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          latitude: -7.458564688477663,
+          longitude: 110.22222490358898,
+          location: '-7.458564688477663, 110.22222490358898',
+          link: 'https://www.google.com/maps/search/?api=1&query=-7.458564688477663,110.22222490358898',
+        }),
+      });
+    });
   });
 
   describe('getSubmissions', () => {

@@ -15,7 +15,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
-import MapPicker from '../../components/map-picker';
 import { getApiBaseUrl } from '../../lib/api';
 
 type FeatureType = 'EVENT' | 'WISATA' | 'KULINER' | 'CULTURE' | 'HISTORY';
@@ -27,6 +26,15 @@ interface Category {
 }
 
 // Categories are loaded from the API so public forms follow the latest options.
+
+function isMapReference(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  return (
+    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/.test(trimmed) ||
+    /(maps\.google|google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl)/i.test(trimmed)
+  );
+}
 
 export default function CommunityFormPage() {
   const router = useRouter();
@@ -47,9 +55,6 @@ export default function CommunityFormPage() {
     openingHours: '',
     rating: '',
   });
-
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState(false);
@@ -160,8 +165,8 @@ export default function CommunityFormPage() {
       errors.location = 'Lokasi maksimal 150 karakter.';
     }
 
-    if (!formState.link || !formState.link.match(/maps\.google|goo\.gl|@/i)) {
-      errors.link = 'Link Google Maps wajib diisi dengan benar agar lokasi terhubung ke peta!';
+    if (!isMapReference(formState.link)) {
+      errors.link = 'Isi dengan link Google Maps atau titik koordinat, contoh: -7.458564688477663, 110.22222490358898';
     }
 
     setFormErrors(errors);
@@ -196,8 +201,6 @@ export default function CommunityFormPage() {
           ...formState,
           featureType,
           submittedById: user?.id,
-          latitude,
-          longitude,
         }),
       });
 
@@ -217,8 +220,6 @@ export default function CommunityFormPage() {
         openingHours: '',
         rating: '',
       });
-      setLatitude(null);
-      setLongitude(null);
       setPreview(false);
       window.dispatchEvent(new Event('magelangverse-submissions-updated'));
     } catch {
@@ -269,7 +270,7 @@ export default function CommunityFormPage() {
           <h1 className="mt-3 text-4xl font-bold sm:text-5xl">Ajukan Konten ke Smart Map</h1>
           <p className="mx-auto mt-4 max-w-2xl text-slate-300">
             Pilih jenis konten, isi detailnya, lalu preview. Konten akan tampil publik setelah
-            disetujui pengelola. Gunakan peta untuk memilih lokasi yang tepat.
+            disetujui pengelola. Tempel link Google Maps atau titik koordinat agar lokasi langsung tersambung ke Smart Map.
           </p>
         </section>
 
@@ -310,13 +311,13 @@ export default function CommunityFormPage() {
 
                 <div>
                   <Field
-                    label="Link Google Maps Lokasi *"
+                    label="Link Google Maps / Titik Koordinat *"
                     value={formState.link}
                     onChange={(v) => {
                       setFormState({ ...formState, link: v });
                       if (formErrors.link) setFormErrors((prev) => { const n = { ...prev }; delete n.link; return n; });
                     }}
-                    placeholder="https://maps.google.com/..."
+                    placeholder="-7.458564688477663, 110.22222490358898"
                     error={formErrors.link}
                   />
                   {formErrors.link && (
@@ -351,7 +352,7 @@ export default function CommunityFormPage() {
 
                 <div>
                   <Field
-                    label="Lokasi / Alamat"
+                    label="Nama Lokasi / Alamat (Opsional)"
                     value={formState.location}
                     onChange={(v) => {
                       if (v.length > 150) return;
@@ -465,24 +466,6 @@ export default function CommunityFormPage() {
 
               </div>
 
-              {/* Map Picker Section */}
-              <div className="rounded-lg border border-slate-700 bg-slate-950/50 p-4">
-                <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-cyan-200">
-                  <MapPin className="h-4 w-4" />
-                  Pilih Lokasi di Peta
-                </h4>
-                <MapPicker
-                  latitude={latitude}
-                  longitude={longitude}
-                  locationText={formState.location}
-                  onLocationChange={(loc) => setFormState((s) => ({ ...s, location: loc }))}
-                  onCoordsChange={(lat, lng) => {
-                    setLatitude(lat);
-                    setLongitude(lng);
-                  }}
-                />
-              </div>
-
               <button
                 type="submit"
                 className="w-full rounded-lg bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
@@ -514,15 +497,15 @@ export default function CommunityFormPage() {
                   <p className="mt-2 text-sm leading-6 text-slate-300">{formState.description}</p>
 
                   <div className="mt-4 space-y-2 text-sm text-slate-400">
-                    <p className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-cyan-300" /> {formState.location}
-                    </p>
-                    {latitude !== null && longitude !== null && (
-                      <p className="flex items-center gap-2 text-xs text-slate-500">
-                        <MapPin className="h-3 w-3 text-cyan-400" />
-                        Koordinat: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                    {formState.location && (
+                      <p className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-cyan-300" /> {formState.location}
                       </p>
                     )}
+                    <p className="flex items-center gap-2 text-xs text-slate-500">
+                      <MapPin className="h-3 w-3 text-cyan-400" />
+                      Titik/link: {formState.link}
+                    </p>
                     {featureType === 'EVENT' && (
                       <p className="flex items-center gap-2">
                         <CalendarDays className="h-4 w-4 text-amber-300" /> {formState.date}

@@ -14,7 +14,16 @@ import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
-import LeafletMap from '../../components/leaflet-map';
+import dynamic from 'next/dynamic';
+
+const LeafletMap = dynamic(() => import('../../components/leaflet-map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[560px] w-full rounded-lg border border-slate-800 bg-slate-900/50 flex items-center justify-center text-slate-400">
+      Memuat peta...
+    </div>
+  ),
+});
 import { getApiBaseUrl } from '../../lib/api';
 import {
   MAGELANG_CENTER,
