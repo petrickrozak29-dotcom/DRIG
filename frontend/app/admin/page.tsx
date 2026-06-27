@@ -1,16 +1,12 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Camera,
-  CheckCircle2,
-  ExternalLink,
   ImagePlus,
-  Link as LinkIcon,
   MapPin,
   ShieldCheck,
   Star,
-  XCircle,
   CalendarDays,
   Ticket,
 } from 'lucide-react';
@@ -19,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
+import MapPicker from '../../components/map-picker';
 import { getApiBaseUrl } from '../../lib/api';
 
 type FeatureType = 'EVENT' | 'WISATA' | 'KULINER' | 'CULTURE' | 'HISTORY';
@@ -51,6 +48,10 @@ export default function CommunityFormPage() {
     rating: '',
   });
 
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -108,7 +109,6 @@ export default function CommunityFormPage() {
 
     setIsUploadingImage(true);
 
-    // If authenticated, attempt to upload to backend uploads endpoint
     (async () => {
       try {
         if (token) {
@@ -132,7 +132,6 @@ export default function CommunityFormPage() {
           }
         }
 
-        // Fallback to base64 when not authenticated or upload failed
         const reader = new FileReader();
         reader.onload = () => {
           setFormState((current) => ({ ...current, image: String(reader.result || '') }));
@@ -156,14 +155,29 @@ export default function CommunityFormPage() {
     setFormState((current) => ({ ...current, image: '' }));
   };
 
+  function validateForm(): boolean {
+    const errors: Record<string, string> = {};
+
+    if (formState.location && formState.location.length > 150) {
+      errors.location = 'Lokasi maksimal 150 karakter.';
+    }
+
+    if (!formState.link || !formState.link.match(/maps\.google|goo\.gl|@/i)) {
+      errors.link = 'Link Google Maps wajib diisi dengan benar agar lokasi terhubung ke peta!';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!preview) {
+      if (!validateForm()) return;
       setPreview(true);
       return;
     }
 
-    // If user is not authenticated, require login before final submit
     if (!isAuthenticated) {
       router.push(
         `/login?next=${encodeURIComponent(`/community-form?feature=${featureType}`)}`
@@ -184,6 +198,8 @@ export default function CommunityFormPage() {
           ...formState,
           featureType,
           submittedById: user?.id,
+          latitude,
+          longitude,
         }),
       });
 
@@ -203,6 +219,8 @@ export default function CommunityFormPage() {
         openingHours: '',
         rating: '',
       });
+      setLatitude(null);
+      setLongitude(null);
       setPreview(false);
       window.dispatchEvent(new Event('magelangverse-submissions-updated'));
     } catch {
@@ -226,7 +244,7 @@ export default function CommunityFormPage() {
           <section className="rounded-lg border border-slate-800 bg-slate-900/80 p-8">
             <h1 className="text-3xl font-bold text-cyan-300">Community Form</h1>
             <p className="mt-3 text-slate-300">
-            Login diperlukan untuk mengirim rekomendasi event, wisata, kuliner, budaya, atau sejarah.
+              Login diperlukan untuk mengirim rekomendasi event, wisata, kuliner, budaya, atau sejarah.
             </p>
             <a
               href="/login"
@@ -241,9 +259,6 @@ export default function CommunityFormPage() {
     );
   }
 
-  // options returned from API
-  // use `categoryOptions` state populated by effect above
-
   return (
     <GradientBg>
       <Navbar />
@@ -256,7 +271,7 @@ export default function CommunityFormPage() {
           <h1 className="mt-3 text-4xl font-bold sm:text-5xl">Ajukan Konten ke Smart Map</h1>
           <p className="mx-auto mt-4 max-w-2xl text-slate-300">
             Pilih jenis konten, isi detailnya, lalu preview. Konten akan tampil publik setelah
-            disetujui pengelola.
+            disetujui pengelola. Gunakan peta untuk memilih lokasi yang tepat.
           </p>
         </section>
 
@@ -309,6 +324,22 @@ export default function CommunityFormPage() {
                   required
                 />
 
+                <div>
+                  <Field
+                    label="Link Google Maps Lokasi *"
+                    value={formState.link}
+                    onChange={(v) => {
+                      setFormState({ ...formState, link: v });
+                      if (formErrors.link) setFormErrors((prev) => { const n = { ...prev }; delete n.link; return n; });
+                    }}
+                    placeholder="https://maps.google.com/..."
+                    error={formErrors.link}
+                  />
+                  {formErrors.link && (
+                    <p className="mt-1 text-xs text-rose-300">{formErrors.link}</p>
+                  )}
+                </div>
+
                 <label className="block text-sm font-semibold text-slate-200">
                   Kategori
                   <select
@@ -324,13 +355,6 @@ export default function CommunityFormPage() {
                   </select>
                 </label>
 
-                <Field
-                  label="Lokasi"
-                  value={formState.location}
-                  onChange={(v) => setFormState({ ...formState, location: v })}
-                  required
-                />
-
                 {featureType === 'EVENT' && (
                   <Field
                     label="Tanggal Event"
@@ -340,6 +364,30 @@ export default function CommunityFormPage() {
                     required
                   />
                 )}
+
+                <div>
+                  <Field
+                    label="Lokasi / Alamat"
+                    value={formState.location}
+                    onChange={(v) => {
+                      if (v.length > 150) return;
+                      setFormState({ ...formState, location: v });
+                      if (formErrors.location) setFormErrors((prev) => { const n = { ...prev }; delete n.location; return n; });
+                    }}
+                    placeholder="Nama jalan atau tempat"
+                    maxLength={150}
+                    error={formErrors.location}
+                  />
+                  <p className="mt-1 flex justify-between text-xs">
+                    <span className="text-slate-500">Maksimal 150 karakter</span>
+                    <span className={`${formState.location.length > 140 ? 'text-amber-300' : 'text-slate-500'}`}>
+                      {formState.location.length}/150
+                    </span>
+                  </p>
+                  {formErrors.location && (
+                    <p className="mt-1 text-xs text-rose-300">{formErrors.location}</p>
+                  )}
+                </div>
 
                 <Field
                   label={featureType === 'EVENT' ? 'Jam Buka / Open Gate' : 'Jam Buka - Tutup'}
@@ -392,7 +440,7 @@ export default function CommunityFormPage() {
                   />
                 </label>
 
-                <label className="block text-sm font-semibold text-slate-200">
+                <label className="block text-sm font-semibold text-slate-200 md:col-span-2">
                   Upload Gambar
                   <span className="mt-2 flex items-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-950 px-4 py-3 text-slate-400">
                     <ImagePlus className="h-5 w-5 text-cyan-300" />
@@ -431,11 +479,23 @@ export default function CommunityFormPage() {
                   )}
                 </label>
 
-                <Field
-                  label="Link Terkait (Opsional)"
-                  value={formState.link}
-                  onChange={(v) => setFormState({ ...formState, link: v })}
-                  placeholder="https://..."
+              </div>
+
+              {/* Map Picker Section */}
+              <div className="rounded-lg border border-slate-700 bg-slate-950/50 p-4">
+                <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-cyan-200">
+                  <MapPin className="h-4 w-4" />
+                  Pilih Lokasi di Peta
+                </h4>
+                <MapPicker
+                  latitude={latitude}
+                  longitude={longitude}
+                  locationText={formState.location}
+                  onLocationChange={(loc) => setFormState((s) => ({ ...s, location: loc }))}
+                  onCoordsChange={(lat, lng) => {
+                    setLatitude(lat);
+                    setLongitude(lng);
+                  }}
                 />
               </div>
 
@@ -473,6 +533,12 @@ export default function CommunityFormPage() {
                     <p className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-cyan-300" /> {formState.location}
                     </p>
+                    {latitude !== null && longitude !== null && (
+                      <p className="flex items-center gap-2 text-xs text-slate-500">
+                        <MapPin className="h-3 w-3 text-cyan-400" />
+                        Koordinat: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                      </p>
+                    )}
                     {featureType === 'EVENT' && (
                       <p className="flex items-center gap-2">
                         <CalendarDays className="h-4 w-4 text-amber-300" /> {formState.date}
@@ -546,6 +612,8 @@ function Field({
   min,
   max,
   step,
+  maxLength,
+  error,
 }: {
   label: string;
   value: string;
@@ -556,6 +624,8 @@ function Field({
   min?: string;
   max?: string;
   step?: string;
+  maxLength?: number;
+  error?: string;
 }) {
   return (
     <label className="block text-sm font-semibold text-slate-200">
@@ -569,7 +639,10 @@ function Field({
         min={min}
         max={max}
         step={step}
-        className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+        maxLength={maxLength}
+        className={`mt-2 w-full rounded-lg border bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400 ${
+          error ? 'border-rose-400' : 'border-slate-700'
+        }`}
       />
     </label>
   );

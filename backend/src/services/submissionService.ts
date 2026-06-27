@@ -44,10 +44,27 @@ export interface UpdateSubmissionInput {
   resetToPending?: boolean;
 }
 
+const GOOGLE_MAPS_LINK_REGEX = /maps\.google|goo\.gl|@/i;
+const MAX_LOCATION_LENGTH = 150;
+
+function validateSubmissionInput(input: CreateSubmissionInput | UpdateSubmissionInput): void {
+  if (input.location && input.location.length > MAX_LOCATION_LENGTH) {
+    throw new Error(`Lokasi maksimal ${MAX_LOCATION_LENGTH} karakter.`);
+  }
+
+  if (input.link && !GOOGLE_MAPS_LINK_REGEX.test(input.link)) {
+    throw new Error('Link Google Maps wajib diisi dengan benar agar lokasi terhubung ke peta!');
+  }
+}
+
 export const submissionService = {
   async createSubmission(input: CreateSubmissionInput): Promise<SubmissionRecord> {
     const { categoryName, featureType, ...rest } = input;
-    const coordinates = resolveCoordinates({
+
+    validateSubmissionInput(input);
+
+    // Resolve coordinates - may return null if none found
+    const coordinates = await resolveCoordinates({
       latitude: input.latitude,
       longitude: input.longitude,
       location: input.location,
@@ -65,15 +82,29 @@ export const submissionService = {
         data: { name: categoryName, featureType },
       });
     }
-    let newSubmission: SubmissionRecord;
-    const data = {
+
+    const data: any = {
       ...rest,
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
       featureType,
       status: 'PENDING',
       categoryId: category.id,
-    } as any;
+    };
+
+    // Only set coordinates if we resolved them
+    if (coordinates) {
+      data.latitude = coordinates.latitude;
+      data.longitude = coordinates.longitude;
+    } else {
+      data.latitude = null;
+      data.longitude = null;
+    }
+
+    // location should always be set from input
+    if (input.location) {
+      data.location = input.location;
+    }
+
+    let newSubmission: SubmissionRecord;
 
     try {
       newSubmission = (await prisma.submission.create({ data })) as SubmissionRecord;
@@ -92,7 +123,12 @@ export const submissionService = {
     }
 
     try {
-      log('info', 'New submission created', { id: newSubmission.id, title: newSubmission.title, featureType });
+      log('info', 'New submission created', {
+        id: newSubmission.id,
+        title: newSubmission.title,
+        featureType,
+        hasCoords: coordinates !== null,
+      });
     } catch {}
 
     // Create a system notification for developers/admins about new submission
@@ -118,6 +154,8 @@ export const submissionService = {
       throw new Error('Submission not found');
     }
 
+    validateSubmissionInput(input);
+
     const featureType = input.featureType || (current.featureType as SubmissionFeatureType);
     const nextLocation = input.location !== undefined ? input.location : current.location;
     const nextLink = input.link !== undefined ? input.link : current.link;
@@ -127,8 +165,6 @@ export const submissionService = {
     if (input.title !== undefined) data.title = input.title;
     if (input.description !== undefined) data.description = input.description;
     if (input.location !== undefined) data.location = input.location;
-    if (input.latitude !== undefined) data.latitude = input.latitude;
-    if (input.longitude !== undefined) data.longitude = input.longitude;
     if (input.image !== undefined) data.image = input.image;
     if (input.link !== undefined) data.link = input.link;
     if (input.priceRange !== undefined) data.priceRange = input.priceRange;
@@ -138,6 +174,7 @@ export const submissionService = {
     if (input.date !== undefined) data.date = input.date;
     if (input.featureType !== undefined) data.featureType = featureType;
 
+    // Re-resolve coordinates when location-related fields change
     if (
       input.latitude !== undefined ||
       input.longitude !== undefined ||
@@ -145,15 +182,21 @@ export const submissionService = {
       input.link !== undefined ||
       input.title !== undefined
     ) {
-      const coordinates = resolveCoordinates({
+      const coordinates = await resolveCoordinates({
         latitude: input.latitude !== undefined ? input.latitude : current.latitude,
         longitude: input.longitude !== undefined ? input.longitude : current.longitude,
         location: nextLocation,
         link: nextLink,
         title: nextTitle,
       });
-      data.latitude = coordinates.latitude;
-      data.longitude = coordinates.longitude;
+
+      if (coordinates) {
+        data.latitude = coordinates.latitude;
+        data.longitude = coordinates.longitude;
+      } else {
+        data.latitude = null;
+        data.longitude = null;
+      }
     }
 
     if (input.categoryName !== undefined) {
@@ -181,7 +224,12 @@ export const submissionService = {
         data,
       })) as SubmissionRecord;
     } catch (err) {
-      if ('publishedAt' in data || 'rating' in data || 'ticketPrice' in data || 'openingHours' in data) {
+      if (
+        'publishedAt' in data ||
+        'rating' in data ||
+        'ticketPrice' in data ||
+        'openingHours' in data
+      ) {
         const {
           publishedAt: _publishedAt,
           rating: _rating,
@@ -246,7 +294,10 @@ export const submissionService = {
     } catch (err) {
       // If the DB schema hasn't been migrated to include publishedAt, retry without it
       try {
-        log('warn', 'Retrying update without publishedAt (may require prisma migrate)', { id, err: String(err) });
+        log('warn', 'Retrying update without publishedAt (may require prisma migrate)', {
+          id,
+          err: String(err),
+        });
       } catch {}
       updated = (await prisma.submission.update({
         where: { id },

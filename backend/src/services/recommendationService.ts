@@ -50,10 +50,8 @@ interface ItineraryResult {
   tips: string[];
 }
 
-// Calculate max distance based on mobility level
 function calculateMaxDistance(mobilityLevel: number): number {
-  // mobilityLevel 1-10, returns distance in km
-  return 5 + mobilityLevel * 2; // Range: 7-25 km
+  return 5 + mobilityLevel * 2;
 }
 
 const MAGELANG_CENTER = {
@@ -88,8 +86,8 @@ function matchesInterest(candidate: any, interests: string[]) {
   });
 }
 
-function resolveSubmissionCoordinates(item: SubmissionWithRelations | any) {
-  return resolveCoordinates({
+async function resolveSubmissionCoordinates(item: SubmissionWithRelations | any) {
+  return await resolveCoordinates({
     latitude: item.latitude,
     longitude: item.longitude,
     location: item.location,
@@ -192,12 +190,12 @@ async function getRouteCandidates(
   const matched = allCandidates.filter((item) => matchesInterest(item, selectedInterests));
   const source = matched.length > 0 ? matched : allCandidates;
 
-  return source
-    .map((item) => {
+  const withCoords = await Promise.all(
+    source.map(async (item) => {
       const record = item as any;
-      const coords = resolveSubmissionCoordinates(record);
-      const latitude = coords.latitude;
-      const longitude = coords.longitude;
+      const coords = await resolveSubmissionCoordinates(record);
+      const latitude = coords?.latitude ?? 0;
+      const longitude = coords?.longitude ?? 0;
       const distance = haversineDistance(origin.latitude, origin.longitude, latitude, longitude);
       const mapPrefix =
         record.kind === 'event'
@@ -243,6 +241,9 @@ async function getRouteCandidates(
         estimatedTravelTime: Math.max(5, Math.ceil((distance / 35) * 60)),
       };
     })
+  );
+
+  return withCoords
     .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
     .sort((a, b) => a.distance - b.distance);
 }

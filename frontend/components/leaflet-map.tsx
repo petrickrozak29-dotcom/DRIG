@@ -38,17 +38,18 @@ const markerColor: Record<string, string> = {
   lokasi: '#22c55e',
 };
 
+// Google Maps 2026 tiles - latest version with subdomains mt0-mt3
 const GOOGLE_SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
 
 const TILE_CONFIGS: Record<TileStyle, { url: string; attribution: string; subdomains: string[] }> = {
   street: {
-    url: 'http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-    attribution: '&copy; Google Maps',
+    url: 'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=id&gl=ID&apistyle=s.t:2|s.e:l|p.v:off',
+    attribution: '&copy; 2026 Google',
     subdomains: GOOGLE_SUBDOMAINS,
   },
   satellite: {
-    url: 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-    attribution: '&copy; Google Maps',
+    url: 'https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&hl=id&gl=ID',
+    attribution: '&copy; 2026 Google',
     subdomains: GOOGLE_SUBDOMAINS,
   },
 };
@@ -66,37 +67,40 @@ const fallbackImage: Record<string, string> = {
     'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=800&q=80',
 };
 
-function escapeHtml(value?: string | number) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
 function getPopupHtml(marker: MarkerItem) {
-  const title = escapeHtml(marker.title);
-  const typeLabel = escapeHtml(marker.typeLabel || marker.category);
-  const location = escapeHtml(marker.location);
-  const description = escapeHtml(marker.description);
+  const title = String(marker.title ?? '').replace(/[&<>"']/g, (c) => {
+    const m: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' };
+    return m[c] || c;
+  });
+  const typeLabel = String(marker.typeLabel || marker.category).replace(/[&<>"']/g, (c) => {
+    const m: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' };
+    return m[c] || c;
+  });
+  const location = String(marker.location ?? '').replace(/[&<>"']/g, (c) => {
+    const m: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' };
+    return m[c] || c;
+  });
+  const description = String(marker.description ?? '').replace(/[&<>"']/g, (c) => {
+    const m: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' };
+    return m[c] || c;
+  });
   const distance = typeof marker.distance === 'number' ? `${marker.distance.toFixed(1)} km` : '';
   const detailUrl = marker.detailUrl || `/smart-map?focus=${encodeURIComponent(String(marker.id))}`;
   const sourceButton = marker.link
-    ? `<a href="${escapeHtml(marker.link)}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;background:#0891b2;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</a>`
+    ? `<a href="${String(marker.link).replace(/[&<>"']/g, (c) => { const m: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' }; return m[c] || c; })}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;background:#0891b2;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</a>`
     : `<span style="flex:1;text-align:center;background:#e2e8f0;color:#64748b;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</span>`;
   const extra = [marker.openingHours, marker.ticketPrice || marker.priceRange]
     .filter(Boolean)
     .map(
       (item) =>
-        `<p style="font-size:11px;line-height:1.35;margin:0 0 6px;color:#64748b;">${escapeHtml(item)}</p>`
+        `<p style="font-size:11px;line-height:1.35;margin:0 0 6px;color:#64748b;">${String(item).replace(/[&<>"']/g, (c) => { const m: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' }; return m[c] || c; })}</p>`
     )
     .join('');
   const imageUrl =
     marker.image ||
     fallbackImage[String(marker.category).toLowerCase()] ||
     fallbackImage.wisata;
-  const image = `<img src="${escapeHtml(imageUrl)}" alt="${title}" onerror="this.onerror=null;this.src='${escapeHtml(fallbackImage[String(marker.category).toLowerCase()] || fallbackImage.wisata)}';" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:10px;background:#e2e8f0;" />`;
+  const image = `<img src="${String(imageUrl).replace(/[&<>"']/g, (c) => { const m: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' }; return m[c] || c; })}" alt="${title}" onerror="this.onerror=null;this.src='${String(fallbackImage[String(marker.category).toLowerCase()] || fallbackImage.wisata).replace(/[&<>"']/g, (c) => { const m: Record<string, string> = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' }; return m[c] || c; })}';" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:10px;background:#e2e8f0;" />`;
 
   return `
     <div style="width:240px;color:#0f172a;font-family:Inter,Arial,sans-serif;">
@@ -107,7 +111,7 @@ function getPopupHtml(marker: MarkerItem) {
       <p style="font-size:11px;line-height:1.35;margin:0 0 10px;color:#64748b;">${location}${distance ? ` • ${distance}` : ''}</p>
       ${extra}
       <div style="display:flex;gap:8px;">
-        <a href="${escapeHtml(detailUrl)}" style="flex:1;text-align:center;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Lihat Detail</a>
+        <a href="${detailUrl}" style="flex:1;text-align:center;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Lihat Detail</a>
         ${sourceButton}
       </div>
     </div>
@@ -129,7 +133,6 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
       if (!mapRef.current || mapInstance.current || !mounted) return;
 
       const L = (await import('leaflet')).default;
-      // @ts-ignore - dynamic CSS import for client-only Leaflet styles
       await import('leaflet/dist/leaflet.css');
 
       leafletRef.current = L;
@@ -144,7 +147,7 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
       L.tileLayer(cfg.url, {
         attribution: cfg.attribution,
         subdomains: cfg.subdomains,
-        maxZoom: 19,
+        maxZoom: 20,
       }).addTo(mapInstance.current);
 
       markerLayer.current = L.layerGroup().addTo(mapInstance.current);
@@ -169,7 +172,6 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
   useEffect(() => {
     if (!mapInstance.current || !leafletRef.current) return;
 
-    // Clear existing tile layers
     mapInstance.current.eachLayer((layer: any) => {
       if (layer._url) {
         mapInstance.current.removeLayer(layer);
@@ -181,7 +183,7 @@ export default function LeafletMap({ markers, center, focusId }: LeafletMapProps
       .tileLayer(cfg.url, {
         attribution: cfg.attribution,
         subdomains: cfg.subdomains,
-        maxZoom: 19,
+        maxZoom: 20,
       })
       .addTo(mapInstance.current);
   }, [tileStyle]);

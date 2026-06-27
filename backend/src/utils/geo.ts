@@ -1,6 +1,8 @@
-const MAGELANG_CENTER = {
-  latitude: -7.4797,
-  longitude: 110.2177,
+const MAGELANG_AREA = {
+  minLat: -7.65,
+  maxLat: -7.35,
+  minLng: 110.15,
+  maxLng: 110.40,
 };
 
 const knownLocations = [
@@ -30,6 +32,15 @@ function isValidCoordinate(latitude: number, longitude: number) {
   );
 }
 
+function isInMagelangArea(latitude: number, longitude: number) {
+  return (
+    latitude >= MAGELANG_AREA.minLat &&
+    latitude <= MAGELANG_AREA.maxLat &&
+    longitude >= MAGELANG_AREA.minLng &&
+    longitude <= MAGELANG_AREA.maxLng
+  );
+}
+
 export function extractCoordinates(value?: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return null;
@@ -46,7 +57,6 @@ export function extractCoordinates(value?: unknown) {
     /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
     /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
     /(?:q|query|ll|center)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i,
-    // Only match if at least one number has a decimal or numbers are large enough to be real coordinates
     /(-?\d{2,}(?:\.\d+)?),\s*(-?\d{2,3}(?:\.\d+)?)/,
   ];
 
@@ -64,38 +74,84 @@ export function extractCoordinates(value?: unknown) {
   return null;
 }
 
-export function resolveCoordinates(input: {
+export async function geocodeAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&accept-language=id`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'FutureMagelang/1.0',
+        'Accept-Language': 'id',
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    const lat = Number(data[0].lat);
+    const lng = Number(data[0].lon);
+
+    if (!isValidCoordinate(lat, lng)) return null;
+
+    return { latitude: lat, longitude: lng };
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveCoordinates(input: {
   latitude?: unknown;
   longitude?: unknown;
   location?: unknown;
   link?: unknown;
   title?: unknown;
-}) {
-  const hasExplicitCoordinates =
-    input.latitude !== undefined &&
-    input.latitude !== null &&
-    input.latitude !== '' &&
-    input.longitude !== undefined &&
-    input.longitude !== null &&
-    input.longitude !== '';
-  const latitude = Number(input.latitude);
-  const longitude = Number(input.longitude);
+}): Promise<{ latitude: number; longitude: number } | null> {
+  // 1. If explicit valid coordinates are provided, use them
+  const hasExplicitLat = input.latitude !== undefined && input.latitude !== null && input.latitude !== '';
+  const hasExplicitLng = input.longitude !== undefined && input.longitude !== null && input.longitude !== '';
 
-  if (hasExplicitCoordinates && isValidCoordinate(latitude, longitude)) {
-    return { latitude, longitude };
+  if (hasExplicitLat && hasExplicitLng) {
+    const lat = Number(input.latitude);
+    const lng = Number(input.longitude);
+    if (isValidCoordinate(lat, lng)) {
+      return { latitude: lat, longitude: lng };
+    }
   }
 
-  // Check link first — Google Maps URLs contain reliable coordinates
+  // 2. Try extracting coordinates from link (Google Maps URLs)
   const fromLink = extractCoordinates(input.link);
   if (fromLink) return fromLink;
 
+  // 3. Try extracting from location text
   const fromLocation = extractCoordinates(input.location);
   if (fromLocation) return fromLocation;
 
-  const text = `${input.location || ''} ${input.title || ''}`.toLowerCase();
-  const found = knownLocations.find((location) =>
-    location.match.some((keyword) => text.includes(keyword))
-  );
+  // 4. Try geocoding the location text with Nominatim
+  if (input.location && String(input.location).trim().length > 0) {
+    const locationText = `${String(input.location)} Magelang Jawa Tengah`;
+    const geocoded = await geocodeAddress(locationText);
+    if (geocoded && isInMagelangArea(geocoded.latitude, geocoded.longitude)) {
+      return geocoded;
+    }
+  }
 
-  return found || MAGELANG_CENTER;
+  // 5. Try matching known locations by keyword
+  const text = `${input.location || ''} ${input.title || ''}`.toLowerCase();
+  for (const known of knownLocations) {
+    if (known.match.some((keyword) => text.includes(keyword))) {
+      return { latitude: known.latitude, longitude: known.longitude };
+    }
+  }
+
+  // 6. If we have a location string, try geocoding without area restriction
+  if (input.location && String(input.location).trim().length > 0) {
+    const geocoded = await geocodeAddress(String(input.location));
+    if (geocoded) {
+      return geocoded;
+    }
+  }
+
+  // 7. No coordinates could be resolved
+  return null;
 }

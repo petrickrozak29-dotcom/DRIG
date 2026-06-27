@@ -22,6 +22,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
+import MapPicker from '../../components/map-picker';
 import GradientBg from '../../components/gradient-bg';
 import CategoryManager from '../../components/category-manager';
 import { useAuth } from '../../contexts/AuthContext';
@@ -67,6 +68,8 @@ const defaultForm = {
   openingHours: '',
   rating: '',
   date: '',
+  latitude: '',
+  longitude: '',
 };
 
 const fallbackImage =
@@ -115,6 +118,8 @@ function toFormState(item?: ManagedContentItem | null) {
     openingHours: item.openingHours || '',
     rating: item.rating !== undefined && item.rating !== null ? String(item.rating) : '',
     date: item.date ? String(item.date).slice(0, 10) : '',
+    latitude: item.latitude !== undefined && item.latitude !== null ? String(item.latitude) : '',
+    longitude: item.longitude !== undefined && item.longitude !== null ? String(item.longitude) : '',
   };
 }
 
@@ -721,6 +726,9 @@ function ContentFormCard({
   const isCulinary = section === 'culinary';
   const hasRating = section === 'tourism' || section === 'culinary' || section === 'event';
 
+  const pickerLat = formState.latitude ? Number(formState.latitude) : null;
+  const pickerLng = formState.longitude ? Number(formState.longitude) : null;
+
   return (
     <form
       onSubmit={onSubmit}
@@ -788,6 +796,25 @@ function ContentFormCard({
               placeholder="Contoh: Alun-alun Magelang"
             />
           </>
+        )}
+
+        {/* Map Picker for developer content */}
+        {isPlace && (
+          <div className="rounded-lg border border-slate-700 bg-slate-950/50 p-3">
+            <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold text-cyan-200">
+              <MapPin className="h-3 w-3" />
+              Pilih Lokasi di Peta
+            </h4>
+            <MapPicker
+              latitude={pickerLat}
+              longitude={pickerLng}
+              locationText={formState.location}
+              onLocationChange={(loc) => setFormState((s) => ({ ...s, location: loc }))}
+              onCoordsChange={(lat, lng) => {
+                setFormState((s) => ({ ...s, latitude: String(lat), longitude: String(lng) }));
+              }}
+            />
+          </div>
         )}
 
         {isEvent && (
