@@ -41,6 +41,7 @@ interface ItineraryItem {
     priceRange?: string;
     latitude?: number;
     longitude?: number;
+    location?: string;
     link?: string;
     detailUrl?: string;
     mapId?: string;
@@ -62,6 +63,26 @@ interface ItineraryResult {
   totalDuration: number;
   summary: string;
   tips: string[];
+}
+
+interface SmartMapRoutePayload {
+  source: 'ai-assistant';
+  generatedAt: string;
+  summary: string;
+  totalDistance: number;
+  totalDuration: number;
+  stops: Array<{
+    id: string;
+    order: number;
+    title: string;
+    description?: string;
+    category?: string;
+    latitude: number;
+    longitude: number;
+    location?: string;
+    link?: string;
+    detailUrl?: string;
+  }>;
 }
 
 const tabs: Array<{ key: SmartTab; label: string; icon: any }> = [
@@ -149,6 +170,15 @@ function timeLabel(value: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function normalizeRouteCategory(value?: string) {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized.includes('kuliner')) return 'kuliner';
+  if (normalized.includes('event')) return 'event';
+  if (normalized.includes('budaya')) return 'budaya';
+  if (normalized.includes('sejarah')) return 'sejarah';
+  return 'wisata';
 }
 
 export default function SmartMagelangPage() {
@@ -251,6 +281,36 @@ export default function SmartMagelangPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const storeItineraryForSmartMap = () => {
+    if (!result || typeof window === 'undefined') return;
+
+    const payload: SmartMapRoutePayload = {
+      source: 'ai-assistant',
+      generatedAt: new Date().toISOString(),
+      summary: result.summary,
+      totalDistance: result.totalDistance,
+      totalDuration: result.totalDuration,
+      stops: result.itinerary
+        .map((item) => ({
+          id: String(item.destination.mapId || item.destination.id || `${item.order}-${item.destination.name}`),
+          order: item.order,
+          title: item.destination.name,
+          description: item.destination.description,
+          category: normalizeRouteCategory(item.destination.category),
+          latitude: Number(item.destination.latitude),
+          longitude: Number(item.destination.longitude),
+          location: item.destination.location || 'Magelang',
+          link: item.destination.link,
+          detailUrl:
+            item.destination.detailUrl ||
+            `/smart-map?focus=${item.destination.mapId || item.destination.id || encodeURIComponent(item.destination.name)}`,
+        }))
+        .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude)),
+    };
+
+    window.sessionStorage.setItem('magelangverse.smartMap.itinerary', JSON.stringify(payload));
   };
 
   return (
@@ -424,6 +484,15 @@ export default function SmartMagelangPage() {
                       value={`Rp ${result.totalCost.toLocaleString('id-ID')}`}
                     />
                   </div>
+
+                  <a
+                    href="/smart-map?itinerary=ai"
+                    onClick={storeItineraryForSmartMap}
+                    className="mb-6 inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Lihat di Smart Map
+                  </a>
 
                   <div className="space-y-4">
                     {result.itinerary.map((item) => (

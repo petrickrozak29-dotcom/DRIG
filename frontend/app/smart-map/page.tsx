@@ -39,6 +39,28 @@ import {
 
 type CategoryFilter = 'semua' | MapCategory;
 
+const SMART_MAP_ITINERARY_KEY = 'magelangverse.smartMap.itinerary';
+
+interface SmartMapRoutePayload {
+  source: 'ai-assistant';
+  generatedAt: string;
+  summary: string;
+  totalDistance: number;
+  totalDuration: number;
+  stops: Array<{
+    id: string;
+    order: number;
+    title: string;
+    description?: string;
+    category?: MapCategory | string;
+    latitude: number;
+    longitude: number;
+    location?: string;
+    link?: string;
+    detailUrl?: string;
+  }>;
+}
+
 const fallbackMapImage: Record<string, string> = {
   event:
     'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1000&q=80',
@@ -69,6 +91,50 @@ function categoryClass(category: string) {
   return 'border-cyan-400/40 bg-cyan-500/10 text-cyan-200';
 }
 
+function normalizeMapCategory(value?: string): MapCategory {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized.includes('event')) return 'event';
+  if (normalized.includes('kuliner')) return 'kuliner';
+  if (normalized.includes('budaya')) return 'budaya';
+  if (normalized.includes('sejarah')) return 'sejarah';
+  return 'wisata';
+}
+
+function readItineraryPayload(): SmartMapRoutePayload | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('itinerary') !== 'ai') return null;
+
+    const raw = window.sessionStorage.getItem(SMART_MAP_ITINERARY_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as SmartMapRoutePayload;
+    if (!Array.isArray(parsed.stops)) return null;
+
+    const stops = parsed.stops
+      .map((stop) => ({
+        ...stop,
+        latitude: Number(stop.latitude),
+        longitude: Number(stop.longitude),
+        category: normalizeMapCategory(String(stop.category || 'wisata')),
+      }))
+      .filter(
+        (stop) =>
+          Number.isFinite(stop.latitude) &&
+          Number.isFinite(stop.longitude) &&
+          stop.latitude !== 0 &&
+          stop.longitude !== 0
+      );
+
+    if (stops.length === 0) return null;
+    return { ...parsed, stops };
+  } catch {
+    return null;
+  }
+}
+
 export default function SmartMapPage() {
   const { token, isAuthenticated } = useAuth();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>(MAGELANG_CENTER);
@@ -78,6 +144,7 @@ export default function SmartMapPage() {
   const [apiEvents, setApiEvents] = useState<CommunityEvent[]>([]);
   const [dataVersion, setDataVersion] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [itineraryRoute, setItineraryRoute] = useState<SmartMapRoutePayload | null>(null);
 
   const requestLocation = () => {
     if (!('geolocation' in navigator)) {
@@ -124,6 +191,7 @@ export default function SmartMapPage() {
 
   useEffect(() => {
     setFocusId(new URLSearchParams(window.location.search).get('focus'));
+    setItineraryRoute(readItineraryPayload());
     requestLocation();
 
     const updateVersion = () => setDataVersion((version) => version + 1);
@@ -212,6 +280,7 @@ export default function SmartMapPage() {
 
     return allItems
       .filter((item) => {
+        if (item.category !== 'event' || item.status !== 'approved') return false;
         if (!item.date) return false;
         const date = new Date(item.date);
         return (
@@ -223,6 +292,49 @@ export default function SmartMapPage() {
       .sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime())
       .slice(0, 5);
   }, [allItems]);
+
+  const itineraryMapMarkers = useMemo(
+    () =>
+      itineraryRoute?.stops.map((stop) => {
+        const category = normalizeMapCategory(String(stop.category || 'wisata'));
+        return {
+          id: `itinerary-${stop.order}-${stop.id}`,
+          title: `${stop.order}. ${stop.title}`,
+          category,
+          typeLabel: 'Itinerary AI',
+          description: stop.description || 'Destinasi dari itinerary AI Assistant.',
+          location: stop.location || 'Magelang',
+          latitude: stop.latitude,
+          longitude: stop.longitude,
+          image: fallbackMapImage[category],
+          link: stop.link,
+          detailUrl: stop.detailUrl || `/smart-map?focus=${stop.id}`,
+        };
+      }) || [],
+    [itineraryRoute]
+  );
+
+  const routeStops = useMemo(
+    () =>
+      itineraryRoute?.stops.map((stop) => ({
+        id: stop.id,
+        order: stop.order,
+        title: stop.title,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+      })) || [],
+    [itineraryRoute]
+  );
+
+  const clearItineraryRoute = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(SMART_MAP_ITINERARY_KEY);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('itinerary');
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+    setItineraryRoute(null);
+  };
 
   const mapMarkers = useMemo(
     () => [
@@ -238,9 +350,10 @@ export default function SmartMapPage() {
         detailUrl: '/smart-map',
         link: `https://www.google.com/maps/search/?api=1&query=${userLocation.lat},${userLocation.lng}`,
       },
+      ...itineraryMapMarkers,
       ...filteredItems,
     ],
-    [filteredItems, locationStatus, userLocation]
+    [filteredItems, itineraryMapMarkers, locationStatus, userLocation]
   );
 
   return (
@@ -332,7 +445,44 @@ export default function SmartMapPage() {
           </div>
 
           <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80">
-            <LeafletMap markers={mapMarkers} center={userLocation} focusId={focusId} />
+            {itineraryRoute && (
+              <div className="border-b border-slate-800 bg-slate-950/80 p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="flex items-center gap-2 text-sm font-semibold text-cyan-200">
+                      <Navigation className="h-4 w-4" />
+                      Rute itinerary AI aktif
+                    </p>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                      {itineraryRoute.summary}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
+                      {itineraryRoute.stops.map((stop) => (
+                        <span
+                          key={`${stop.order}-${stop.id}`}
+                          className="rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-blue-100"
+                        >
+                          {stop.order}. {stop.title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearItineraryRoute}
+                    className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-cyan-300"
+                  >
+                    Tutup Rute
+                  </button>
+                </div>
+              </div>
+            )}
+            <LeafletMap
+              markers={mapMarkers}
+              center={userLocation}
+              focusId={focusId}
+              routeStops={routeStops}
+            />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
