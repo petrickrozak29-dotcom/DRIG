@@ -28,6 +28,7 @@ import ImagePositionEditor from '../../components/image-position-editor';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson, getApiBaseUrl } from '../../lib/api';
 import { getImageObjectPosition, getImageSrc, withImagePosition } from '../../lib/image-position';
+import { formatCoordinatePair, isSourceUrl, parseCoordinatePair } from '../../lib/location-source';
 import {
   deleteDeveloperContent,
   fetchCategories,
@@ -103,12 +104,6 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
-function isSourceReference(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return false;
-  return /^https?:\/\//i.test(trimmed);
-}
-
 function toFormState(item?: ManagedContentItem | null) {
   if (!item) return defaultForm;
   return {
@@ -116,7 +111,7 @@ function toFormState(item?: ManagedContentItem | null) {
     title: item.title || '',
     description: item.description || '',
     typeLabel: item.typeLabel || item.category || '',
-    location: item.location || '',
+    location: formatCoordinatePair(item.latitude, item.longitude) || item.location || '',
     image: item.image || '',
     link: item.link || '',
     priceRange: item.priceRange || '',
@@ -298,7 +293,14 @@ export default function DeveloperPage() {
 
     setSaving(true);
     try {
-      if (!isSourceReference(formState.link)) {
+      const needsMapPoint = currentSection === 'tourism' || currentSection === 'culinary' || currentSection === 'event';
+      const coordinates = needsMapPoint ? parseCoordinatePair(formState.location) : null;
+
+      if (needsMapPoint && !coordinates) {
+        throw new Error('Titik lokasi wajib diisi dengan format latitude, longitude. Contoh: -7.607501577648155, 110.20378352884043');
+      }
+
+      if (!isSourceUrl(formState.link)) {
         throw new Error('Link sumber wajib diisi dengan URL yang valid. Contoh: https://...');
       }
 
@@ -307,7 +309,9 @@ export default function DeveloperPage() {
         description: formState.description.trim(),
         typeLabel: formState.typeLabel.trim(),
         category: formState.typeLabel.trim(),
-        location: formState.location.trim() || undefined,
+        location: needsMapPoint ? formState.location.trim() : undefined,
+        latitude: coordinates?.latitude,
+        longitude: coordinates?.longitude,
         image: formState.image.trim() || undefined,
         link: formState.link.trim() || undefined,
         priceRange: formState.priceRange.trim() || undefined,
@@ -733,6 +737,7 @@ function ContentFormCard({
 }) {
   const isEvent = section === 'event';
   const isCulinary = section === 'culinary';
+  const needsMapPoint = section === 'tourism' || section === 'culinary' || section === 'event';
   const hasRating = section === 'tourism' || section === 'culinary' || section === 'event';
 
   return (
@@ -790,6 +795,16 @@ function ContentFormCard({
             value={formState.typeLabel}
             onChange={(value) => setFormState((current) => ({ ...current, typeLabel: value }))}
             placeholder={section === 'culture' ? 'Budaya' : section === 'history' ? 'Sejarah' : ''}
+          />
+        )}
+
+        {needsMapPoint && (
+          <Field
+            label="Titik Lokasi"
+            value={formState.location}
+            onChange={(value) => setFormState((current) => ({ ...current, location: value }))}
+            placeholder="-7.607501577648155, 110.20378352884043"
+            required
           />
         )}
 

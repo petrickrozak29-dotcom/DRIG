@@ -86,7 +86,7 @@ describe('Submission Service', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('should resolve a raw coordinate pair while keeping the source link unchanged', async () => {
+    it('should store Smart Map coordinates separately from the source link', async () => {
       const mockCategory = { id: 'cat-map', name: 'Event', featureType: 'EVENT' };
       const mockSubmission = { id: 'sub-map', title: 'Festival', status: 'PENDING' };
 
@@ -95,18 +95,21 @@ describe('Submission Service', () => {
 
       await submissionService.createSubmission({
         title: 'Festival',
-        description: 'Event dengan titik Google Maps',
+        description: 'Event dengan titik Smart Map dan sumber terpisah',
         featureType: 'EVENT',
         categoryName: 'Event',
-        link: '-7.458564688477663, 110.22222490358898',
+        location: '-7.607501577648155, 110.20378352884043',
+        latitude: -7.607501577648155,
+        longitude: 110.20378352884043,
+        link: 'https://example.com/sumber-festival',
       });
 
       expect(prisma.submission.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          latitude: -7.458564688477663,
-          longitude: 110.22222490358898,
-          location: '-7.458564688477663, 110.22222490358898',
-          link: '-7.458564688477663, 110.22222490358898',
+          latitude: -7.607501577648155,
+          longitude: 110.20378352884043,
+          location: '-7.607501577648155, 110.20378352884043',
+          link: 'https://example.com/sumber-festival',
         }),
       });
     });

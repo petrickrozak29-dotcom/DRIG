@@ -18,6 +18,7 @@ import GradientBg from '../../components/gradient-bg';
 import ImagePositionEditor from '../../components/image-position-editor';
 import { getApiBaseUrl } from '../../lib/api';
 import { getImageObjectPosition, getImageSrc, withImagePosition } from '../../lib/image-position';
+import { isSourceUrl, parseCoordinatePair } from '../../lib/location-source';
 
 type FeatureType = 'EVENT' | 'WISATA' | 'KULINER' | 'CULTURE' | 'HISTORY';
 
@@ -28,12 +29,6 @@ interface Category {
 }
 
 // Categories are loaded from the API so public forms follow the latest options.
-
-function isSourceReference(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return false;
-  return /^https?:\/\//i.test(trimmed);
-}
 
 export default function CommunityFormPage() {
   const router = useRouter();
@@ -169,11 +164,11 @@ export default function CommunityFormPage() {
   function validateForm(): boolean {
     const errors: Record<string, string> = {};
 
-    if (formState.location && formState.location.length > 150) {
-      errors.location = 'Lokasi maksimal 150 karakter.';
+    if (!parseCoordinatePair(formState.location)) {
+      errors.location = 'Isi titik lokasi dengan format latitude, longitude. Contoh: -7.607501577648155, 110.20378352884043';
     }
 
-    if (!isSourceReference(formState.link)) {
+    if (!isSourceUrl(formState.link)) {
       errors.link = 'Isi dengan link sumber yang valid, contoh: https://...';
     }
 
@@ -199,6 +194,11 @@ export default function CommunityFormPage() {
     setStatus('Mengirim submission...');
 
     try {
+      const coordinates = parseCoordinatePair(formState.location);
+      if (!coordinates) {
+        throw new Error('Titik lokasi tidak valid.');
+      }
+
       const response = await fetch(`${getApiBaseUrl()}/api/submissions`, {
         method: 'POST',
         headers: {
@@ -207,6 +207,8 @@ export default function CommunityFormPage() {
         },
         body: JSON.stringify({
           ...formState,
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
           featureType,
           submittedById: user?.id,
         }),
@@ -278,7 +280,7 @@ export default function CommunityFormPage() {
           <h1 className="mt-3 text-4xl font-bold sm:text-5xl">Ajukan Konten ke Smart Map</h1>
           <p className="mx-auto mt-4 max-w-2xl text-slate-300">
             Pilih jenis konten, isi detailnya, lalu preview. Konten akan tampil publik setelah
-            disetujui pengelola. Tempel link sumber agar tombol Sumber di halaman publik membuka referensi yang benar.
+            disetujui pengelola. Titik lokasi dipakai untuk Smart Map, sedangkan Link Sumber membuka referensi terkait.
           </p>
         </section>
 
@@ -319,17 +321,17 @@ export default function CommunityFormPage() {
 
                 <div>
                   <Field
-                    label="Link Sumber *"
-                    value={formState.link}
+                    label="Titik Lokasi *"
+                    value={formState.location}
                     onChange={(v) => {
-                      setFormState({ ...formState, link: v });
-                      if (formErrors.link) setFormErrors((prev) => { const n = { ...prev }; delete n.link; return n; });
+                      setFormState({ ...formState, location: v });
+                      if (formErrors.location) setFormErrors((prev) => { const n = { ...prev }; delete n.location; return n; });
                     }}
-                    placeholder="https://..."
-                    error={formErrors.link}
+                    placeholder="-7.607501577648155, 110.20378352884043"
+                    error={formErrors.location}
                   />
-                  {formErrors.link && (
-                    <p className="mt-1 text-xs text-rose-300">{formErrors.link}</p>
+                  {formErrors.location && (
+                    <p className="mt-1 text-xs text-rose-300">{formErrors.location}</p>
                   )}
                 </div>
 
@@ -360,25 +362,17 @@ export default function CommunityFormPage() {
 
                 <div>
                   <Field
-                    label="Keterangan Lokasi (Opsional)"
-                    value={formState.location}
+                    label="Link Sumber *"
+                    value={formState.link}
                     onChange={(v) => {
-                      if (v.length > 150) return;
-                      setFormState({ ...formState, location: v });
-                      if (formErrors.location) setFormErrors((prev) => { const n = { ...prev }; delete n.location; return n; });
+                      setFormState({ ...formState, link: v });
+                      if (formErrors.link) setFormErrors((prev) => { const n = { ...prev }; delete n.link; return n; });
                     }}
-                    placeholder="Nama jalan atau tempat jika ingin ditampilkan"
-                    maxLength={150}
-                    error={formErrors.location}
+                    placeholder="https://..."
+                    error={formErrors.link}
                   />
-                  <p className="mt-1 flex justify-between text-xs">
-                    <span className="text-slate-500">Maksimal 150 karakter</span>
-                    <span className={`${formState.location.length > 140 ? 'text-amber-300' : 'text-slate-500'}`}>
-                      {formState.location.length}/150
-                    </span>
-                  </p>
-                  {formErrors.location && (
-                    <p className="mt-1 text-xs text-rose-300">{formErrors.location}</p>
+                  {formErrors.link && (
+                    <p className="mt-1 text-xs text-rose-300">{formErrors.link}</p>
                   )}
                 </div>
 
@@ -514,7 +508,7 @@ export default function CommunityFormPage() {
                   <div className="mt-4 space-y-2 text-sm text-slate-400">
                     {formState.location && (
                       <p className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-cyan-300" /> {formState.location}
+                        <MapPin className="h-4 w-4 text-cyan-300" /> Titik lokasi: {formState.location}
                       </p>
                     )}
                     <p className="flex items-center gap-2 text-xs text-slate-500">

@@ -424,10 +424,9 @@ export function deleteDeveloperContent(type: DeveloperContentType, id: string) {
 }
 
 function toManagedMapItem(type: 'tourism' | 'culinary', item: DeveloperContentItem): SmartMapItem {
-  const resolved = resolveLocation(item.location || '', item.link || item.sourceUrl);
-  const linkCoords = extractCoordinates(item.link || item.sourceUrl);
-  const effectiveLat = linkCoords?.latitude ?? coordinateOrFallback(item.latitude, resolved?.latitude ?? MAGELANG_CENTER.lat);
-  const effectiveLng = linkCoords?.longitude ?? coordinateOrFallback(item.longitude, resolved?.longitude ?? MAGELANG_CENTER.lng);
+  const resolved = resolveLocation(item.location || '');
+  const effectiveLat = coordinateOrFallback(item.latitude, resolved?.latitude ?? MAGELANG_CENTER.lat);
+  const effectiveLng = coordinateOrFallback(item.longitude, resolved?.longitude ?? MAGELANG_CENTER.lng);
   const category = type === 'tourism' ? 'wisata' : 'kuliner';
   const title = item.title.trim();
 
@@ -502,11 +501,10 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
   return records
     .filter((item) => item?.title && item?.date && item?.location)
     .map((item) => {
-      const resolved = resolveLocation(String(item.location || ''), item.link || item.sourceUrl);
-      const linkCoords = extractCoordinates(item.link);
+      const resolved = resolveLocation(String(item.location || ''));
       const r = resolved ?? { latitude: MAGELANG_CENTER.lat, longitude: MAGELANG_CENTER.lng, scope: 'city' as EventScope };
-      const effectiveLat = linkCoords?.latitude ?? coordinateOrFallback(item.latitude, r.latitude);
-      const effectiveLng = linkCoords?.longitude ?? coordinateOrFallback(item.longitude, r.longitude);
+      const effectiveLat = coordinateOrFallback(item.latitude, r.latitude);
+      const effectiveLng = coordinateOrFallback(item.longitude, r.longitude);
       const id = `api-${item.id || slugify(`${item.title}-${item.date}`)}`;
       return {
         id,
@@ -676,14 +674,13 @@ export function formatDate(date?: string) {
 function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[] {
   if (!Array.isArray(records)) return [];
   return records.map((item) => {
-    const resolved = resolveLocation(String(item.location || item.title || ''), item.link || item.sourceUrl);
+    const resolved = resolveLocation(String(item.location || item.title || ''));
     const prefix = featureType === 'KULINER' ? 'kuliner' : featureType === 'WISATA' ? 'wisata' : featureType === 'CULTURE' ? 'budaya' : featureType === 'HISTORY' ? 'sejarah' : 'api';
     const id = `${prefix}-${item.id || slugify(String(item.title || 'item'))}`;
     const fallback = featureType === 'KULINER' ? photo.food : featureType === 'WISATA' ? photo.nature : featureType === 'CULTURE' ? photo.museum : featureType === 'HISTORY' ? photo.museum : photo.event;
-    const linkCoords = extractCoordinates(item.link);
     const r = resolved ?? { latitude: MAGELANG_CENTER.lat, longitude: MAGELANG_CENTER.lng, scope: 'city' as EventScope };
-    const effectiveLat = linkCoords?.latitude ?? coordinateOrFallback(item.latitude, r.latitude);
-    const effectiveLng = linkCoords?.longitude ?? coordinateOrFallback(item.longitude, r.longitude);
+    const effectiveLat = coordinateOrFallback(item.latitude, r.latitude);
+    const effectiveLng = coordinateOrFallback(item.longitude, r.longitude);
     const image = normalizeImageUrl(item.image || item.imageUrl, fallback);
     return {
       id,

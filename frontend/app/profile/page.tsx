@@ -23,6 +23,7 @@ import GradientBg from '../../components/gradient-bg';
 import ImagePositionEditor from '../../components/image-position-editor';
 import { getApiBaseUrl } from '../../lib/api';
 import { getImageObjectPosition, getImageSrc, withImagePosition } from '../../lib/image-position';
+import { formatCoordinatePair, isSourceUrl, parseCoordinatePair } from '../../lib/location-source';
 import { formatDate, fetchUserSubmissions } from '../../lib/magelang-data';
 
 type SubmissionStatus = 'approved' | 'pending' | 'rejected';
@@ -38,6 +39,8 @@ interface ProfileSubmissionItem {
   status: SubmissionStatus;
   typeLabel?: string;
   location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   image?: string | null;
   link?: string | null;
   priceRange?: string | null;
@@ -48,12 +51,6 @@ interface ProfileSubmissionItem {
   submittedById?: string | null;
   submittedBy?: { id?: string; name?: string; email?: string } | null;
   createdAt?: string;
-}
-
-function isSourceReference(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return false;
-  return /^https?:\/\//i.test(trimmed);
 }
 
 export default function ProfilePage() {
@@ -260,7 +257,7 @@ export default function ProfilePage() {
       title: item.title || '',
       description: item.description || '',
       categoryName: item.typeLabel || '',
-      location: item.location || '',
+      location: formatCoordinatePair(item.latitude, item.longitude) || item.location || '',
       image: item.image || '',
       link: item.link || '',
       priceRange: item.priceRange || '',
@@ -326,7 +323,13 @@ export default function ProfilePage() {
     setSubmissionStatus('');
 
     try {
-      if (!isSourceReference(submissionForm.link)) {
+      const coordinates = parseCoordinatePair(submissionForm.location);
+
+      if (!coordinates) {
+        throw new Error('Titik lokasi wajib diisi dengan format latitude, longitude. Contoh: -7.607501577648155, 110.20378352884043');
+      }
+
+      if (!isSourceUrl(submissionForm.link)) {
         throw new Error('Link sumber wajib diisi dengan URL yang valid. Contoh: https://...');
       }
 
@@ -338,6 +341,8 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({
           ...submissionForm,
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
           featureType: editingSubmission.featureType,
           rating: submissionForm.rating ? Number(submissionForm.rating) : undefined,
           date: submissionForm.date || undefined,
@@ -667,11 +672,13 @@ export default function ProfilePage() {
                 }
               />
               <ProfileField
-                label="Nama Lokasi (Opsional)"
+                label="Titik Lokasi"
                 value={submissionForm.location}
                 onChange={(value) =>
                   setSubmissionForm((current) => ({ ...current, location: value }))
                 }
+                placeholder="-7.607501577648155, 110.20378352884043"
+                required
               />
               <ProfileField
                 label="Rating"
@@ -996,6 +1003,7 @@ function ProfileField({
   onChange,
   type = 'text',
   required = false,
+  placeholder,
   min,
   max,
   step,
@@ -1005,6 +1013,7 @@ function ProfileField({
   onChange: (value: string) => void;
   type?: string;
   required?: boolean;
+  placeholder?: string;
   min?: string;
   max?: string;
   step?: string;
@@ -1017,6 +1026,7 @@ function ProfileField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required={required}
+        placeholder={placeholder}
         min={min}
         max={max}
         step={step}
