@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/navbar';
@@ -10,10 +9,7 @@ import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
 
 export default function LoginPage() {
-  const router = useRouter();
   const { login, register } = useAuth();
-  const nextParam =
-    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
@@ -46,14 +42,14 @@ export default function LoginPage() {
         if (!name.trim()) throw new Error('Nama harus diisi');
 
         await register(name.trim(), email.trim(), password);
-        setStatus('Registrasi berhasil. Mengarahkan ke Smart Map...');
+        setStatus('Registrasi berhasil. Mengarahkan ke Beranda...');
       } else {
         const loggedInUser = await login(email.trim(), password);
-        const target = nextParam || (loggedInUser.role === 'ADMIN' ? '/developer' : '/smart-map');
+        const target = loggedInUser.role === 'ADMIN' ? '/developer' : '/';
         setStatus(
           loggedInUser.role === 'ADMIN'
             ? 'Login developer berhasil. Mengarahkan ke Dashboard Developer...'
-            : 'Login berhasil. Mengarahkan ke Smart Map...'
+            : 'Login berhasil. Mengarahkan ke Beranda...'
         );
         setTimeout(() => {
           window.location.href = target;
@@ -61,7 +57,7 @@ export default function LoginPage() {
         return;
       }
 
-      const target = nextParam || '/smart-map';
+      const target = '/';
       setTimeout(() => {
         window.location.href = target;
       }, 900);

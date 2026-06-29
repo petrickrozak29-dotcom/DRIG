@@ -240,7 +240,9 @@ export default function SmartMapPage() {
   const eventAgendaItems = useMemo(
     () =>
       withDistances(
-        getActiveCommunityEvents(apiEvents).filter((event) => event.status === 'approved'),
+        getActiveCommunityEvents(apiEvents).filter(
+          (event) => event.category === 'event' && event.status === 'approved'
+        ),
         userLocation
       ),
     [apiEvents, dataVersion, userLocation]

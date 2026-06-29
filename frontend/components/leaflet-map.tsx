@@ -451,7 +451,6 @@ export default function LeafletMap({ markers, center, focusId, routeStops = [] }
     }
 
     markerLayerRef.current.clearLayers();
-    const bounds: any[] = [];
     let focusMarker: any | null = null;
 
     markers.forEach((marker) => {
@@ -472,16 +471,10 @@ export default function LeafletMap({ markers, center, focusId, routeStops = [] }
         .bindPopup(getPopupHtml(marker))
         .addTo(markerLayerRef.current);
 
-      bounds.push([marker.latitude, marker.longitude]);
-
       if (focusId && String(marker.id) === focusId) {
         focusMarker = leafletMarker;
       }
     });
-
-    if (center && Number.isFinite(center.lat) && Number.isFinite(center.lng)) {
-      bounds.push([center.lat, center.lng]);
-    }
 
     if (focusMarker) {
       if (!mapInstanceRef.current) return;
@@ -493,17 +486,16 @@ export default function LeafletMap({ markers, center, focusId, routeStops = [] }
     if (routeStops.length > 1) return;
 
     try {
-      if (mapInstanceRef.current && bounds.length > 1) {
-        mapInstanceRef.current.fitBounds(bounds, {
-          padding: [36, 36],
-          maxZoom: 13,
-          animate: false,
-        });
-      } else if (mapInstanceRef.current && bounds.length === 1) {
-        mapInstanceRef.current.setView(bounds[0], 13, { animate: false });
+      if (
+        mapInstanceRef.current &&
+        center &&
+        Number.isFinite(center.lat) &&
+        Number.isFinite(center.lng)
+      ) {
+        mapInstanceRef.current.setView([center.lat, center.lng], 12, { animate: false });
       }
     } catch {
-      // Ignore fitBounds errors on empty bounds
+      // Ignore view errors while the map is still settling.
     }
   }, [markers, center, focusId, routeStops.length, ready]);
 

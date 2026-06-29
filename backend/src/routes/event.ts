@@ -20,9 +20,15 @@ router.get('/', async (req, res) => {
 
     const events = await submissionService.getSubmissions(filters);
 
-    const mappedEvents = events.map((event: SubmissionWithRelations) => {
-      return serializeSubmission(req, event);
-    });
+    const mappedEvents = events
+      .filter((event: SubmissionWithRelations) => String(event.featureType).toUpperCase() === 'EVENT')
+      .map((event: SubmissionWithRelations) => {
+        const serialized = serializeSubmission(req, event);
+        return {
+          ...serialized,
+          featureType: 'EVENT',
+        };
+      });
 
     res.json(mappedEvents);
   } catch (error) {
