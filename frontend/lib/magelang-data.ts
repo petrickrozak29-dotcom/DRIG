@@ -224,6 +224,18 @@ function isValidCoordinate(latitude: number, longitude: number) {
   );
 }
 
+function coordinateOrFallback(value: unknown, fallback: number) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric !== 0 ? numeric : fallback;
+}
+
+function normalizeStatus(value: unknown): EventStatus {
+  const normalized = String(value || 'approved').toLowerCase();
+  if (normalized === 'pending') return 'pending';
+  if (normalized === 'rejected') return 'rejected';
+  return 'approved';
+}
+
 /**
  * Extract coordinates from any string value (Google Maps URL, address, etc.).
  */
@@ -414,8 +426,8 @@ export function deleteDeveloperContent(type: DeveloperContentType, id: string) {
 function toManagedMapItem(type: 'tourism' | 'culinary', item: DeveloperContentItem): SmartMapItem {
   const resolved = resolveLocation(item.location || '', item.link || item.sourceUrl);
   const linkCoords = extractCoordinates(item.link || item.sourceUrl);
-  const effectiveLat = linkCoords?.latitude ?? Number(item.latitude ?? resolved?.latitude ?? MAGELANG_CENTER.lat);
-  const effectiveLng = linkCoords?.longitude ?? Number(item.longitude ?? resolved?.longitude ?? MAGELANG_CENTER.lng);
+  const effectiveLat = linkCoords?.latitude ?? coordinateOrFallback(item.latitude, resolved?.latitude ?? MAGELANG_CENTER.lat);
+  const effectiveLng = linkCoords?.longitude ?? coordinateOrFallback(item.longitude, resolved?.longitude ?? MAGELANG_CENTER.lng);
   const category = type === 'tourism' ? 'wisata' : 'kuliner';
   const title = item.title.trim();
 
@@ -493,8 +505,8 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
       const resolved = resolveLocation(String(item.location || ''), item.link || item.sourceUrl);
       const linkCoords = extractCoordinates(item.link);
       const r = resolved ?? { latitude: MAGELANG_CENTER.lat, longitude: MAGELANG_CENTER.lng, scope: 'city' as EventScope };
-      const effectiveLat = linkCoords?.latitude ?? Number(item.latitude ?? r.latitude);
-      const effectiveLng = linkCoords?.longitude ?? Number(item.longitude ?? r.longitude);
+      const effectiveLat = linkCoords?.latitude ?? coordinateOrFallback(item.latitude, r.latitude);
+      const effectiveLng = linkCoords?.longitude ?? coordinateOrFallback(item.longitude, r.longitude);
       const id = `api-${item.id || slugify(`${item.title}-${item.date}`)}`;
       return {
         id,
@@ -513,7 +525,7 @@ export function normalizeApiEvents(records: any[]): CommunityEvent[] {
         ticketPrice: item.ticketPrice ? String(item.ticketPrice) : undefined,
         openingHours: item.openingHours ? String(item.openingHours) : undefined,
         detailUrl: `/smart-map?focus=${id}`,
-        status: (item.status || 'approved') as EventStatus,
+        status: normalizeStatus(item.status),
         scope: r.scope,
         source: 'api' as const,
         createdAt: item.createdAt || new Date().toISOString(),
@@ -670,8 +682,8 @@ function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[]
     const fallback = featureType === 'KULINER' ? photo.food : featureType === 'WISATA' ? photo.nature : featureType === 'CULTURE' ? photo.museum : featureType === 'HISTORY' ? photo.museum : photo.event;
     const linkCoords = extractCoordinates(item.link);
     const r = resolved ?? { latitude: MAGELANG_CENTER.lat, longitude: MAGELANG_CENTER.lng, scope: 'city' as EventScope };
-    const effectiveLat = linkCoords?.latitude ?? Number(item.latitude ?? r.latitude);
-    const effectiveLng = linkCoords?.longitude ?? Number(item.longitude ?? r.longitude);
+    const effectiveLat = linkCoords?.latitude ?? coordinateOrFallback(item.latitude, r.latitude);
+    const effectiveLng = linkCoords?.longitude ?? coordinateOrFallback(item.longitude, r.longitude);
     const image = normalizeImageUrl(item.image || item.imageUrl, fallback);
     return {
       id,
@@ -686,7 +698,7 @@ function normalizeApiItems(records: any[], featureType?: string): SmartMapItem[]
       detailUrl: `/smart-map?focus=${id}`,
       date: item.date ? String(item.date).slice(0, 10) : undefined,
       time: item.time ? String(item.time) : undefined,
-      status: (item.status || 'approved') as EventStatus,
+      status: normalizeStatus(item.status),
       scope: r.scope, source: 'api',
       rating: Number(item.rating ?? 4.5), priceRange: item.priceRange,
       ticketPrice: item.ticketPrice, openingHours: item.openingHours,

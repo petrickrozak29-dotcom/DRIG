@@ -30,6 +30,7 @@ import {
   buildSmartMapItemsAsync,
   formatDate,
   fetchEvents,
+  getActiveCommunityEvents,
   withDistances,
   type CommunityEvent,
   type MapCategory,
@@ -147,7 +148,7 @@ export default function SmartMapPage() {
         };
 
         setUserLocation(coords);
-        setLocationStatus('Lokasi perangkat aktif untuk filter terdekat');
+        setLocationStatus('Lokasi perangkat aktif untuk estimasi jarak');
 
         if (token) {
           try {
@@ -178,7 +179,6 @@ export default function SmartMapPage() {
   useEffect(() => {
     setFocusId(new URLSearchParams(window.location.search).get('focus'));
     setItineraryRoute(readItineraryPayload());
-    requestLocation();
 
     const updateVersion = () => setDataVersion((version) => version + 1);
     window.addEventListener('magelangverse-events-updated', updateVersion);
@@ -237,14 +237,22 @@ export default function SmartMapPage() {
 
   const allItems = asyncItems;
 
+  const eventAgendaItems = useMemo(
+    () =>
+      withDistances(
+        getActiveCommunityEvents(apiEvents).filter((event) => event.status === 'approved'),
+        userLocation
+      ),
+    [apiEvents, dataVersion, userLocation]
+  );
+
   const monthlyAgenda = useMemo(() => {
     const now = new Date();
     const month = now.getMonth();
     const year = now.getFullYear();
 
-    return allItems
+    return eventAgendaItems
       .filter((item) => {
-        if (item.category !== 'event' || item.status !== 'approved') return false;
         if (!item.date) return false;
         const date = new Date(item.date);
         return (
@@ -255,7 +263,7 @@ export default function SmartMapPage() {
       })
       .sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime())
       .slice(0, 5);
-  }, [allItems]);
+  }, [eventAgendaItems]);
 
   const itineraryMapMarkers = useMemo(
     () =>
@@ -302,22 +310,10 @@ export default function SmartMapPage() {
 
   const mapMarkers = useMemo(
     () => [
-      {
-        id: 'lokasi-saya',
-        title: 'Lokasi referensi',
-        category: 'lokasi',
-        typeLabel: 'Titik Anda',
-        description: locationStatus,
-        location: 'Pusat radius pencarian',
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
-        detailUrl: '/smart-map',
-        link: `https://www.google.com/maps/search/?api=1&query=${userLocation.lat},${userLocation.lng}`,
-      },
       ...itineraryMapMarkers,
       ...allItems,
     ],
-    [allItems, itineraryMapMarkers, locationStatus, userLocation]
+    [allItems, itineraryMapMarkers]
   );
 
   return (
@@ -399,7 +395,7 @@ export default function SmartMapPage() {
             )}
             <LeafletMap
               markers={mapMarkers}
-              center={userLocation}
+              center={MAGELANG_CENTER}
               focusId={focusId}
               routeStops={routeStops}
             />
