@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
   ExternalLink,
-  Filter,
   LocateFixed,
   MapPin,
   Navigation,
@@ -36,8 +35,6 @@ import {
   type MapCategory,
   type SmartMapItemWithDistance,
 } from '../../lib/magelang-data';
-
-type CategoryFilter = 'semua' | MapCategory;
 
 const SMART_MAP_ITINERARY_KEY = 'magelangverse.smartMap.itinerary';
 
@@ -73,15 +70,6 @@ const fallbackMapImage: Record<string, string> = {
   sejarah:
     'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1000&q=80',
 };
-
-const categoryFilters: Array<{ value: CategoryFilter; label: string }> = [
-  { value: 'semua', label: 'Semua kategori' },
-  { value: 'event', label: 'Event' },
-  { value: 'wisata', label: 'Wisata' },
-  { value: 'kuliner', label: 'Kuliner' },
-  { value: 'budaya', label: 'Budaya' },
-  { value: 'sejarah', label: 'Sejarah' },
-];
 
 function categoryClass(category: string) {
   if (category === 'event') return 'border-rose-400/40 bg-rose-500/10 text-rose-200';
@@ -139,8 +127,6 @@ export default function SmartMapPage() {
   const { token, isAuthenticated } = useAuth();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>(MAGELANG_CENTER);
   const [locationStatus, setLocationStatus] = useState('Mode pusat Magelang aktif');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('semua');
-  const [typeFilter, setTypeFilter] = useState('semua');
   const [apiEvents, setApiEvents] = useState<CommunityEvent[]>([]);
   const [dataVersion, setDataVersion] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -251,28 +237,6 @@ export default function SmartMapPage() {
 
   const allItems = asyncItems;
 
-  const filteredItems = useMemo(() => {
-    let next: SmartMapItemWithDistance[] = allItems;
-
-    if (categoryFilter !== 'semua') {
-      next = next.filter((item) => item.category === categoryFilter);
-    }
-
-    if (typeFilter !== 'semua') {
-      next = next.filter((item) => item.typeLabel === typeFilter);
-    }
-
-    return next;
-  }, [allItems, categoryFilter, typeFilter]);
-
-  const subcategoryOptions = useMemo(() => {
-    const scoped =
-      categoryFilter === 'semua'
-        ? allItems
-        : allItems.filter((item) => item.category === categoryFilter);
-    return Array.from(new Set(scoped.map((item) => item.typeLabel).filter(Boolean))).sort();
-  }, [allItems, categoryFilter]);
-
   const monthlyAgenda = useMemo(() => {
     const now = new Date();
     const month = now.getMonth();
@@ -351,9 +315,9 @@ export default function SmartMapPage() {
         link: `https://www.google.com/maps/search/?api=1&query=${userLocation.lat},${userLocation.lng}`,
       },
       ...itineraryMapMarkers,
-      ...filteredItems,
+      ...allItems,
     ],
-    [filteredItems, itineraryMapMarkers, locationStatus, userLocation]
+    [allItems, itineraryMapMarkers, locationStatus, userLocation]
   );
 
   return (
@@ -400,50 +364,6 @@ export default function SmartMapPage() {
         </section>
 
         <section className="space-y-6">
-          <div className="grid gap-4 rounded-lg border border-slate-800 bg-slate-900/80 p-5 lg:grid-cols-[minmax(0,1fr)_260px]">
-            <div>
-              <div className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
-                <Filter className="h-5 w-5 text-cyan-300" />
-                Kategori
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {categoryFilters.map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => {
-                      setCategoryFilter(item.value);
-                      setTypeFilter('semua');
-                    }}
-                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                      categoryFilter === item.value
-                        ? 'bg-cyan-400 text-slate-950'
-                        : 'border border-slate-700 bg-slate-950/70 text-slate-300 hover:border-cyan-400/60'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <label className="block text-sm font-semibold text-slate-200">
-              Jenis kategori
-              <select
-                value={typeFilter}
-                onChange={(event) => setTypeFilter(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
-              >
-                <option value="semua">Semua jenis</option>
-                {subcategoryOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
           <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80">
             {itineraryRoute && (
               <div className="border-b border-slate-800 bg-slate-950/80 p-4">
@@ -486,7 +406,7 @@ export default function SmartMapPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
-            <span>{filteredItems.length} marker aktif dalam filter saat ini</span>
+            <span>{allItems.length} marker aktif di Smart Map</span>
             <a href="/community-form" className="font-semibold text-cyan-300 hover:text-cyan-200">
               Tambah Konten Komunitas
             </a>
@@ -520,7 +440,7 @@ export default function SmartMapPage() {
           </section>
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {filteredItems.map((item) => (
+            {allItems.map((item) => (
               <article
                 key={item.id}
                 className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
