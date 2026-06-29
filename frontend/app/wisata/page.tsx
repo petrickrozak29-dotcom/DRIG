@@ -7,6 +7,7 @@ import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
 import { fetchCategories } from '../../lib/content-api';
+import { getImageObjectPosition, getImageSrc } from '../../lib/image-position';
 
 interface TourismItem {
   id: string;
@@ -163,15 +164,16 @@ export default function WisataPage() {
               className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
             >
               <img
-                src={
-                  item.image ||
+                src={getImageSrc(
+                  item.image,
                   'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80'
-                }
+                )}
                 alt={item.title}
                 onError={(event) => {
                   event.currentTarget.src =
                     'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80';
                 }}
+                style={{ objectPosition: getImageObjectPosition(item.image) }}
                 className="h-48 w-full object-cover"
               />
               <div className="p-6">

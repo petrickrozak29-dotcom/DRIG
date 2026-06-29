@@ -533,18 +533,22 @@ export default function SmartMagelangPage() {
                             <MapPin className="h-4 w-4" />
                             Lihat di Smart Map
                           </a>
-                          <a
-                            href={
-                              item.destination.link ||
-                              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.destination.name)}`
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-cyan-200 hover:border-cyan-300"
-                          >
-                            <Navigation className="h-4 w-4" />
-                            Sumber
-                          </a>
+                          {item.destination.link ? (
+                            <a
+                              href={item.destination.link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-cyan-200 hover:border-cyan-300"
+                            >
+                              <Navigation className="h-4 w-4" />
+                              Sumber
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-500">
+                              <Navigation className="h-4 w-4" />
+                              Sumber
+                            </span>
+                          )}
                         </div>
                       </article>
                     ))}

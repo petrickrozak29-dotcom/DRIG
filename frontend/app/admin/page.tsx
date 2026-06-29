@@ -15,7 +15,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
+import ImagePositionEditor from '../../components/image-position-editor';
 import { getApiBaseUrl } from '../../lib/api';
+import { getImageObjectPosition, getImageSrc, withImagePosition } from '../../lib/image-position';
 
 type FeatureType = 'EVENT' | 'WISATA' | 'KULINER' | 'CULTURE' | 'HISTORY';
 
@@ -27,13 +29,10 @@ interface Category {
 
 // Categories are loaded from the API so public forms follow the latest options.
 
-function isMapReference(value: string) {
+function isSourceReference(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return false;
-  return (
-    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/.test(trimmed) ||
-    /(maps\.google|google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl)/i.test(trimmed)
-  );
+  return /^https?:\/\//i.test(trimmed);
 }
 
 export default function CommunityFormPage() {
@@ -128,7 +127,10 @@ export default function CommunityFormPage() {
 
           if (res.ok) {
             const body = await res.json();
-            setFormState((current) => ({ ...current, image: body.url }));
+            setFormState((current) => ({
+              ...current,
+              image: body.url ? withImagePosition(body.url, { x: 50, y: 50 }) : '',
+            }));
             setStatus('');
             setIsUploadingImage(false);
             return;
@@ -137,7 +139,10 @@ export default function CommunityFormPage() {
 
         const reader = new FileReader();
         reader.onload = () => {
-          setFormState((current) => ({ ...current, image: String(reader.result || '') }));
+          setFormState((current) => ({
+            ...current,
+            image: withImagePosition(String(reader.result || ''), { x: 50, y: 50 }),
+          }));
           setStatus('');
           setIsUploadingImage(false);
         };
@@ -145,7 +150,10 @@ export default function CommunityFormPage() {
       } catch (err) {
         const reader = new FileReader();
         reader.onload = () => {
-          setFormState((current) => ({ ...current, image: String(reader.result || '') }));
+          setFormState((current) => ({
+            ...current,
+            image: withImagePosition(String(reader.result || ''), { x: 50, y: 50 }),
+          }));
           setStatus('');
           setIsUploadingImage(false);
         };
@@ -165,8 +173,8 @@ export default function CommunityFormPage() {
       errors.location = 'Lokasi maksimal 150 karakter.';
     }
 
-    if (!isMapReference(formState.link)) {
-      errors.link = 'Isi dengan link Google Maps atau titik koordinat, contoh: -7.458564688477663, 110.22222490358898';
+    if (!isSourceReference(formState.link)) {
+      errors.link = 'Isi dengan link sumber yang valid, contoh: https://...';
     }
 
     setFormErrors(errors);
@@ -270,7 +278,7 @@ export default function CommunityFormPage() {
           <h1 className="mt-3 text-4xl font-bold sm:text-5xl">Ajukan Konten ke Smart Map</h1>
           <p className="mx-auto mt-4 max-w-2xl text-slate-300">
             Pilih jenis konten, isi detailnya, lalu preview. Konten akan tampil publik setelah
-            disetujui pengelola. Tempel link Google Maps atau titik koordinat agar lokasi langsung tersambung ke Smart Map.
+            disetujui pengelola. Tempel link sumber agar tombol Sumber di halaman publik membuka referensi yang benar.
           </p>
         </section>
 
@@ -311,13 +319,13 @@ export default function CommunityFormPage() {
 
                 <div>
                   <Field
-                    label="Link Google Maps / Titik Koordinat *"
+                    label="Link Sumber *"
                     value={formState.link}
                     onChange={(v) => {
                       setFormState({ ...formState, link: v });
                       if (formErrors.link) setFormErrors((prev) => { const n = { ...prev }; delete n.link; return n; });
                     }}
-                    placeholder="-7.458564688477663, 110.22222490358898"
+                    placeholder="https://..."
                     error={formErrors.link}
                   />
                   {formErrors.link && (
@@ -352,14 +360,14 @@ export default function CommunityFormPage() {
 
                 <div>
                   <Field
-                    label="Nama Lokasi / Alamat (Opsional)"
+                    label="Keterangan Lokasi (Opsional)"
                     value={formState.location}
                     onChange={(v) => {
                       if (v.length > 150) return;
                       setFormState({ ...formState, location: v });
                       if (formErrors.location) setFormErrors((prev) => { const n = { ...prev }; delete n.location; return n; });
                     }}
-                    placeholder="Nama jalan atau tempat"
+                    placeholder="Nama jalan atau tempat jika ingin ditampilkan"
                     maxLength={150}
                     error={formErrors.location}
                   />
@@ -443,10 +451,12 @@ export default function CommunityFormPage() {
                   </span>
                   {formState.image && (
                     <div className="mt-4 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
-                      <img
-                        src={formState.image}
+                      <ImagePositionEditor
+                        value={formState.image}
+                        onChange={(value) => setFormState({ ...formState, image: value })}
                         alt="Preview upload"
-                        className="h-48 w-full object-cover"
+                        className="rounded-none border-0 bg-transparent p-0"
+                        previewClassName="h-48 w-full"
                       />
                       <div className="flex items-center justify-between gap-3 px-4 py-3">
                         <p className="text-xs font-normal text-slate-400">
@@ -481,7 +491,12 @@ export default function CommunityFormPage() {
 
               <article className="overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
                 {formState.image ? (
-                  <img src={formState.image} alt="Preview" className="h-48 w-full object-cover" />
+                  <img
+                    src={getImageSrc(formState.image)}
+                    alt="Preview"
+                    className="h-48 w-full object-cover"
+                    style={{ objectPosition: getImageObjectPosition(formState.image) }}
+                  />
                 ) : (
                   <div className="flex h-48 items-center justify-center bg-slate-900 text-slate-500">
                     <Camera className="h-8 w-8" />
@@ -504,7 +519,7 @@ export default function CommunityFormPage() {
                     )}
                     <p className="flex items-center gap-2 text-xs text-slate-500">
                       <MapPin className="h-3 w-3 text-cyan-400" />
-                      Titik/link: {formState.link}
+                      Sumber: {formState.link}
                     </p>
                     {featureType === 'EVENT' && (
                       <p className="flex items-center gap-2">

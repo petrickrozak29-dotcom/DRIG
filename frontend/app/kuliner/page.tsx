@@ -8,6 +8,7 @@ import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
 import { fetchCategories } from '../../lib/content-api';
 import { fetchCulinaryItems } from '../../lib/magelang-data';
+import { getImageObjectPosition, getImageSrc } from '../../lib/image-position';
 
 type SmartMapItem = {
   id: string;
@@ -165,11 +166,12 @@ export default function KulinerPage() {
               className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
             >
               <img
-                src={item.image || fallbackImage}
+                src={getImageSrc(item.image, fallbackImage)}
                 alt={item.title}
                 onError={(event) => {
                   event.currentTarget.src = fallbackImage;
                 }}
+                style={{ objectPosition: getImageObjectPosition(item.image) }}
                 className="h-48 w-full object-cover"
               />
               <div className="p-5">

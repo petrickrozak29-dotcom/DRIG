@@ -24,6 +24,7 @@ const LeafletMap = dynamic(() => import('../../components/leaflet-map'), {
   ),
 });
 import { getApiBaseUrl } from '../../lib/api';
+import { getImageObjectPosition, getImageSrc } from '../../lib/image-position';
 import {
   MAGELANG_CENTER,
   buildSmartMapItems,
@@ -444,11 +445,12 @@ export default function SmartMapPage() {
                 className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
               >
                 <img
-                  src={item.image || fallbackMapImage[item.category]}
+                  src={getImageSrc(item.image, fallbackMapImage[item.category])}
                   alt={item.title}
                   onError={(event) => {
                     event.currentTarget.src = fallbackMapImage[item.category] || fallbackMapImage.wisata;
                   }}
+                  style={{ objectPosition: getImageObjectPosition(item.image) }}
                   className="h-40 w-full object-cover"
                 />
                 <div className="p-5">

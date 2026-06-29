@@ -24,8 +24,10 @@ import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
 import CategoryManager from '../../components/category-manager';
+import ImagePositionEditor from '../../components/image-position-editor';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson, getApiBaseUrl } from '../../lib/api';
+import { getImageObjectPosition, getImageSrc, withImagePosition } from '../../lib/image-position';
 import {
   deleteDeveloperContent,
   fetchCategories,
@@ -101,13 +103,10 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
-function isMapReference(value: string) {
+function isSourceReference(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return false;
-  return (
-    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/.test(trimmed) ||
-    /(maps\.google|google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl)/i.test(trimmed)
-  );
+  return /^https?:\/\//i.test(trimmed);
 }
 
 function toFormState(item?: ManagedContentItem | null) {
@@ -283,7 +282,10 @@ export default function DeveloperPage() {
       }
 
       const payload = await response.json();
-      setFormState((current) => ({ ...current, image: payload.url || '' }));
+      setFormState((current) => ({
+        ...current,
+        image: payload.url ? withImagePosition(payload.url, { x: 50, y: 50 }) : '',
+      }));
       setStatusMessage('Gambar berhasil diunggah.');
     } catch (error: any) {
       setStatusMessage(error.message || 'Gagal mengunggah gambar.');
@@ -296,8 +298,8 @@ export default function DeveloperPage() {
 
     setSaving(true);
     try {
-      if (!isMapReference(formState.link)) {
-        throw new Error('Link Google Maps atau titik koordinat wajib diisi. Contoh: -7.458564688477663, 110.22222490358898');
+      if (!isSourceReference(formState.link)) {
+        throw new Error('Link sumber wajib diisi dengan URL yang valid. Contoh: https://...');
       }
 
       const payload: Record<string, unknown> = {
@@ -729,12 +731,6 @@ function ContentFormCard({
   onReset: () => void;
   saving: boolean;
 }) {
-  const isPlace =
-    section === 'tourism' ||
-    section === 'culinary' ||
-    section === 'event' ||
-    section === 'culture' ||
-    section === 'history';
   const isEvent = section === 'event';
   const isCulinary = section === 'culinary';
   const hasRating = section === 'tourism' || section === 'culinary' || section === 'event';
@@ -797,15 +793,13 @@ function ContentFormCard({
           />
         )}
 
-        {isPlace && (
-          <Field
-            label="Link Google Maps / Titik Koordinat"
-            value={formState.link}
-            onChange={(value) => setFormState((current) => ({ ...current, link: value }))}
-            placeholder="-7.458564688477663, 110.22222490358898"
-            required
-          />
-        )}
+        <Field
+          label="Link Sumber"
+          value={formState.link}
+          onChange={(value) => setFormState((current) => ({ ...current, link: value }))}
+          placeholder="https://..."
+          required
+        />
 
         {isEvent && (
           <Field
@@ -861,10 +855,11 @@ function ContentFormCard({
         </label>
 
         {formState.image && (
-          <img
-            src={formState.image}
+          <ImagePositionEditor
+            value={formState.image}
+            onChange={(value) => setFormState((current) => ({ ...current, image: value }))}
             alt="Preview"
-            className="h-40 w-full rounded-lg border border-slate-800 object-cover"
+            previewClassName="h-40 w-full"
           />
         )}
 
@@ -906,11 +901,12 @@ function ContentCard({
   return (
     <article className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80">
       <img
-        src={item.image || fallbackImage}
+        src={getImageSrc(item.image, fallbackImage)}
         alt={item.title}
         onError={(event) => {
           event.currentTarget.src = fallbackImage;
         }}
+        style={{ objectPosition: getImageObjectPosition(item.image) }}
         className="h-44 w-full object-cover"
       />
       <div className="p-4">

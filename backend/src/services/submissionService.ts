@@ -1,6 +1,6 @@
 import prisma from './prismaClient';
 import { log } from './logger';
-import { normalizeMapReference, resolveCoordinates } from '../utils/geo';
+import { resolveCoordinates } from '../utils/geo';
 import type {
   SubmissionFeatureType,
   SubmissionRecord,
@@ -84,7 +84,7 @@ export const submissionService = {
       featureType,
       status: 'PENDING',
       categoryId: category.id,
-      link: normalizeMapReference(input.link),
+      link: typeof input.link === 'string' ? input.link.trim() || null : input.link ?? null,
     };
 
     // Only set coordinates if we resolved them
@@ -162,7 +162,9 @@ export const submissionService = {
     if (input.description !== undefined) data.description = input.description;
     if (input.location !== undefined) data.location = input.location;
     if (input.image !== undefined) data.image = input.image;
-    if (input.link !== undefined) data.link = normalizeMapReference(input.link) ?? null;
+    if (input.link !== undefined) {
+      data.link = typeof input.link === 'string' ? input.link.trim() || null : input.link ?? null;
+    }
     if (input.priceRange !== undefined) data.priceRange = input.priceRange;
     if (input.ticketPrice !== undefined) data.ticketPrice = input.ticketPrice;
     if (input.openingHours !== undefined) data.openingHours = input.openingHours;

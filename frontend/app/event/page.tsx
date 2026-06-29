@@ -21,6 +21,7 @@ import {
   type CommunityEvent,
   type EventCategory,
 } from '../../lib/magelang-data';
+import { getImageObjectPosition, getImageSrc } from '../../lib/image-position';
 
 export default function EventPage() {
   const [apiEvents, setApiEvents] = useState<CommunityEvent[]>([]);
@@ -177,15 +178,16 @@ export default function EventPage() {
               className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
             >
               <img
-                src={
-                  item.image ||
+                src={getImageSrc(
+                  item.image,
                   'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1000&q=80'
-                }
+                )}
                 alt={item.title}
                 onError={(event) => {
                   event.currentTarget.src =
                     'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1000&q=80';
                 }}
+                style={{ objectPosition: getImageObjectPosition(item.image) }}
                 className="h-44 w-full object-cover"
               />
               <div className="p-6">

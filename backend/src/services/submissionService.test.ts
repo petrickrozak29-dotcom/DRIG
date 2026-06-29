@@ -86,7 +86,7 @@ describe('Submission Service', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('should resolve a raw coordinate pair and store a valid Google Maps link', async () => {
+    it('should resolve a raw coordinate pair while keeping the source link unchanged', async () => {
       const mockCategory = { id: 'cat-map', name: 'Event', featureType: 'EVENT' };
       const mockSubmission = { id: 'sub-map', title: 'Festival', status: 'PENDING' };
 
@@ -106,7 +106,7 @@ describe('Submission Service', () => {
           latitude: -7.458564688477663,
           longitude: 110.22222490358898,
           location: '-7.458564688477663, 110.22222490358898',
-          link: 'https://www.google.com/maps/search/?api=1&query=-7.458564688477663,110.22222490358898',
+          link: '-7.458564688477663, 110.22222490358898',
         }),
       });
     });

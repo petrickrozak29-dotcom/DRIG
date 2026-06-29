@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { getImageObjectPosition, getImageSrc } from '../lib/image-position';
 
 interface MarkerItem {
   id: string | number;
@@ -97,7 +98,7 @@ function getPopupHtml(marker: MarkerItem) {
   const description = escapeHtml(String(marker.description ?? ''));
   const distance = typeof marker.distance === 'number' ? `${marker.distance.toFixed(1)} km` : '';
   const detailUrl = escapeAttr(marker.detailUrl || `/smart-map?focus=${encodeURIComponent(String(marker.id))}`);
-  const linkUrl = getSafeMapHref(marker);
+  const linkUrl = getSafeSourceHref(marker);
   const sourceButton = linkUrl
     ? `<a href="${linkUrl}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;background:#0891b2;color:#fff;text-decoration:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</a>`
     : `<span style="flex:1;text-align:center;background:#e2e8f0;color:#64748b;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">Sumber</span>`;
@@ -106,9 +107,10 @@ function getPopupHtml(marker: MarkerItem) {
     .map((item) => `<p style="font-size:11px;line-height:1.35;margin:0 0 6px;color:#64748b;">${escapeHtml(String(item))}</p>`)
     .join('');
   const cat = String(marker.category).toLowerCase();
-  const imgSrc = marker.image || fallbackImage[cat] || fallbackImage.wisata;
+  const imgSrc = getImageSrc(marker.image, fallbackImage[cat] || fallbackImage.wisata);
   const fallbackSrc = fallbackImage[cat] || fallbackImage.wisata;
-  const image = `<img src="${escapeAttr(imgSrc)}" alt="${title}" onerror="this.onerror=null;this.src='${escapeAttr(fallbackSrc)}';" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:10px;background:#e2e8f0;" />`;
+  const imagePosition = getImageObjectPosition(marker.image);
+  const image = `<img src="${escapeAttr(imgSrc)}" alt="${title}" onerror="this.onerror=null;this.src='${escapeAttr(fallbackSrc)}';" style="width:100%;height:96px;object-fit:cover;object-position:${escapeAttr(imagePosition)};border-radius:8px;margin-bottom:10px;background:#e2e8f0;" />`;
 
   return `
     <div style="width:240px;color:#0f172a;font-family:Inter,Arial,sans-serif;">
@@ -140,44 +142,10 @@ function escapeAttr(value: string) {
   return escapeHtml(value).replace(/`/g, '&#096;');
 }
 
-function extractCoordinatePair(value?: string | null) {
-  const raw = String(value || '').trim();
-  const match = raw.match(/(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
-  if (!match) return null;
-
-  const latitude = Number(match[1]);
-  const longitude = Number(match[2]);
-  if (
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180
-  ) {
-    return { latitude, longitude };
-  }
-
-  return null;
-}
-
-function getSafeMapHref(marker: MarkerItem) {
+function getSafeSourceHref(marker: MarkerItem) {
   const rawLink = String(marker.link || '').trim();
-  const linkCoords = extractCoordinatePair(rawLink);
-  if (linkCoords) {
-    return escapeAttr(
-      `https://www.google.com/maps/search/?api=1&query=${linkCoords.latitude},${linkCoords.longitude}`
-    );
-  }
-
   if (/^https?:\/\//i.test(rawLink)) {
     return escapeAttr(rawLink);
-  }
-
-  if (Number.isFinite(marker.latitude) && Number.isFinite(marker.longitude)) {
-    return escapeAttr(
-      `https://www.google.com/maps/search/?api=1&query=${marker.latitude},${marker.longitude}`
-    );
   }
 
   return '';

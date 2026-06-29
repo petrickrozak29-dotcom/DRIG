@@ -7,6 +7,7 @@ import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
 import AnimatedBackground from '../../components/animated-background';
 import { fetchPublicContent, type ManagedContentItem } from '../../lib/content-api';
+import { getImageObjectPosition, getImageSrc } from '../../lib/image-position';
 
 const fallbackImage =
   'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=80';
@@ -81,11 +82,12 @@ export default function SejarahPage() {
               className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
             >
               <img
-                src={item.image || fallbackImage}
+                src={getImageSrc(item.image, fallbackImage)}
                 alt={item.title}
                 onError={(event) => {
                   event.currentTarget.src = fallbackImage;
                 }}
+                style={{ objectPosition: getImageObjectPosition(item.image) }}
                 className="h-52 w-full object-cover"
               />
               <div className="p-6">

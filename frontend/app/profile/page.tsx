@@ -20,7 +20,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
+import ImagePositionEditor from '../../components/image-position-editor';
 import { getApiBaseUrl } from '../../lib/api';
+import { getImageObjectPosition, getImageSrc, withImagePosition } from '../../lib/image-position';
 import { formatDate, fetchUserSubmissions } from '../../lib/magelang-data';
 
 type SubmissionStatus = 'approved' | 'pending' | 'rejected';
@@ -48,13 +50,10 @@ interface ProfileSubmissionItem {
   createdAt?: string;
 }
 
-function isMapReference(value: string) {
+function isSourceReference(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return false;
-  return (
-    /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/.test(trimmed) ||
-    /(maps\.google|google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl)/i.test(trimmed)
-  );
+  return /^https?:\/\//i.test(trimmed);
 }
 
 export default function ProfilePage() {
@@ -223,7 +222,10 @@ export default function ProfilePage() {
 
           if (res.ok) {
             const body = await res.json();
-            setProfileForm((current) => ({ ...current, avatar: body.url }));
+            setProfileForm((current) => ({
+              ...current,
+              avatar: body.url ? withImagePosition(body.url, { x: 50, y: 50 }) : '',
+            }));
             setProfileStatus('');
             return;
           }
@@ -232,13 +234,19 @@ export default function ProfilePage() {
         // Fallback to base64 when not authenticated or upload failed
         const reader = new FileReader();
         reader.onload = () => {
-          setProfileForm((current) => ({ ...current, avatar: String(reader.result || '') }));
+          setProfileForm((current) => ({
+            ...current,
+            avatar: withImagePosition(String(reader.result || ''), { x: 50, y: 50 }),
+          }));
         };
         reader.readAsDataURL(file);
       } catch (err) {
         const reader = new FileReader();
         reader.onload = () => {
-          setProfileForm((current) => ({ ...current, avatar: String(reader.result || '') }));
+          setProfileForm((current) => ({
+            ...current,
+            avatar: withImagePosition(String(reader.result || ''), { x: 50, y: 50 }),
+          }));
         };
         reader.readAsDataURL(file);
       }
@@ -281,20 +289,29 @@ export default function ProfilePage() {
 
           if (res.ok) {
             const body = await res.json();
-            setSubmissionForm((current) => ({ ...current, image: body.url }));
+            setSubmissionForm((current) => ({
+              ...current,
+              image: body.url ? withImagePosition(body.url, { x: 50, y: 50 }) : '',
+            }));
             return;
           }
         }
 
         const reader = new FileReader();
         reader.onload = () => {
-          setSubmissionForm((current) => ({ ...current, image: String(reader.result || '') }));
+          setSubmissionForm((current) => ({
+            ...current,
+            image: withImagePosition(String(reader.result || ''), { x: 50, y: 50 }),
+          }));
         };
         reader.readAsDataURL(file);
       } catch {
         const reader = new FileReader();
         reader.onload = () => {
-          setSubmissionForm((current) => ({ ...current, image: String(reader.result || '') }));
+          setSubmissionForm((current) => ({
+            ...current,
+            image: withImagePosition(String(reader.result || ''), { x: 50, y: 50 }),
+          }));
         };
         reader.readAsDataURL(file);
       }
@@ -309,8 +326,8 @@ export default function ProfilePage() {
     setSubmissionStatus('');
 
     try {
-      if (!isMapReference(submissionForm.link)) {
-        throw new Error('Link Google Maps atau titik koordinat wajib diisi. Contoh: -7.458564688477663, 110.22222490358898');
+      if (!isSourceReference(submissionForm.link)) {
+        throw new Error('Link sumber wajib diisi dengan URL yang valid. Contoh: https://...');
       }
 
       const response = await fetch(`${getApiBaseUrl()}/api/submissions/${editingSubmission.id}`, {
@@ -405,8 +422,9 @@ export default function ProfilePage() {
               <div className="flex items-center gap-4">
                 {profileForm.avatar ? (
                   <img
-                    src={profileForm.avatar}
+                    src={getImageSrc(profileForm.avatar)}
                     alt={profileForm.name || 'Avatar'}
+                    style={{ objectPosition: getImageObjectPosition(profileForm.avatar) }}
                     className="h-20 w-20 rounded-full border border-slate-700 object-cover"
                   />
                 ) : (
@@ -427,6 +445,15 @@ export default function ProfilePage() {
                   </span>
                 </label>
               </div>
+
+              {profileForm.avatar && (
+                <ImagePositionEditor
+                  value={profileForm.avatar}
+                  onChange={(value) => setProfileForm({ ...profileForm, avatar: value })}
+                  alt={profileForm.name || 'Preview foto profil'}
+                  previewClassName="h-48 w-full"
+                />
+              )}
 
               <label className="block text-sm font-semibold text-slate-200">
                 Nama
@@ -696,7 +723,7 @@ export default function ProfilePage() {
                 />
               )}
               <ProfileField
-                label="Link Google Maps / Titik Koordinat"
+                label="Link Sumber"
                 value={submissionForm.link}
                 onChange={(value) =>
                   setSubmissionForm((current) => ({ ...current, link: value }))
@@ -733,10 +760,14 @@ export default function ProfilePage() {
             </div>
 
             {submissionForm.image && (
-              <img
-                src={submissionForm.image}
+              <ImagePositionEditor
+                value={submissionForm.image}
+                onChange={(value) =>
+                  setSubmissionForm((current) => ({ ...current, image: value }))
+                }
                 alt="Preview submission"
-                className="mt-5 h-48 w-full rounded-lg border border-slate-800 object-cover"
+                className="mt-5"
+                previewClassName="h-48 w-full"
               />
             )}
 
@@ -863,11 +894,12 @@ function SubmissionSection({
           >
             {item.image ? (
               <img
-                src={item.image}
+                src={getImageSrc(item.image, fallbackSubmissionImage)}
                 alt={item.title}
                 onError={(event) => {
                   event.currentTarget.src = fallbackSubmissionImage;
                 }}
+                style={{ objectPosition: getImageObjectPosition(item.image) }}
                 className="h-44 w-full object-cover"
               />
             ) : (

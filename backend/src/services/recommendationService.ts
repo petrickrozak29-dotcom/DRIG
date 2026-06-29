@@ -226,9 +226,7 @@ async function getRouteCandidates(
                     : record.category?.name || 'Wisata',
           mapId,
           detailUrl: `/smart-map?focus=${mapId}`,
-          link:
-            record.link ||
-            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(record.name || record.title)}`,
+          link: record.link || undefined,
           openingHours: record.openingHours,
           ticketPrice: record.ticketPrice,
           priceRange: record.priceRange,
