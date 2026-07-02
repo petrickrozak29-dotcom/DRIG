@@ -379,12 +379,12 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="relative rounded-3xl border-2 border-cyan-400/50 bg-gradient-to-r from-cyan-900/40 via-purple-900/40 to-pink-900/40 p-12 text-center backdrop-blur-xl"
+          className="relative rounded-3xl border-2 border-cyan-400/50 bg-gradient-to-r from-cyan-900/40 via-purple-900/40 to-pink-900/40 px-6 py-10 text-center backdrop-blur-xl sm:px-10 sm:py-12 lg:px-12"
         >
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-200 to-purple-200 bg-clip-text text-transparent sm:text-5xl">
+          <h2 className="mx-auto max-w-4xl break-words bg-gradient-to-r from-cyan-200 to-purple-200 bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-5xl">
             Siap Menjelajahi Magelang?
           </h2>
-          <p className="mt-4 text-lg text-slate-200">
+          <p className="mx-auto mt-4 max-w-5xl break-words text-base leading-relaxed text-slate-200 sm:text-lg">
             Buka Smart Map dan fitur publik untuk menjelajahi event, budaya, sejarah, wisata, dan kuliner Magelang.
           </p>
           <Link
