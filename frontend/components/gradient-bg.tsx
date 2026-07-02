@@ -12,7 +12,8 @@ interface GradientBgProps {
     | 'event'
     | 'smart-magelang'
     | 'smart-map'
-    | 'login';
+    | 'login'
+    | 'community-form';
 }
 
 export default function GradientBg({ children, theme }: GradientBgProps) {

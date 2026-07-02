@@ -15,7 +15,6 @@ import {
   Map,
   MapPin,
   MessageCircle,
-  Send,
   ShieldCheck,
   Sparkles,
   Utensils,
@@ -150,11 +149,17 @@ export default function Home() {
           <p className="section-kicker"><CircleHelp /> Pertanyaan Umum</p>
           <h2>FAQ</h2>
           <div className="faq-grid">
-            {faqs.map(([question, answer]) => (
-              <details key={question} className="faq-item">
-                <summary>{question}<ChevronDown /></summary>
-                <p>{answer}</p>
-              </details>
+            {[0, 1].map((column) => (
+              <div key={column} className="faq-column">
+                {faqs
+                  .filter((_, index) => index % 2 === column)
+                  .map(([question, answer]) => (
+                    <details key={question} className="faq-item">
+                      <summary>{question}<ChevronDown /></summary>
+                      <p>{answer}</p>
+                    </details>
+                  ))}
+              </div>
             ))}
           </div>
         </motion.div>
@@ -165,11 +170,10 @@ export default function Home() {
           <h2>Siap Menjelajahi<br /><span>Magelang?</span></h2>
           <p>Buka Smart Map dan fitur publik untuk menjelajahi wisata, budaya, sejarah, event, dan kuliner Magelang.</p>
           <div className="hero-actions">
-            <Link href="/wisata" className="primary-button">Jelajahi Sekarang <ArrowRight /></Link>
+            <Link href="/login" className="primary-button">Jelajahi Sekarang <ArrowRight /></Link>
             <Link href="/smart-map" className="secondary-button">Peta Interaktif <Map /></Link>
           </div>
         </div>
-        <div className="cta-badge"><Send /><span>Satu portal<br />untuk Magelang</span></div>
       </section>
 
       <Footer />

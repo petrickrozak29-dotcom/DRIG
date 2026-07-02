@@ -247,7 +247,7 @@ export default function CommunityFormPage() {
 
   if (!isAuthenticated) {
     return (
-      <GradientBg>
+      <GradientBg theme="community-form">
         <Navbar />
         <main className="mx-auto flex min-h-[70vh] max-w-4xl items-center justify-center px-6 py-16 text-center text-white">
           <section className="rounded-lg border border-slate-800 bg-slate-900/80 p-8">
@@ -269,7 +269,7 @@ export default function CommunityFormPage() {
   }
 
   return (
-    <GradientBg>
+    <GradientBg theme="community-form">
       <Navbar />
       <main className="mx-auto max-w-4xl px-4 py-12 text-white sm:px-6 lg:py-16">
         <section className="mb-8 text-center">

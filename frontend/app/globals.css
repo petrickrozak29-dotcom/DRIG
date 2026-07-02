@@ -241,7 +241,8 @@ summary {
 .faq-section::after { content: ''; position: absolute; z-index: 1; left: -12%; bottom: -210px; width: 640px; height: 360px; border: 1px solid rgba(40,223,255,.2); border-radius: 50%; box-shadow: 0 0 70px rgba(24,176,255,.16), inset 0 0 60px rgba(101,42,255,.12); transform: rotate(12deg); animation: rippleFloat 8s ease-in-out infinite alternate; pointer-events: none; }
 .faq-overlay { background: linear-gradient(90deg, rgba(1,10,24,.9), rgba(3,16,33,.52), rgba(2,12,25,.3)), rgba(2,9,20,.18); }
 .faq-content { position: relative; z-index: 1; }
-.faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; margin-top: 22px; }
+.faq-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 30px; margin-top: 22px; }
+.faq-column { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .faq-item { overflow: hidden; border: 1px solid rgba(178,205,225,.22); border-radius: 11px; background: rgba(10,26,45,.78); backdrop-filter: blur(12px); }
 .faq-item summary { display: flex; align-items: center; justify-content: space-between; gap: 15px; min-height: 52px; padding: 13px 18px; color: #eef6ff; font-size: 12px; font-weight: 650; cursor: pointer; list-style: none; }
 .faq-item summary::-webkit-details-marker { display: none; }
@@ -249,11 +250,12 @@ summary {
 .faq-item[open] summary svg { transform: rotate(180deg); }
 .faq-item p { margin: 0; padding: 0 18px 16px; color: #b8c8d8; font-size: 12px; line-height: 1.7; }
 
-.cta-section { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 40px; min-height: calc(330px + var(--section-blend)); padding: calc(55px + var(--section-blend)) max(28px, calc((100% - 1060px) / 2)) 55px; overflow: hidden; background-image: linear-gradient(90deg, rgba(3,11,28,.96), rgba(3,13,31,.64) 46%, rgba(5,14,28,.18)), url('/images/magelang-art-village.png'); background-position: center, center; background-size: cover, cover; background-repeat: no-repeat; animation: scenicPanReverse 24s ease-in-out infinite alternate; }
-.cta-section::before { content: ''; position: absolute; left: -5%; top: 30%; width: 50%; height: 180px; border: 1px solid rgba(31,129,255,.35); border-radius: 50%; transform: rotate(-12deg); box-shadow: 0 0 40px rgba(35,98,255,.18), inset 0 0 35px rgba(107,48,255,.15); }
-.cta-copy { position: relative; z-index: 1; width: min(540px, 100%); }
-.cta-copy h2 { margin: 0; font-size: clamp(38px, 4vw, 58px); line-height: 1; letter-spacing: -.04em; }
-.cta-copy p { color: #cedbea; font-size: 13px; line-height: 1.7; }
+.cta-section { position: relative; display: flex; align-items: center; justify-content: center; min-height: calc(390px + var(--section-blend)); padding: calc(70px + var(--section-blend)) max(28px, calc((100% - 1060px) / 2)) 70px; overflow: hidden; text-align: center; background-image: linear-gradient(90deg, rgba(3,11,28,.92), rgba(3,13,31,.54) 50%, rgba(5,14,28,.28)), url('/images/magelang-art-village.png'); background-position: center, center; background-size: cover, cover; background-repeat: no-repeat; animation: scenicPanReverse 24s ease-in-out infinite alternate; }
+.cta-section::before { content: ''; position: absolute; left: 50%; top: 27%; width: min(820px, 72%); height: 210px; border: 1px solid rgba(31,129,255,.35); border-radius: 50%; transform: translateX(-50%) rotate(-7deg); box-shadow: 0 0 40px rgba(35,98,255,.18), inset 0 0 35px rgba(107,48,255,.15); animation: ctaOrbit 9s ease-in-out infinite alternate; }
+.cta-copy { position: relative; z-index: 1; width: min(760px, 100%); animation: ctaContentFloat 7s ease-in-out infinite alternate; }
+.cta-copy h2 { margin: 0; font-size: clamp(40px, 4.6vw, 64px); line-height: 1.08; letter-spacing: -.04em; }
+.cta-copy p { max-width: 680px; margin: 20px auto 0; color: #d6e2ef; font-size: 15px; line-height: 1.8; }
+.cta-copy .hero-actions { justify-content: center; margin-top: 28px; }
 .cta-badge { position: relative; z-index: 1; display: flex; align-items: center; gap: 15px; padding: 18px 23px; border: 1px solid rgba(60,219,255,.3); border-radius: 17px; color: white; background: rgba(4,18,39,.54); backdrop-filter: blur(12px); }
 .cta-badge svg { color: #38dcff; }
 .cta-badge span { font-size: 13px; font-weight: 750; line-height: 1.4; }
@@ -284,9 +286,11 @@ summary {
 @keyframes slowOrbit { from { transform: rotate(0deg) scale(.95); } to { transform: rotate(360deg) scale(1.05); } }
 @keyframes rippleFloat { from { transform: rotate(12deg) translate3d(-25px, 0, 0) scale(.94); } to { transform: rotate(8deg) translate3d(45px, -20px, 0) scale(1.08); } }
 @keyframes footerGrid { from { background-position: 0 0, 0 0; } to { background-position: 110px 110px, 110px 110px; } }
+@keyframes ctaOrbit { from { transform: translateX(-50%) rotate(-8deg) scale(.96); opacity: .58; } to { transform: translateX(-50%) rotate(-3deg) scale(1.05); opacity: .9; } }
+@keyframes ctaContentFloat { from { transform: translateY(0); } to { transform: translateY(-7px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .modules-section::before, .modules-section::after, .potential-section, .potential-section::after, .faq-section, .faq-section::after, .cta-section, .site-footer::before, .site-footer::after { animation: none !important; }
+  .modules-section::before, .modules-section::after, .potential-section, .potential-section::after, .faq-section, .faq-section::after, .cta-section, .cta-section::before, .cta-copy, .site-footer::before, .site-footer::after { animation: none !important; }
 }
 
 @media (max-width: 1060px) {
@@ -332,7 +336,7 @@ summary {
   .module-card h3 { font-size: 15px; }
   .potential-grid, .faq-grid { grid-template-columns: 1fr; }
   .potential-card { min-height: 190px; }
-  .cta-section { align-items: flex-start; min-height: calc(440px + var(--section-blend)); padding: calc(65px + var(--section-blend)) 22px 65px; background-position: 63% center; }
+  .cta-section { align-items: center; min-height: calc(470px + var(--section-blend)); padding: calc(72px + var(--section-blend)) 22px 72px; background-position: 63% center; }
   .cta-badge { display: none; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px 22px; }
   .footer-about, .footer-contact { grid-column: 1 / -1; }
@@ -380,6 +384,7 @@ summary {
 .portal-photo-smart-magelang { background-image: url('/images/page-smart-magelang.png'); }
 .portal-photo-smart-map { background-image: url('/images/page-smart-map.png'); }
 .portal-photo-login { background-image: url('/images/page-login.png'); }
+.portal-photo-community-form { background-image: url('/images/page-community-form.png'); }
 
 .portal-photo-overlay {
   z-index: 1;
@@ -407,6 +412,18 @@ summary {
 .portal-theme-smart-magelang { --portal-accent: 68, 139, 255; }
 .portal-theme-smart-map { --portal-accent: 44, 232, 199; }
 .portal-theme-login { --portal-accent: 74, 174, 255; }
+.portal-theme-community-form { --portal-accent: 54, 226, 183; }
+
+.portal-theme-wisata .portal-photo-overlay,
+.portal-theme-kuliner .portal-photo-overlay,
+.portal-theme-budaya .portal-photo-overlay,
+.portal-theme-sejarah .portal-photo-overlay,
+.portal-theme-event .portal-photo-overlay {
+  background:
+    radial-gradient(circle at 76% 14%, rgba(var(--portal-accent), .13), transparent 34%),
+    linear-gradient(90deg, rgba(1, 7, 18, .76), rgba(2, 10, 23, .4) 50%, rgba(2, 9, 20, .25)),
+    linear-gradient(180deg, rgba(2, 8, 20, .08), rgba(2, 8, 20, .52) 45%, rgba(2, 8, 20, .86) 92%);
+}
 
 .portal-theme main h1,
 .portal-theme main h2 {
