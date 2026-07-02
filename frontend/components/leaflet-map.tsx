@@ -471,7 +471,7 @@ export default function LeafletMap({ markers, center, focusId, routeStops = [] }
   if (!mounted) {
     return (
       <div className="relative">
-        <div className="h-[560px] w-full rounded-lg border border-slate-800 bg-slate-900/50" />
+        <div className="h-[62vh] min-h-[360px] w-full rounded-lg border border-slate-800 bg-slate-900/50 sm:h-[560px]" />
       </div>
     );
   }
@@ -539,7 +539,7 @@ export default function LeafletMap({ markers, center, focusId, routeStops = [] }
           Satelit
         </button>
       </div>
-      <div ref={mapContainerRef} className="h-[560px] w-full rounded-lg border border-slate-800" />
+      <div ref={mapContainerRef} className="h-[62vh] min-h-[360px] w-full rounded-lg border border-slate-800 sm:h-[560px]" />
     </div>
   );
 }
