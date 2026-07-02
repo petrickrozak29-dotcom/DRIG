@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
-  ExternalLink,
   LocateFixed,
   MapPin,
   Navigation,
@@ -24,7 +23,6 @@ const LeafletMap = dynamic(() => import('../../components/leaflet-map'), {
   ),
 });
 import { getApiBaseUrl } from '../../lib/api';
-import { getImageObjectPosition, getImageSrc } from '../../lib/image-position';
 import {
   MAGELANG_CENTER,
   buildSmartMapItems,
@@ -437,85 +435,6 @@ export default function SmartMapPage() {
               )}
             </div>
           </section>
-
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {allItems.map((item) => (
-              <article
-                key={item.id}
-                className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80"
-              >
-                <img
-                  src={getImageSrc(item.image, fallbackMapImage[item.category])}
-                  alt={item.title}
-                  onError={(event) => {
-                    event.currentTarget.src = fallbackMapImage[item.category] || fallbackMapImage.wisata;
-                  }}
-                  style={{ objectPosition: getImageObjectPosition(item.image) }}
-                  className="h-40 w-full object-cover"
-                />
-                <div className="p-5">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${categoryClass(item.category)}`}
-                    >
-                      {item.typeLabel}
-                    </span>
-                    <span className="text-xs text-slate-400">{item.distance.toFixed(1)} km</span>
-                  </div>
-                  <h2 className="text-xl font-bold text-white">{item.title}</h2>
-                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-300">
-                    {item.description}
-                  </p>
-                  <div className="mt-4 space-y-2 text-sm text-slate-400">
-                    <p className="flex gap-2">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-                      <span>{item.location || 'Magelang'}</span>
-                    </p>
-                    {item.date && (
-                      <p className="flex gap-2">
-                        <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
-                        <span>
-                          {formatDate(item.date)}
-                          {item.time ? `, ${item.time}` : ''}
-                        </span>
-                      </p>
-                    )}
-                    {item.openingHours && <p>Jam: {item.openingHours}</p>}
-                    {(item.ticketPrice || item.priceRange) && (
-                      <p>Harga: {item.ticketPrice || item.priceRange}</p>
-                    )}
-                    <p className="flex gap-2">
-                      <Navigation className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-                      <span>Estimasi {item.estimatedTravelTime} menit perjalanan</span>
-                    </p>
-                  </div>
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <a
-                      href={`/smart-map?focus=${item.id}`}
-                      className="rounded-lg bg-slate-800 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
-                    >
-                      Lihat Detail
-                    </a>
-                    {item.link ? (
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                      >
-                        Sumber
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    ) : (
-                      <span className="rounded-lg border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-500">
-                        Sumber
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
         </section>
       </main>
       <Footer />
