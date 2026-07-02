@@ -65,17 +65,11 @@ const fallbackMapImage: Record<string, string> = {
     'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80',
   kuliner:
     'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80',
-  budaya:
-    'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1000&q=80',
-  sejarah:
-    'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1000&q=80',
 };
 
 function categoryClass(category: string) {
   if (category === 'event') return 'border-rose-400/40 bg-rose-500/10 text-rose-200';
   if (category === 'kuliner') return 'border-amber-400/40 bg-amber-500/10 text-amber-200';
-  if (category === 'budaya') return 'border-violet-400/40 bg-violet-500/10 text-violet-200';
-  if (category === 'sejarah') return 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200';
   return 'border-cyan-400/40 bg-cyan-500/10 text-cyan-200';
 }
 
@@ -83,8 +77,6 @@ function normalizeMapCategory(value?: string): MapCategory {
   const normalized = String(value || '').toLowerCase();
   if (normalized.includes('event')) return 'event';
   if (normalized.includes('kuliner')) return 'kuliner';
-  if (normalized.includes('budaya')) return 'budaya';
-  if (normalized.includes('sejarah')) return 'sejarah';
   return 'wisata';
 }
 
@@ -330,10 +322,10 @@ export default function SmartMapPage() {
                 Smart Map Magelang
               </p>
               <h1 className="mt-3 text-4xl font-bold text-white sm:text-5xl">
-                Event, Wisata, Kuliner, Sejarah, dan Budaya dalam satu peta
+                Event, Wisata, dan Kuliner dalam satu peta
               </h1>
               <p className="mt-4 max-w-3xl text-slate-300">
-                Jelajahi titik wisata, kuliner, budaya, sejarah, dan event magelang dengan foto,
+                Jelajahi titik wisata, kuliner, dan event Magelang dengan foto,
                 sumber informasi, serta estimasi jarak dari lokasi Anda.
               </p>
             </div>

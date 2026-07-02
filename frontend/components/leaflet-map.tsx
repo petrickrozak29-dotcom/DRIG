@@ -43,8 +43,6 @@ const markerColor: Record<string, string> = {
   event: '#f43f5e',
   wisata: '#06b6d4',
   kuliner: '#f59e0b',
-  budaya: '#8b5cf6',
-  sejarah: '#10b981',
   lokasi: '#22c55e',
 };
 
@@ -67,9 +65,9 @@ const fallbackImage: Record<string, string> = {
   event: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=800&q=80',
   wisata: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80',
   kuliner: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
-  budaya: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=800&q=80',
-  sejarah: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=800&q=80',
 };
+
+const hiddenMapCategories = new Set(['budaya', 'sejarah', 'culture', 'history']);
 
 const MAGELANG_BOUNDARIES: Array<{
   id: string;
@@ -422,10 +420,12 @@ export default function LeafletMap({ markers, center, focusId, routeStops = [] }
     let focusMarker: any | null = null;
 
     markers.forEach((marker) => {
+      const category = String(marker.category).toLowerCase();
+      if (hiddenMapCategories.has(category)) return;
       if (!Number.isFinite(marker.latitude) || !Number.isFinite(marker.longitude)) return;
       if (marker.latitude === 0 && marker.longitude === 0) return;
 
-      const color = markerColor[String(marker.category).toLowerCase()] || '#38bdf8';
+      const color = markerColor[category] || '#38bdf8';
       const icon = leafletRef.current.divIcon({
         className: '',
         html: `<span style="display:block;width:18px;height:18px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 8px 18px rgba(15,23,42,.35);"></span>`,

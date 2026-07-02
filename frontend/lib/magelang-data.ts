@@ -794,9 +794,9 @@ export async function submitCommunityEventAsync(input: CommunityEventInput, toke
 }
 
 export async function buildSmartMapItemsAsync() {
-  const [events, tourism, culinary, culture, history] = await Promise.all([
-    fetchEvents(false), fetchTourismItems(false), fetchCulinaryItems(false), fetchCultureItems(false), fetchHistoryItems(false),
+  const [events, tourism, culinary] = await Promise.all([
+    fetchEvents(false), fetchTourismItems(false), fetchCulinaryItems(false),
   ]);
   const approvedEvents = events.filter((e) => e.status === 'approved').map((event) => ({ ...event, detailUrl: `/smart-map?focus=${event.id}` }));
-  return [...approvedEvents, ...tourism, ...culinary, ...culture, ...history];
+  return [...approvedEvents, ...tourism, ...culinary];
 }
