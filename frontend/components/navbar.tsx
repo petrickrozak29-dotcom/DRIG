@@ -52,9 +52,11 @@ export default function Navbar() {
         </button>
         <nav className={mobileOpen ? 'nav-links nav-open' : 'nav-links'}>
           {links.map(([label, href]) => <Link key={href} href={href} onClick={() => setMobileOpen(false)}>{label}</Link>)}
-          <Link href="/community-form" className="community-badge-link" onClick={() => setMobileOpen(false)}>
-            <ShieldCheck /> Community Form
-          </Link>
+          {!isDeveloper && (
+            <Link href="/community-form" className="community-badge-link" onClick={() => setMobileOpen(false)}>
+              <ShieldCheck /> Community Form
+            </Link>
+          )}
           {isDeveloper && <Link href="/developer" className="developer-link"><LayoutDashboard /> Dashboard</Link>}
         </nav>
         <div className="nav-account">
@@ -63,7 +65,10 @@ export default function Navbar() {
               <Link href="/notifications" className="icon-button" aria-label="Notifikasi">
                 <Bell />{unreadCount > 0 && <span>{unreadCount}</span>}
               </Link>
-              <Link href={isDeveloper ? '/developer' : '/profile'} className="profile-pill"><UserCircle /> {user?.name}</Link>
+              <Link href={isDeveloper ? '/developer' : '/profile'} className="profile-pill" title={user?.name || 'Profil'}>
+                <UserCircle />
+                <span className="profile-name">{user?.name}</span>
+              </Link>
               <button onClick={logout} className="logout-button" aria-label="Logout"><LogOut /></button>
             </>
           ) : <Link href="/login" className="login-button">Login</Link>)}

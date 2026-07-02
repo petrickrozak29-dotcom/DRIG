@@ -276,7 +276,7 @@ export default function CommunityFormPage() {
               Login
             </a>
             <div className="mt-6 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100">
-              Badge Community Form tetap tersedia untuk publik. Login hanya dibutuhkan saat submit konten.
+              Silahkan Login Terlebih Dahulu.
             </div>
           </section>
         </main>
