@@ -110,7 +110,7 @@ export default function KulinerPage() {
   );
 
   return (
-    <GradientBg>
+    <GradientBg theme="kuliner">
       <AnimatedBackground />
       <Navbar />
 

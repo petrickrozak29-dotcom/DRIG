@@ -1,113 +1,70 @@
 'use client';
 
 import Link from 'next/link';
-import { LogOut, UserCircle, Bell } from 'lucide-react';
+import { Bell, LayoutDashboard, LogOut, Menu, UserCircle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiBaseUrl } from '../lib/api';
 import { useEffect, useState } from 'react';
 
+const links = [
+  ['Wisata', '/wisata'],
+  ['Kuliner', '/kuliner'],
+  ['Budaya', '/budaya'],
+  ['Sejarah', '/sejarah'],
+  ['Event', '/event'],
+  ['Smart Magelang', '/smart-magelang'],
+  ['Smart Map', '/smart-map'],
+] as const;
+
 export default function Navbar() {
   const { user, isAuthenticated, logout, loading } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const isDeveloper = user?.role === 'ADMIN';
-  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
     let mounted = true;
     async function fetchNotifications() {
       if (!user) return;
       try {
-        const res = await fetch(`${getApiBaseUrl()}/api/notifications`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/notifications`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
         });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!mounted) return;
-        const unread = Array.isArray(data) ? data.filter((n: any) => !n.isRead).length : 0;
-        setUnreadCount(unread);
-      } catch {
-        // ignore
-      }
+        if (!response.ok) return;
+        const data = await response.json();
+        if (mounted) setUnreadCount(Array.isArray(data) ? data.filter((item: { isRead?: boolean }) => !item.isRead).length : 0);
+      } catch { /* notifikasi tidak boleh mengganggu navigasi */ }
     }
-
     if (isAuthenticated) fetchNotifications();
-    const onStorage = () => {
-      if (isAuthenticated) fetchNotifications();
-    };
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('magelangverse-content-updated', onStorage);
-    window.addEventListener('magelangverse-notifications-updated', onStorage);
-
+    window.addEventListener('magelangverse-notifications-updated', fetchNotifications);
     return () => {
       mounted = false;
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('magelangverse-content-updated', onStorage);
-      window.removeEventListener('magelangverse-notifications-updated', onStorage);
+      window.removeEventListener('magelangverse-notifications-updated', fetchNotifications);
     };
-  }, [user, isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   return (
-    <header className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 text-sm text-slate-100 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <Link href="/" className="font-semibold text-white">
-          Future Magelang
-        </Link>
-        <nav className="flex flex-wrap items-center gap-3 lg:justify-end">
-          {isDeveloper ? (
-            <Link href="/developer">Dashboard Developer</Link>
-          ) : (
-            <>
-              <Link href="/wisata">Wisata</Link>
-              <Link href="/kuliner">Kuliner</Link>
-              <Link href="/budaya">Budaya</Link>
-              <Link href="/sejarah">Sejarah</Link>
-              <Link href="/event">Event</Link>
-              <Link href="/smart-magelang">Smart Magelang</Link>
-              <Link href="/smart-map">Smart Map</Link>
-            </>
-          )}
-          {isAuthenticated && (
-            <>
-              {!isDeveloper && <Link href="/community-form">Community Form</Link>}
-              <Link
-                href="/notifications"
-                className="ml-2 inline-flex items-center gap-2 rounded-full border border-slate-700 px-3 py-1 text-slate-200 hover:bg-slate-800 relative"
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-2 -top-2 inline-flex items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white">
-                    {unreadCount}
-                  </span>
-                )}
-              </Link>
-            </>
-          )}
-          {!loading &&
-            (isAuthenticated ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  href="/profile"
-                  className="inline-flex items-center gap-2 rounded-full border border-cyan-400/40 px-3 py-1.5 font-medium text-cyan-200 transition hover:border-cyan-300"
-                >
-                  <UserCircle className="h-4 w-4" />
-                  {user?.name}
-                </Link>
-                <button
-                  onClick={logout}
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-700 px-4 py-1.5 text-white transition hover:bg-slate-600"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className="rounded-full bg-cyan-500 px-4 py-1.5 font-semibold text-black transition hover:bg-cyan-400"
-              >
-                Login
-              </Link>
-            ))}
+    <header className="site-header">
+      <div className="nav-wrap">
+        <Link href="/" className="brand" aria-label="Future Magelang">Future <span>Magelang</span></Link>
+        <button className="mobile-toggle" onClick={() => setMobileOpen((value) => !value)} aria-label="Buka navigasi">
+          {mobileOpen ? <X /> : <Menu />}
+        </button>
+        <nav className={mobileOpen ? 'nav-links nav-open' : 'nav-links'}>
+          {links.map(([label, href]) => <Link key={href} href={href} onClick={() => setMobileOpen(false)}>{label}</Link>)}
+          {isDeveloper && <Link href="/developer" className="developer-link"><LayoutDashboard /> Dashboard</Link>}
         </nav>
+        <div className="nav-account">
+          {!loading && (isAuthenticated ? (
+            <>
+              <Link href="/notifications" className="icon-button" aria-label="Notifikasi">
+                <Bell />{unreadCount > 0 && <span>{unreadCount}</span>}
+              </Link>
+              <Link href={isDeveloper ? '/developer' : '/profile'} className="profile-pill"><UserCircle /> {user?.name}</Link>
+              <button onClick={logout} className="logout-button" aria-label="Logout"><LogOut /></button>
+            </>
+          ) : <Link href="/login" className="login-button">Login</Link>)}
+        </div>
       </div>
     </header>
   );

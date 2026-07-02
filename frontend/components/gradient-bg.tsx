@@ -4,11 +4,27 @@ import { motion } from 'framer-motion';
 
 interface GradientBgProps {
   children: React.ReactNode;
+  theme?:
+    | 'wisata'
+    | 'kuliner'
+    | 'budaya'
+    | 'sejarah'
+    | 'event'
+    | 'smart-magelang'
+    | 'smart-map'
+    | 'login';
 }
 
-export default function GradientBg({ children }: GradientBgProps) {
+export default function GradientBg({ children, theme }: GradientBgProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950">
+    <div className={`relative min-h-screen overflow-hidden bg-slate-950 ${theme ? `portal-theme portal-theme-${theme}` : ''}`}>
+      {theme && (
+        <>
+          <div className={`portal-photo portal-photo-${theme}`} aria-hidden="true" />
+          <div className="portal-photo-overlay" aria-hidden="true" />
+          <div className="portal-motion-grid" aria-hidden="true" />
+        </>
+      )}
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div

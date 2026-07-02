@@ -116,7 +116,7 @@ export default function EventPage() {
   }, [apiEvents, activeFilter, dataVersion]);
 
   return (
-    <GradientBg>
+    <GradientBg theme="event">
       <AnimatedBackground />
       <Navbar />
 

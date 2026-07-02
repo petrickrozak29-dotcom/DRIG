@@ -104,7 +104,7 @@ export default function WisataPage() {
   );
 
   return (
-    <GradientBg>
+    <GradientBg theme="wisata">
       <AnimatedBackground />
       <Navbar />
 

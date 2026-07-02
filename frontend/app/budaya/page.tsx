@@ -41,7 +41,7 @@ export default function BudayaPage() {
   }, [items, search]);
 
   return (
-    <GradientBg>
+    <GradientBg theme="budaya">
       <AnimatedBackground />
       <Navbar />
 

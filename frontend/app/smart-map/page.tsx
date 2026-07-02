@@ -124,9 +124,9 @@ function readItineraryPayload(): SmartMapRoutePayload | null {
 }
 
 export default function SmartMapPage() {
-  const { token, isAuthenticated } = useAuth();
+  const { token } = useAuth();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>(MAGELANG_CENTER);
-  const [locationStatus, setLocationStatus] = useState('Mode pusat Magelang aktif');
+  const [, setLocationStatus] = useState('Mode pusat Magelang aktif');
   const [apiEvents, setApiEvents] = useState<CommunityEvent[]>([]);
   const [dataVersion, setDataVersion] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -318,7 +318,7 @@ export default function SmartMapPage() {
   );
 
   return (
-    <GradientBg>
+    <GradientBg theme="smart-map">
       <AnimatedBackground />
       <Navbar />
       <main className="relative mx-auto max-w-7xl px-4 py-12 text-white sm:px-6 lg:py-16">
@@ -348,16 +348,6 @@ export default function SmartMapPage() {
             </button>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-3 text-sm">
-            <span className="rounded-full border border-slate-700 bg-slate-900/70 px-4 py-2 text-slate-300">
-              {locationStatus}
-            </span>
-            <span className="rounded-full border border-slate-700 bg-slate-900/70 px-4 py-2 text-slate-300">
-              {isAuthenticated
-                ? 'Login aktif, event komunitas bisa dikirim'
-                : 'Peta bisa dipakai tanpa login'}
-            </span>
-          </div>
         </section>
 
         <section className="space-y-6">

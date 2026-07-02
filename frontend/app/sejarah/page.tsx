@@ -41,7 +41,7 @@ export default function SejarahPage() {
   }, [items, search]);
 
   return (
-    <GradientBg>
+    <GradientBg theme="sejarah">
       <AnimatedBackground />
       <Navbar />
 

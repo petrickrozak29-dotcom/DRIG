@@ -68,7 +68,7 @@ export default function LoginPage() {
   };
 
   return (
-    <GradientBg>
+    <GradientBg theme="login">
       <AnimatedBackground />
       <Navbar />
       <main className="mx-auto flex min-h-[78vh] max-w-6xl items-center justify-center px-4 py-10 text-white sm:px-6">

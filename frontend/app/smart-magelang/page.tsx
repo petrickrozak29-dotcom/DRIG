@@ -314,7 +314,7 @@ export default function SmartMagelangPage() {
   };
 
   return (
-    <GradientBg>
+    <GradientBg theme="smart-magelang">
       <AnimatedBackground />
       <Navbar />
 
