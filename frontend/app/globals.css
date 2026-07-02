@@ -226,6 +226,88 @@ summary {
 .module-green { border-color: rgba(47,225,111,.68); background: linear-gradient(145deg, rgba(9,106,51,.43), rgba(3,29,17,.82)); }
 .module-green .module-icon { color: #52ef8c; background: rgba(50,222,111,.12); }
 
+.community-badge-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid rgba(37, 225, 255, .42);
+  border-radius: 999px;
+  color: #cff9ff !important;
+  background: rgba(17, 216, 255, .1);
+  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 10px 24px rgba(18, 205, 255, .1);
+}
+.community-badge-link svg { width: 15px; height: 15px; color: #31e4ff; }
+.community-badge-link:hover {
+  border-color: rgba(73, 231, 255, .75);
+  color: #ffffff !important;
+  background: rgba(28, 218, 255, .16);
+}
+
+.community-badge-section {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  margin-top: -96px;
+  padding: 28px max(28px, calc((100% - 1180px) / 2)) 36px;
+  background: linear-gradient(180deg, rgba(3, 18, 39, .92), rgba(2, 12, 28, .98));
+}
+.community-feature-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  width: min(560px, 100%);
+  min-height: 78px;
+  padding: 16px 20px;
+  border: 1px solid rgba(63, 225, 255, .42);
+  border-radius: 18px;
+  color: white;
+  background: linear-gradient(135deg, rgba(19, 204, 255, .18), rgba(9, 31, 64, .82));
+  box-shadow: inset 0 1px rgba(255,255,255,.1), 0 18px 45px rgba(0,0,0,.22);
+  backdrop-filter: blur(14px);
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+.community-feature-badge:hover {
+  transform: translateY(-4px);
+  border-color: rgba(72, 231, 255, .78);
+  box-shadow: 0 22px 55px rgba(24, 208, 255, .13);
+}
+.community-feature-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  color: #2ee4ff;
+  background: rgba(22, 217, 255, .14);
+}
+.community-feature-icon svg,
+.community-feature-badge > svg {
+  width: 22px;
+  height: 22px;
+}
+.community-feature-badge > span:not(.community-feature-icon) {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.community-feature-badge strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+.community-feature-badge small {
+  color: #a9bfd0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.community-feature-badge > svg {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: #dffbff;
+}
+
 .potential-section { position: relative; display: grid; grid-template-columns: 320px 1fr; align-items: end; gap: 55px; min-height: 530px; overflow: hidden; background: url('/images/magelang-terraces.png') center center/cover no-repeat; animation: scenicPan 20s ease-in-out infinite alternate; }
 .potential-section::after { content: ''; position: absolute; z-index: 1; right: -80px; top: -150px; width: 420px; height: 420px; border: 1px solid rgba(38,215,255,.16); border-radius: 48% 52% 58% 42%; box-shadow: inset 0 0 70px rgba(37,102,255,.12), 0 0 50px rgba(62,39,255,.13); animation: slowOrbit 16s linear infinite; pointer-events: none; }
 .potential-overlay, .faq-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(1,11,23,.92), rgba(2,13,27,.55) 50%, rgba(1,10,22,.2)), linear-gradient(0deg, rgba(2,9,20,.7), transparent 45%, rgba(3,10,22,.35)); }
@@ -318,6 +400,7 @@ summary {
   .nav-links { position: absolute; top: 66px; left: 0; right: 0; display: none; flex-direction: column; align-items: stretch; padding: 16px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(3,11,26,.97); box-shadow: 0 18px 50px rgba(0,0,0,.45); }
   .nav-links.nav-open { display: flex; }
   .nav-links a { padding: 7px 5px; font-size: 13px; }
+  .community-badge-link { justify-content: center; padding: 10px 12px; }
   .logout-button { display: none; }
   .hero-shell, .hero-section { min-height: 860px; }
   .hero-shell { background-position: 59% center; }
@@ -333,6 +416,8 @@ summary {
   .quick-icon svg { width: 20px; }
   .quick-card strong { font-size: 11px; }
   .modules-section, .potential-section, .faq-section, .cta-section, .site-footer { --section-blend: 64px; }
+  .community-badge-section { margin-top: -64px; padding: 24px 22px 30px; }
+  .community-feature-badge { border-radius: 16px; }
   .section-pad { padding: 66px 22px; }
   .modules-section, .potential-section, .faq-section { padding-top: calc(66px + var(--section-blend)); }
   .module-grid { grid-template-columns: 1fr 1fr; gap: 10px; }

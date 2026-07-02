@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, LayoutDashboard, LogOut, Menu, UserCircle, X } from 'lucide-react';
+import { Bell, LayoutDashboard, LogOut, Menu, ShieldCheck, UserCircle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiBaseUrl } from '../lib/api';
 import { useEffect, useState } from 'react';
@@ -52,6 +52,9 @@ export default function Navbar() {
         </button>
         <nav className={mobileOpen ? 'nav-links nav-open' : 'nav-links'}>
           {links.map(([label, href]) => <Link key={href} href={href} onClick={() => setMobileOpen(false)}>{label}</Link>)}
+          <Link href="/community-form" className="community-badge-link" onClick={() => setMobileOpen(false)}>
+            <ShieldCheck /> Community Form
+          </Link>
           {isDeveloper && <Link href="/developer" className="developer-link"><LayoutDashboard /> Dashboard</Link>}
         </nav>
         <div className="nav-account">

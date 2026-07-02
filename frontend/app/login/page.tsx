@@ -45,11 +45,19 @@ export default function LoginPage() {
         setStatus('Registrasi berhasil. Mengarahkan ke Beranda...');
       } else {
         const loggedInUser = await login(email.trim(), password);
-        const target = loggedInUser.role === 'ADMIN' ? '/developer' : '/';
+        const nextTarget =
+          typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get('next')
+            : null;
+        const safeNextTarget =
+          nextTarget && nextTarget.startsWith('/') && !nextTarget.startsWith('//')
+            ? nextTarget
+            : '/';
+        const target = loggedInUser.role === 'ADMIN' ? '/developer' : safeNextTarget;
         setStatus(
           loggedInUser.role === 'ADMIN'
             ? 'Login developer berhasil. Mengarahkan ke Dashboard Developer...'
-            : 'Login berhasil. Mengarahkan ke Beranda...'
+            : 'Login berhasil. Mengarahkan...'
         );
         setTimeout(() => {
           window.location.href = target;

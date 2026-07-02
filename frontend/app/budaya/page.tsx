@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Clock, ExternalLink, MapPin, PlusCircle, Sparkles, Ticket } from 'lucide-react';
+import { BookOpen, Clock, ExternalLink, MapPin, Sparkles, Ticket } from 'lucide-react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
@@ -64,13 +64,6 @@ export default function BudayaPage() {
                 placeholder="Cari budaya..."
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-violet-400"
               />
-              <a
-                href="/community-form?feature=CULTURE"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-400 px-5 py-3 font-semibold text-slate-950 hover:bg-violet-300"
-              >
-                <PlusCircle className="h-5 w-5" />
-                Tambah Budaya
-              </a>
             </div>
           </div>
         </section>

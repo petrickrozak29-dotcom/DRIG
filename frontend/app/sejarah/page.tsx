@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Clock, ExternalLink, History, MapPin, PlusCircle, ScrollText, Ticket } from 'lucide-react';
+import { Clock, ExternalLink, History, MapPin, ScrollText, Ticket } from 'lucide-react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import GradientBg from '../../components/gradient-bg';
@@ -64,13 +64,6 @@ export default function SejarahPage() {
                 placeholder="Cari sejarah..."
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-rose-400"
               />
-              <a
-                href="/community-form?feature=HISTORY"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-rose-400 px-5 py-3 font-semibold text-slate-950 hover:bg-rose-300"
-              >
-                <PlusCircle className="h-5 w-5" />
-                Tambah Sejarah
-              </a>
             </div>
           </div>
         </section>

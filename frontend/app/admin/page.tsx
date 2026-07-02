@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { type ComponentType, useEffect, useState } from 'react';
 import {
   Camera,
   ImagePlus,
@@ -9,6 +9,8 @@ import {
   Star,
   CalendarDays,
   Ticket,
+  Utensils,
+  Compass,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,7 +22,19 @@ import { getApiBaseUrl } from '../../lib/api';
 import { getImageObjectPosition, getImageSrc, withImagePosition } from '../../lib/image-position';
 import { isSourceUrl, parseCoordinatePair } from '../../lib/location-source';
 
-type FeatureType = 'EVENT' | 'WISATA' | 'KULINER' | 'CULTURE' | 'HISTORY';
+type FeatureType = 'EVENT' | 'WISATA' | 'KULINER';
+
+const featureOptions: Array<{ value: FeatureType; label: string; icon: ComponentType<{ className?: string }> }> = [
+  { value: 'EVENT', label: 'Event', icon: CalendarDays },
+  { value: 'WISATA', label: 'Wisata', icon: Compass },
+  { value: 'KULINER', label: 'Kuliner', icon: Utensils },
+];
+
+const featureLabels: Record<FeatureType, string> = {
+  EVENT: 'Event',
+  WISATA: 'Wisata',
+  KULINER: 'Kuliner',
+};
 
 interface Category {
   id: string;
@@ -253,14 +267,17 @@ export default function CommunityFormPage() {
           <section className="rounded-lg border border-slate-800 bg-slate-900/80 p-8">
             <h1 className="text-3xl font-bold text-cyan-300">Community Form</h1>
             <p className="mt-3 text-slate-300">
-              Login diperlukan untuk mengirim rekomendasi event, wisata, kuliner, budaya, atau sejarah.
+              Login diperlukan untuk mengirim rekomendasi event, wisata, atau kuliner.
             </p>
             <a
-              href="/login"
+              href={`/login?next=${encodeURIComponent(`/community-form?feature=${featureType}`)}`}
               className="mt-6 inline-block rounded-lg bg-cyan-400 px-6 py-3 font-semibold text-slate-950 hover:bg-cyan-300"
             >
               Login
             </a>
+            <div className="mt-6 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100">
+              Badge Community Form tetap tersedia untuk publik. Login hanya dibutuhkan saat submit konten.
+            </div>
           </section>
         </main>
         <Footer />
@@ -288,32 +305,22 @@ export default function CommunityFormPage() {
           {!preview ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-3">
-                <button
-                  type="button"
-                  onClick={() => setFeatureType('EVENT')}
-                  className={`rounded-lg border p-4 text-center transition ${featureType === 'EVENT' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
-                >
-                  <h3 className="font-bold text-white">Event</h3>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFeatureType('WISATA')}
-                  className={`rounded-lg border p-4 text-center transition ${featureType === 'WISATA' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
-                >
-                  <h3 className="font-bold text-white">Wisata</h3>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFeatureType('KULINER')}
-                  className={`rounded-lg border p-4 text-center transition ${featureType === 'KULINER' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
-                >
-                  <h3 className="font-bold text-white">Kuliner</h3>
-                </button>
+                {featureOptions.map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setFeatureType(value)}
+                    className={`rounded-lg border p-4 text-center transition ${featureType === value ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-500'}`}
+                  >
+                    <Icon className="mx-auto mb-2 h-5 w-5 text-cyan-300" />
+                    <h3 className="font-bold text-white">{label}</h3>
+                  </button>
+                ))}
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <Field
-                  label={`Nama ${featureType}`}
+                  label={`Nama ${featureLabels[featureType]}`}
                   value={formState.title}
                   onChange={(v) => setFormState({ ...formState, title: v })}
                   required

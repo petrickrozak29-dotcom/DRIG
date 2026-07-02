@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Mail, MapPin } from 'lucide-react';
 
+const SUGGESTION_FORM_URL = 'https://forms.gle/6xfgxkDquVoLwqQE9';
+
 export default function Footer() {
   return (
     <footer className="site-footer">
@@ -20,7 +22,8 @@ export default function Footer() {
         <div>
           <h4>Bantuan</h4>
           <Link href="/#faq">FAQ</Link>
-          <Link href="/community-form">Form Saran/Aduan</Link>
+          <a href={SUGGESTION_FORM_URL} target="_blank" rel="noopener noreferrer">Form Saran/Aduan</a>
+          <Link href="/community-form">Community Form</Link>
         </div>
         <div className="footer-contact">
           <h4>Kontak</h4>

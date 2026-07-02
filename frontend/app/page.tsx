@@ -24,6 +24,8 @@ import {
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 
+const SUGGESTION_FORM_URL = 'https://forms.gle/6xfgxkDquVoLwqQE9';
+
 const quickLinks = [
   { label: 'Wisata', caption: 'Jelajahi destinasi', href: '/wisata', icon: Compass, tone: 'cyan' },
   { label: 'Kuliner', caption: 'Temukan kuliner', href: '/kuliner', icon: Utensils, tone: 'emerald' },
@@ -40,14 +42,15 @@ const modules = [
   { title: 'Event & Festival', description: 'Ikuti agenda kota, festival, pameran, dan kegiatan komunitas di Magelang.', href: '/event', icon: Calendar, tone: 'rose' },
   { title: 'Smart Map', description: 'Navigasi wisata, kuliner, dan lokasi event yang telah terverifikasi dalam satu peta.', href: '/smart-map', icon: Map, tone: 'teal' },
   { title: 'Smart Magelang', description: 'Jelajahi potensi teknologi, smart city, pariwisata, dan ekonomi kreatif Magelang.', href: '/smart-magelang', icon: Bot, tone: 'blue' },
-  { title: 'Form Saran/Aduan', description: 'Sampaikan saran, aduan, serta rekomendasi informasi untuk pengembangan portal.', href: '/community-form', icon: MessageCircle, tone: 'green' },
+  { title: 'Form Saran/Aduan', description: 'Sampaikan saran dan aduan untuk pengembangan portal melalui Google Form resmi.', href: SUGGESTION_FORM_URL, icon: MessageCircle, tone: 'green', external: true },
+  { title: 'Community Form', description: 'Ajukan konten event, kuliner, dan wisata untuk ditinjau pengelola.', href: '/community-form', icon: Users, tone: 'teal' },
 ] as const;
 
 const potentials = [
   { title: 'Smart City & Layanan Digital', description: 'Layanan publik berbasis digital, data kota, dan inovasi yang berkelanjutan.', href: '/smart-magelang', icon: Cpu },
   { title: 'UMKM, Kuliner & Ekonomi Kreatif', description: 'Produk lokal, pusat kuliner, event ekonomi, dan promosi digital binaan warga.', href: '/kuliner', icon: BarChart3 },
   { title: 'Pariwisata Berbasis Data', description: 'Smart Map menyatukan wisata, kuliner, dan agenda agar perjalanan lebih efisien.', href: '/smart-map', icon: MapPin },
-  { title: 'Partisipasi Komunitas', description: 'Ruang kolaborasi warga untuk menyampaikan saran, aduan, dan rekomendasi.', href: '/community-form', icon: Users },
+  { title: 'Partisipasi Komunitas', description: 'Ruang kolaborasi warga untuk mengajukan rekomendasi konten publik.', href: '/community-form', icon: Users },
 ] as const;
 
 const faqs = [
@@ -112,22 +115,42 @@ export default function Home() {
         <div className="module-grid">
           {modules.map(({ icon: Icon, ...module }, index) => (
             <motion.div key={module.title} {...reveal} transition={{ duration: 0.5, delay: index * 0.04 }}>
-              <Link href={module.href} className={`module-card module-${module.tone}`}>
-                <span className="module-icon"><Icon /></span>
-                <h3>{module.title}</h3>
-                <p>{module.description}</p>
-                <span className="card-link">Jelajahi <ArrowRight /></span>
-              </Link>
+              {'external' in module && module.external ? (
+                <a href={module.href} target="_blank" rel="noopener noreferrer" className={`module-card module-${module.tone}`}>
+                  <span className="module-icon"><Icon /></span>
+                  <h3>{module.title}</h3>
+                  <p>{module.description}</p>
+                  <span className="card-link">Buka Form <ArrowRight /></span>
+                </a>
+              ) : (
+                <Link href={module.href} className={`module-card module-${module.tone}`}>
+                  <span className="module-icon"><Icon /></span>
+                  <h3>{module.title}</h3>
+                  <p>{module.description}</p>
+                  <span className="card-link">Jelajahi <ArrowRight /></span>
+                </Link>
+              )}
             </motion.div>
           ))}
         </div>
+      </section>
+
+      <section className="community-badge-section">
+        <Link href="/community-form" className="community-feature-badge">
+          <span className="community-feature-icon"><Users /></span>
+          <span>
+            <strong>Community Form</strong>
+            <small>Ajukan konten ke Smart Map</small>
+          </span>
+          <ArrowRight />
+        </Link>
       </section>
 
       <section className="potential-section section-pad">
         <div className="potential-overlay" />
         <motion.div {...reveal} className="potential-copy">
           <p className="section-kicker"><Sparkles /> Perkembangan Teknologi</p>
-          <h2>Potensi modern<br />Magelang</h2>
+          <h2>Potensi Modern<br />Magelang</h2>
           <p>Portal ini menampilkan sejarah dan budaya berdampingan dengan smart city, UMKM digital, event komunitas, dan peta berbasis lokasi.</p>
           <Link href="/smart-magelang" className="primary-button">Selengkapnya <ArrowRight /></Link>
         </motion.div>
