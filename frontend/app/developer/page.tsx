@@ -948,10 +948,12 @@ function ContentCard({
         <p className="line-clamp-3 text-sm leading-6 text-slate-300">{item.description}</p>
 
         <div className="mt-4 grid gap-2 text-xs text-slate-400">
-          {item.location && (
+          {item.location && (section === 'culture' ? item.location.replace(/-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?/g, '').trim() !== '' : true) && (
             <span className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-cyan-300" />
-              {item.location}
+              {section === 'culture' 
+               ? item.location.replace(/-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?/g, '').trim() 
+               : item.location}
             </span>
           )}
           {item.date && (
