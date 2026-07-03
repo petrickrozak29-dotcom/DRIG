@@ -90,10 +90,12 @@ export default function SejarahPage() {
                 <h2 className="mt-4 text-2xl font-bold text-white">{item.title}</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-300">{item.description}</p>
                 <div className="mt-5 space-y-2 text-sm text-slate-400">
-                  {item.location && (
+                  {item.location && item.location.replace(/-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?/g, '').trim() && (
                     <p className="flex gap-2">
                       <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-                      <span>{item.location}</span>
+                      <span>
+                        {item.location.replace(/-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?/g, '').trim()}
+                      </span>
                     </p>
                   )}
                   {item.openingHours && (
