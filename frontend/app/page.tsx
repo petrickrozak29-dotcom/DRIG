@@ -135,20 +135,26 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="community-badge-section">
-        <Link href="/community-form" className="community-feature-badge">
-          <span className="community-feature-icon"><Users /></span>
-          <span>
-            <strong>Community Form</strong>
-            <small>Ajukan konten ke Smart Map</small>
-          </span>
-          <ArrowRight />
-        </Link>
-      </section>
+{/* 1. MASKING DIPERCEPAT: Pudar dari 0 sampai 80px aja biar nggak tembus ke belakang */}
+      <style>{`
+        .mask-gunung {
+          -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 100px, black calc(100% - 150px), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0%, black 200px, black calc(100% - 150px), transparent 100%);
+        }
+      `}</style>
 
-      <section className="potential-section section-pad">
-        <div className="potential-overlay" />
-        <motion.div {...reveal} className="potential-copy">
+      {/* 2. Ditarik persis 5rem (80px) biar menutupi ujung section atas dengan sempurna */}
+      <section
+        className="potential-section section-pad relative mask-gunung" 
+        style={{ 
+          borderTop: 'none', 
+          marginTop: '-5rem', /* -5rem = 80px (Pas dengan panjang masking) */
+          zIndex: 10, 
+          paddingTop: '8rem' 
+        }} 
+      >
+        <div className="potential-overlay" style={{ zIndex: 1 }}/>
+        <motion.div {...reveal} className="potential-copy relative z-20">
           <p className="section-kicker"><Sparkles /> Perkembangan Teknologi</p>
           <h2>Potensi Modern<br />Magelang</h2>
           <p>Portal ini menampilkan sejarah dan budaya berdampingan dengan smart city, UMKM digital, event komunitas, dan peta berbasis lokasi.</p>
