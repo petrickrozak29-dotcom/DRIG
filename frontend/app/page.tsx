@@ -226,7 +226,7 @@ export default function Home() {
           justifyContent: 'center'
         }}
       >
-        <div className="cta-copy relative z-10" style={{ textAlign: 'center' }}>
+        <div className="cta-copy relative z-10" style={{ textAlign: 'center', marginTop: '-100px' }}>
           <h2>Siap Menjelajahi<br /><span>Magelang?</span></h2>
           <p>Buka Smart Map dan fitur publik untuk menjelajahi wisata, budaya, sejarah, event, dan kuliner Magelang.</p>
           <div className="hero-actions" style={{ justifyContent: 'center' }}>
