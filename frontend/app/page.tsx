@@ -172,9 +172,19 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="faq" className="faq-section section-pad">
-        <div className="faq-overlay" />
-        <motion.div {...reveal} className="faq-content">
+{/* SECTION FAQ (Margin dihapus, kita pakai paddingTop & paddingBottom kecil biar rapat) */}
+      <section 
+        id="faq" 
+        className="faq-section section-pad relative" 
+        style={{ 
+          marginTop: '-4rem', /* Pastikan margin reset ke nol */
+          paddingTop: '3rem', /* Ngepres jarak atas biar deket sama air terjun */
+          paddingBottom: '5rem', /* Ngasih jarak aman ke CTA di bawahnya */
+          zIndex: 20 
+        }} 
+      >
+        <div className="faq-overlay" style={{ zIndex: 1 }} />
+        <motion.div {...reveal} className="faq-content relative z-10">
           <p className="section-kicker"><CircleHelp /> Pertanyaan Umum</p>
           <h2>FAQ</h2>
           <div className="faq-grid">
@@ -194,11 +204,32 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <section className="cta-section">
-        <div className="cta-copy">
+{/* 1. MASKING DUA ARAH (Atas & Bawah) */}
+      <style>{`
+        .mask-cta-full {
+          -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 100px, black calc(100% - 100px), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0%, black 100px, black calc(100% - 100px), transparent 100%);
+        }
+      `}</style>
+
+      {/* 2. SECTION CTA (Dibuat full-height biar nggak ada celah putih/hitam di bawah) */}
+      <section 
+        className="cta-section relative mask-cta-full" 
+        style={{ 
+          marginTop: '-5rem', 
+          zIndex: 30,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          minHeight: '60vh', /* Biar fotonya ngebentang full */
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <div className="cta-copy relative z-10" style={{ textAlign: 'center' }}>
           <h2>Siap Menjelajahi<br /><span>Magelang?</span></h2>
           <p>Buka Smart Map dan fitur publik untuk menjelajahi wisata, budaya, sejarah, event, dan kuliner Magelang.</p>
-          <div className="hero-actions">
+          <div className="hero-actions" style={{ justifyContent: 'center' }}>
             <Link href="/login" className="primary-button">Jelajahi Sekarang <ArrowRight /></Link>
             <Link href="/smart-map" className="secondary-button">Peta Interaktif <Map /></Link>
           </div>
