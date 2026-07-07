@@ -911,3 +911,91 @@ summary {
     padding-left: 16px;
   }
 }
+
+@media (max-width: 760px) {
+  .home-page .hero-shell,
+  .home-page .hero-section {
+    min-height: auto;
+  }
+
+  .home-page .hero-section {
+    display: flex;
+    flex-direction: column;
+    padding: clamp(58px, 12vh, 88px) 18px 44px;
+  }
+
+  .home-page .hero-content {
+    width: 100%;
+  }
+
+  .home-page .hero-content h1 {
+    margin-top: 18px;
+    font-size: clamp(42px, 14vw, 62px);
+    line-height: .94;
+  }
+
+  .home-page .hero-copy {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .home-page .hero-actions {
+    width: 100%;
+    max-width: none;
+    margin-top: 26px;
+  }
+
+  .home-page .hero-actions .primary-button,
+  .home-page .hero-actions .secondary-button {
+    flex: 1 1 100%;
+    min-height: 54px;
+  }
+
+  .home-page .quick-links {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    margin-top: 28px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .home-page .quick-card {
+    min-height: 118px;
+    padding: 16px 10px 14px;
+  }
+
+  .home-page .quick-links .quick-card:nth-child(4),
+  .home-page .quick-links .quick-card:nth-child(5),
+  .home-page .quick-links .quick-card:hover:nth-child(4),
+  .home-page .quick-links .quick-card:hover:nth-child(5) {
+    transform: none;
+  }
+
+  .home-page .quick-links .quick-card:last-child {
+    grid-column: 1 / -1;
+    min-height: 112px;
+  }
+}
+
+@media (max-width: 430px) {
+  .home-page .hero-section {
+    padding: 54px 16px 38px;
+  }
+
+  .home-page .hero-content h1 {
+    font-size: clamp(40px, 14vw, 54px);
+  }
+
+  .home-page .hero-actions {
+    max-width: none;
+  }
+
+  .home-page .quick-links {
+    left: auto;
+    right: auto;
+    margin-top: 26px;
+  }
+}
