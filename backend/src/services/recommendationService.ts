@@ -36,7 +36,6 @@ interface ItineraryItem {
   stayDuration: number; // minutes
   travelTime: number; // minutes
   distance: number; // kilometers
-  estimatedCost: number;
   notes: string;
   directions: string;
 }
@@ -44,7 +43,6 @@ interface ItineraryItem {
 interface ItineraryResult {
   itinerary: ItineraryItem[];
   totalDistance: number;
-  totalCost: number;
   totalDuration: number;
   summary: string;
   tips: string[];
@@ -349,20 +347,16 @@ export async function generateItinerary(
     duration: number; // hours
     startTime: Date;
     interests: string[];
-    budget?: number;
     latitude?: number;
     longitude?: number;
   }
 ): Promise<ItineraryResult> {
-  const { duration, startTime, budget } = params;
+  const { duration, startTime } = params;
   const interests = params.interests.map(normalizeInterest);
 
   // Validate inputs
   if (duration <= 0) {
     throw new Error('Duration must be greater than 0');
-  }
-  if (budget !== undefined && budget < 0) {
-    throw new Error('Budget must be non-negative');
   }
   if (interests.length === 0) {
     throw new Error('At least one interest must be specified');
@@ -409,7 +403,6 @@ export async function generateItinerary(
     const stayTime = Math.min(90, Math.max(30, remainingTime - next.estimatedTravelTime));
     const totalTime = next.estimatedTravelTime + stayTime;
     const endTime = new Date(currentTime.getTime() + totalTime * 60000);
-    const estimatedCost = next.destination.kind === 'kuliner' ? 35000 : 50000;
 
     itinerary.push({
       order: itinerary.length + 1,
@@ -419,7 +412,6 @@ export async function generateItinerary(
       stayDuration: stayTime,
       travelTime: next.estimatedTravelTime,
       distance: next.distance,
-      estimatedCost,
       notes:
         next.destination.kind === 'kuliner'
           ? 'Cocok untuk jeda kuliner tanpa keluar jauh dari rute.'
@@ -434,7 +426,6 @@ export async function generateItinerary(
     visited.add(next.destination.id);
   }
 
-  const totalCost = itinerary.reduce((sum, item) => sum + item.estimatedCost, 0);
   const totalDuration = itinerary.reduce(
     (sum, item) => sum + item.stayDuration + item.travelTime,
     0
@@ -491,7 +482,7 @@ export async function generateItinerary(
         items: JSON.stringify(itinerary),
         duration: totalDuration,
         totalDistance,
-        totalEstimatedCost: totalCost,
+        totalEstimatedCost: 0,
       },
     })
     .catch((): undefined => undefined);
@@ -499,7 +490,6 @@ export async function generateItinerary(
   return {
     itinerary,
     totalDistance,
-    totalCost,
     totalDuration,
     summary,
     tips,

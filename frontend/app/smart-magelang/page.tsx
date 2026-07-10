@@ -51,7 +51,6 @@ interface ItineraryItem {
   stayDuration: number;
   travelTime: number;
   distance: number;
-  estimatedCost: number;
   notes: string;
   directions: string;
 }
@@ -59,7 +58,6 @@ interface ItineraryItem {
 interface ItineraryResult {
   itinerary: ItineraryItem[];
   totalDistance: number;
-  totalCost: number;
   totalDuration: number;
   summary: string;
   tips: string[];
@@ -473,15 +471,11 @@ export default function SmartMagelangPage() {
                     <p className="mt-3 text-sm leading-6 text-slate-300">{result.summary}</p>
                   </div>
 
-                  <div className="mb-6 grid gap-3 sm:grid-cols-3">
+                  <div className="mb-6 grid gap-3 sm:grid-cols-2">
                     <Stat label="Jarak Total" value={`${result.totalDistance.toFixed(1)} km`} />
                     <Stat
                       label="Waktu Rute"
                       value={`${Math.floor(result.totalDuration / 60)}j ${result.totalDuration % 60}m`}
-                    />
-                    <Stat
-                      label="Estimasi Biaya"
-                      value={`Rp ${result.totalCost.toLocaleString('id-ID')}`}
                     />
                   </div>
 
