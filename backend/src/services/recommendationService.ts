@@ -69,11 +69,14 @@ const DEFAULT_STOP_DURATION_MINUTES = 60;
 const MIN_STOP_DURATION_MINUTES = 15;
 const MAX_STOP_DURATION_MINUTES = 240;
 const MIN_CULINARY_GAP_MINUTES = 120;
+const CULINARY_APPROACH_MINUTES = 45;
+const APP_TIME_ZONE = 'Asia/Jakarta';
+const APP_TIME_ZONE_OFFSET_MINUTES = 7 * 60;
 
 const CULINARY_WINDOWS = [
-  { start: 12 * 60, end: 13 * 60 },
-  { start: 15 * 60 + 30, end: 16 * 60 + 30 },
-  { start: 19 * 60 + 30, end: 20 * 60 + 30 },
+  { start: 12 * 60, end: 14 * 60 },
+  { start: 15 * 60 + 30, end: 17 * 60 },
+  { start: 19 * 60 + 30, end: 21 * 60 },
 ];
 
 function normalizeInterest(value: string) {
@@ -96,13 +99,22 @@ function matchesInterest(candidate: any, interests: string[]) {
 }
 
 function minutesOfDay(value: Date) {
-  return value.getHours() * 60 + value.getMinutes();
+  const local = new Date(value.getTime() + APP_TIME_ZONE_OFFSET_MINUTES * 60000);
+  return local.getUTCHours() * 60 + local.getUTCMinutes();
 }
 
 function dateAtMinutes(base: Date, minutes: number) {
-  const next = new Date(base);
-  next.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-  return next;
+  const local = new Date(base.getTime() + APP_TIME_ZONE_OFFSET_MINUTES * 60000);
+  const utcTime = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth(),
+    local.getUTCDate(),
+    Math.floor(minutes / 60),
+    minutes % 60,
+    0,
+    0
+  );
+  return new Date(utcTime - APP_TIME_ZONE_OFFSET_MINUTES * 60000);
 }
 
 function isCulinaryCandidate(candidate: RouteCandidate) {
@@ -111,7 +123,48 @@ function isCulinaryCandidate(candidate: RouteCandidate) {
 
 function isWithinCulinaryWindow(value: Date) {
   const minutes = minutesOfDay(value);
-  return CULINARY_WINDOWS.some((window) => minutes >= window.start && minutes <= window.end);
+  return CULINARY_WINDOWS.some((window) => minutes >= window.start && minutes < window.end);
+}
+
+function activeCulinaryWindow(value: Date) {
+  const minutes = minutesOfDay(value);
+  return (
+    CULINARY_WINDOWS.find(
+      (window) => minutes >= window.start - CULINARY_APPROACH_MINUTES && minutes < window.end
+    ) || null
+  );
+}
+
+function formatTime(value: Date) {
+  return value.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: APP_TIME_ZONE,
+  });
+}
+
+function formatDate(value: Date) {
+  return value.toLocaleDateString('id-ID', { timeZone: APP_TIME_ZONE });
+}
+
+function resolveDepartureStartTime(base: Date, departureTime?: string) {
+  if (!departureTime) return base;
+
+  const [hour, minute] = departureTime.split(':').map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return base;
+
+  const local = new Date(base.getTime() + APP_TIME_ZONE_OFFSET_MINUTES * 60000);
+  const utcTime = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth(),
+    local.getUTCDate(),
+    hour,
+    minute,
+    0,
+    0
+  );
+
+  return new Date(utcTime - APP_TIME_ZONE_OFFSET_MINUTES * 60000);
 }
 
 function hasRecentCulinaryStop(itinerary: ItineraryItem[], nextArrival: Date) {
@@ -122,18 +175,20 @@ function hasRecentCulinaryStop(itinerary: ItineraryItem[], nextArrival: Date) {
   return gapMinutes < MIN_CULINARY_GAP_MINUTES;
 }
 
-function findCulinarySlotStart(arrivalTime: Date, stayDuration: number) {
-  for (const window of CULINARY_WINDOWS) {
-    const slotStart = dateAtMinutes(arrivalTime, window.start);
-    const slotEnd = dateAtMinutes(arrivalTime, window.end);
-    const candidateStart = arrivalTime <= slotStart ? slotStart : arrivalTime;
+function findCulinarySlotStart(
+  arrivalTime: Date,
+  stayDuration: number,
+  window: (typeof CULINARY_WINDOWS)[number]
+) {
+  const slotStart = dateAtMinutes(arrivalTime, window.start);
+  const slotEnd = dateAtMinutes(arrivalTime, window.end);
+  const candidateStart = arrivalTime <= slotStart ? slotStart : arrivalTime;
 
-    if (
-      candidateStart >= slotStart &&
-      candidateStart.getTime() + stayDuration * 60000 <= slotEnd.getTime()
-    ) {
-      return candidateStart;
-    }
+  if (
+    candidateStart >= slotStart &&
+    candidateStart.getTime() + stayDuration * 60000 <= slotEnd.getTime()
+  ) {
+    return candidateStart;
   }
 
   return null;
@@ -151,13 +206,17 @@ function scheduleCandidate(
   candidate: RouteCandidate,
   itinerary: ItineraryItem[],
   arrivalTime: Date,
-  stayDuration: number
+  stayDuration: number,
+  culinaryWindow: (typeof CULINARY_WINDOWS)[number] | null
 ) {
   if (!isCulinaryCandidate(candidate)) {
+    if (culinaryWindow) return null;
     return { startTime: arrivalTime, waitTime: 0 };
   }
 
-  const slotStart = findCulinarySlotStart(arrivalTime, stayDuration);
+  if (!culinaryWindow) return null;
+
+  const slotStart = findCulinarySlotStart(arrivalTime, stayDuration, culinaryWindow);
   if (!slotStart || hasRecentCulinaryStop(itinerary, slotStart)) return null;
 
   return {
@@ -429,12 +488,14 @@ export async function generateItinerary(
     duration: number; // hours
     stopDuration?: number; // minutes
     startTime: Date;
+    departureTime?: string;
     interests: string[];
     latitude?: number;
     longitude?: number;
   }
 ): Promise<ItineraryResult> {
-  const { duration, startTime } = params;
+  const { duration } = params;
+  const startTime = resolveDepartureStartTime(params.startTime, params.departureTime);
   const interests = params.interests.map(normalizeInterest);
 
   // Validate inputs
@@ -494,12 +555,23 @@ export async function generateItinerary(
       })
       .sort((a, b) => a.distance - b.distance);
 
-    const schedulableCandidates = nearestCandidates
+    const requiredCulinaryWindow = activeCulinaryWindow(currentTime);
+    const categoryFilteredCandidates = nearestCandidates.filter((candidate) =>
+      requiredCulinaryWindow ? isCulinaryCandidate(candidate) : !isCulinaryCandidate(candidate)
+    );
+
+    const schedulableCandidates = categoryFilteredCandidates
       .map((candidate) => {
         const stayDuration = preferredStayDuration(candidate, preferredStopDuration);
         const minimumCandidateStayTime = Math.min(30, stayDuration);
         const arrivalTime = new Date(currentTime.getTime() + candidate.estimatedTravelTime * 60000);
-        const schedule = scheduleCandidate(candidate, itinerary, arrivalTime, stayDuration);
+        const schedule = scheduleCandidate(
+          candidate,
+          itinerary,
+          arrivalTime,
+          stayDuration,
+          requiredCulinaryWindow
+        );
 
         if (
           !schedule ||
@@ -518,13 +590,7 @@ export async function generateItinerary(
       })
       .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null);
 
-    const currentSlotIsCulinary = isWithinCulinaryWindow(currentTime);
-    const next =
-      (currentSlotIsCulinary
-        ? schedulableCandidates.find((candidate) => isCulinaryCandidate(candidate))
-        : schedulableCandidates.find((candidate) => !isCulinaryCandidate(candidate))) ||
-      schedulableCandidates.find((candidate) => !isCulinaryCandidate(candidate)) ||
-      schedulableCandidates.find((candidate) => isCulinaryCandidate(candidate));
+    const next = schedulableCandidates[0];
 
     if (!next) break;
 
@@ -572,7 +638,7 @@ export async function generateItinerary(
 
   try {
     if (openai) {
-      const prompt = `Buat ringkasan itinerary berbahasa Indonesia untuk perjalanan ${duration} jam di Magelang, mulai dari ${startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}. Destinasi sudah diurutkan dari jarak terdekat agar tidak bolak-balik. Minat: ${interests.join(', ')}. Maksimal 100 kata.`;
+      const prompt = `Buat ringkasan itinerary berbahasa Indonesia untuk perjalanan ${duration} jam di Magelang, mulai dari ${formatTime(startTime)}. Destinasi sudah diurutkan dari jarak terdekat agar tidak bolak-balik. Minat: ${interests.join(', ')}. Maksimal 100 kata.`;
 
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
@@ -589,7 +655,7 @@ export async function generateItinerary(
       ];
     } else {
       // Fallback if OpenAI not available
-      summary = `Itinerary ${duration} jam ini berisi ${itinerary.length} rekomendasi di Magelang, dimulai dari pukul ${startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}. Rute diurutkan dari titik terdekat agar perjalanan efisien. Total jarak sekitar ${totalDistance.toFixed(1)} km.`;
+      summary = `Itinerary ${duration} jam ini berisi ${itinerary.length} rekomendasi di Magelang, dimulai dari pukul ${formatTime(startTime)}. Rute diurutkan dari titik terdekat agar perjalanan efisien. Total jarak sekitar ${totalDistance.toFixed(1)} km.`;
       tips = [
         'Cek jam buka destinasi',
         'Gunakan urutan rute dari AI',
@@ -612,7 +678,7 @@ export async function generateItinerary(
     .create({
       data: {
         userId,
-        title: `Smart Magelang - ${startTime.toLocaleDateString()}`,
+        title: `Smart Magelang - ${formatDate(startTime)}`,
         description: summary,
         items: JSON.stringify(itinerary),
         duration: totalDuration,

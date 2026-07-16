@@ -168,18 +168,20 @@ function timeLabel(value: string) {
   return new Date(value).toLocaleTimeString('id-ID', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
   });
 }
 
 const DEFAULT_STOP_DURATION_MINUTES = 60;
 const MIN_STOP_DURATION_MINUTES = 15;
 const MAX_STOP_DURATION_MINUTES = 240;
-const CULINARY_STOP_DURATION_MAX_MINUTES = 60;
+const CULINARY_STOP_DURATION_MAX_MINUTES = 120;
+const APP_TIME_ZONE_OFFSET_MINUTES = 7 * 60;
 
 const culinarySlots = [
-  { start: 12 * 60, end: 13 * 60 },
-  { start: 15 * 60 + 30, end: 16 * 60 + 30 },
-  { start: 19 * 60 + 30, end: 20 * 60 + 30 },
+  { start: 12 * 60, end: 14 * 60 },
+  { start: 15 * 60 + 30, end: 17 * 60 },
+  { start: 19 * 60 + 30, end: 21 * 60 },
 ];
 
 function durationOptions(maxMinutes: number) {
@@ -191,14 +193,22 @@ function durationOptions(maxMinutes: number) {
 }
 
 function minutesOfDay(value: Date) {
-  return value.getHours() * 60 + value.getMinutes();
+  const local = new Date(value.getTime() + APP_TIME_ZONE_OFFSET_MINUTES * 60000);
+  return local.getUTCHours() * 60 + local.getUTCMinutes();
 }
 
 function dateAtMinutes(base: Date, minutes: number, dayOffset = 0) {
-  const next = new Date(base);
-  next.setDate(next.getDate() + dayOffset);
-  next.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-  return next;
+  const local = new Date(base.getTime() + APP_TIME_ZONE_OFFSET_MINUTES * 60000);
+  const utcTime = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth(),
+    local.getUTCDate() + dayOffset,
+    Math.floor(minutes / 60),
+    minutes % 60,
+    0,
+    0
+  );
+  return new Date(utcTime - APP_TIME_ZONE_OFFSET_MINUTES * 60000);
 }
 
 function alignCulinaryStart(arrivalTime: Date, stayDuration: number) {
@@ -305,9 +315,8 @@ export default function SmartMagelangPage() {
   };
 
   const tripWindow = useMemo(() => {
-    const start = new Date();
     const [hour, minute] = departureTime.split(':').map(Number);
-    start.setHours(hour || 0, minute || 0, 0, 0);
+    const start = dateAtMinutes(new Date(), (hour || 0) * 60 + (minute || 0));
     const end = new Date(start.getTime() + Number(duration || 0) * 60 * 60 * 1000);
     return `${timeLabel(start.toISOString())} - ${timeLabel(end.toISOString())}`;
   }, [departureTime, duration]);
@@ -343,9 +352,8 @@ export default function SmartMagelangPage() {
       return;
     }
 
-    const start = new Date();
     const [hour, minute] = departureTime.split(':').map(Number);
-    start.setHours(hour || 0, minute || 0, 0, 0);
+    const start = dateAtMinutes(new Date(), (hour || 0) * 60 + (minute || 0));
 
     setLoading(true);
 
@@ -360,6 +368,7 @@ export default function SmartMagelangPage() {
           duration: Number(duration),
           stopDuration: Number(stopDuration),
           startTime: start.toISOString(),
+          departureTime,
           interests,
           latitude: location.lat,
           longitude: location.lng,
