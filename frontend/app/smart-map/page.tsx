@@ -355,8 +355,8 @@ export default function SmartMapPage() {
                 <span>Garis biru putus-putus: batas Kabupaten Magelang.</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white ring-2 ring-white">1</span>
-                <span>Rute Hijau : urutan rute itinerary AI Asistant.</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white ring-2 ring-white">1</span>
+                <span>Rute Biru : Rute Itinerary dari AI Asistant.</span>
               </div>
             </div>
           </section>

@@ -513,7 +513,7 @@ export async function generateItinerary(
       summary = completion.choices[0]?.message?.content || 'Enjoy your trip to Magelang!';
       tips = [
         'Cek jam buka destinasi sebelum berangkat',
-        'Siapkan uang tunai untuk parkir dan UMKM',
+        'Siapkan uang tunai untuk kebutuhan selama perjalanan',
         'Ikuti urutan rute agar perjalanan tidak bolak-balik',
       ];
     } else {
