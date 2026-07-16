@@ -65,17 +65,15 @@ interface RouteCandidate {
   estimatedTravelTime: number;
 }
 
-const DEFAULT_STOP_DURATION_MINUTES = 90;
+const DEFAULT_STOP_DURATION_MINUTES = 60;
 const MIN_STOP_DURATION_MINUTES = 15;
 const MAX_STOP_DURATION_MINUTES = 240;
 const MIN_CULINARY_GAP_MINUTES = 120;
 
 const CULINARY_WINDOWS = [
-  { start: 7 * 60, end: 9 * 60 + 30 },
-  { start: 10 * 60, end: 11 * 60 + 15 },
-  { start: 12 * 60, end: 14 * 60 },
-  { start: 15 * 60, end: 17 * 60 },
-  { start: 18 * 60, end: 20 * 60 },
+  { start: 12 * 60, end: 13 * 60 },
+  { start: 15 * 60 + 30, end: 16 * 60 + 30 },
+  { start: 19 * 60 + 30, end: 20 * 60 + 30 },
 ];
 
 function normalizeInterest(value: string) {
@@ -101,6 +99,12 @@ function minutesOfDay(value: Date) {
   return value.getHours() * 60 + value.getMinutes();
 }
 
+function dateAtMinutes(base: Date, minutes: number) {
+  const next = new Date(base);
+  next.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+  return next;
+}
+
 function isCulinaryCandidate(candidate: RouteCandidate) {
   return candidate.destination.kind === 'kuliner';
 }
@@ -118,10 +122,48 @@ function hasRecentCulinaryStop(itinerary: ItineraryItem[], nextArrival: Date) {
   return gapMinutes < MIN_CULINARY_GAP_MINUTES;
 }
 
-function canScheduleCandidate(candidate: RouteCandidate, itinerary: ItineraryItem[], arrivalTime: Date) {
-  if (!isCulinaryCandidate(candidate)) return true;
-  if (!isWithinCulinaryWindow(arrivalTime)) return false;
-  return !hasRecentCulinaryStop(itinerary, arrivalTime);
+function findCulinarySlotStart(arrivalTime: Date, stayDuration: number) {
+  for (const window of CULINARY_WINDOWS) {
+    const slotStart = dateAtMinutes(arrivalTime, window.start);
+    const slotEnd = dateAtMinutes(arrivalTime, window.end);
+    const candidateStart = arrivalTime <= slotStart ? slotStart : arrivalTime;
+
+    if (
+      candidateStart >= slotStart &&
+      candidateStart.getTime() + stayDuration * 60000 <= slotEnd.getTime()
+    ) {
+      return candidateStart;
+    }
+  }
+
+  return null;
+}
+
+function preferredStayDuration(candidate: RouteCandidate, preferredStopDuration: number) {
+  if (!isCulinaryCandidate(candidate)) return preferredStopDuration;
+  const longestCulinaryWindow = Math.max(
+    ...CULINARY_WINDOWS.map((window) => window.end - window.start)
+  );
+  return Math.min(preferredStopDuration, longestCulinaryWindow);
+}
+
+function scheduleCandidate(
+  candidate: RouteCandidate,
+  itinerary: ItineraryItem[],
+  arrivalTime: Date,
+  stayDuration: number
+) {
+  if (!isCulinaryCandidate(candidate)) {
+    return { startTime: arrivalTime, waitTime: 0 };
+  }
+
+  const slotStart = findCulinarySlotStart(arrivalTime, stayDuration);
+  if (!slotStart || hasRecentCulinaryStop(itinerary, slotStart)) return null;
+
+  return {
+    startTime: slotStart,
+    waitTime: Math.max(0, Math.round((slotStart.getTime() - arrivalTime.getTime()) / 60000)),
+  };
 }
 
 async function resolveSubmissionCoordinates(item: SubmissionWithRelations | any) {
@@ -452,35 +494,65 @@ export async function generateItinerary(
       })
       .sort((a, b) => a.distance - b.distance);
 
-    const next = nearestCandidates.find((candidate) => {
-      const arrivalTime = new Date(currentTime.getTime() + candidate.estimatedTravelTime * 60000);
-      return (
-        candidate.estimatedTravelTime + minimumStayTime <= remainingTime &&
-        canScheduleCandidate(candidate, itinerary, arrivalTime)
-      );
-    });
+    const schedulableCandidates = nearestCandidates
+      .map((candidate) => {
+        const stayDuration = preferredStayDuration(candidate, preferredStopDuration);
+        const minimumCandidateStayTime = Math.min(30, stayDuration);
+        const arrivalTime = new Date(currentTime.getTime() + candidate.estimatedTravelTime * 60000);
+        const schedule = scheduleCandidate(candidate, itinerary, arrivalTime, stayDuration);
+
+        if (
+          !schedule ||
+          candidate.estimatedTravelTime + schedule.waitTime + minimumCandidateStayTime > remainingTime
+        ) {
+          return null;
+        }
+
+        return {
+          ...candidate,
+          scheduledStartTime: schedule.startTime,
+          waitTime: schedule.waitTime,
+          preferredStayTime: stayDuration,
+          minimumStayTime: minimumCandidateStayTime,
+        };
+      })
+      .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null);
+
+    const currentSlotIsCulinary = isWithinCulinaryWindow(currentTime);
+    const next =
+      (currentSlotIsCulinary
+        ? schedulableCandidates.find((candidate) => isCulinaryCandidate(candidate))
+        : schedulableCandidates.find((candidate) => !isCulinaryCandidate(candidate))) ||
+      schedulableCandidates.find((candidate) => !isCulinaryCandidate(candidate)) ||
+      schedulableCandidates.find((candidate) => isCulinaryCandidate(candidate));
+
     if (!next) break;
 
     const stayTime = Math.min(
-      preferredStopDuration,
-      Math.max(minimumStayTime, remainingTime - next.estimatedTravelTime)
+      next.preferredStayTime,
+      Math.max(
+        next.minimumStayTime,
+        remainingTime - next.estimatedTravelTime - next.waitTime
+      )
     );
-    const totalTime = next.estimatedTravelTime + stayTime;
-    const endTime = new Date(currentTime.getTime() + totalTime * 60000);
+    const totalTime = next.estimatedTravelTime + next.waitTime + stayTime;
+    const endTime = new Date(next.scheduledStartTime.getTime() + stayTime * 60000);
 
     itinerary.push({
       order: itinerary.length + 1,
       destination: next.destination,
-      startTime: new Date(currentTime),
+      startTime: new Date(next.scheduledStartTime),
       endTime,
       stayDuration: stayTime,
       travelTime: next.estimatedTravelTime,
       distance: next.distance,
       notes:
         next.destination.kind === 'kuliner'
-          ? 'Cocok untuk jeda kuliner tanpa keluar jauh dari rute.'
+          ? 'Dijadwalkan pada slot kuliner agar tidak terlalu dekat dengan jadwal makan lain.'
           : 'Nikmati destinasi ini sesuai waktu kunjungan yang tersedia.',
-      directions: `${next.distance.toFixed(1)} km dari titik sebelumnya, estimasi ${next.estimatedTravelTime} menit perjalanan`,
+      directions: `${next.distance.toFixed(1)} km dari titik sebelumnya, estimasi ${next.estimatedTravelTime} menit perjalanan${
+        next.waitTime > 0 ? ` dan menunggu ${next.waitTime} menit sampai slot kuliner` : ''
+      }`,
     });
 
     currentTime = endTime;
@@ -490,10 +562,9 @@ export async function generateItinerary(
     visited.add(next.destination.id);
   }
 
-  const totalDuration = itinerary.reduce(
-    (sum, item) => sum + item.stayDuration + item.travelTime,
-    0
-  );
+  const totalDuration = itinerary.length > 0
+    ? Math.max(0, Math.round((currentTime.getTime() - startTime.getTime()) / 60000))
+    : 0;
 
   // Generate AI summary
   let summary = '';

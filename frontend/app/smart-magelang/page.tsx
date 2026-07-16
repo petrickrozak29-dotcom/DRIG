@@ -38,6 +38,7 @@ interface ItineraryItem {
     name: string;
     description?: string;
     category?: string;
+    kind?: string;
     priceRange?: string;
     latitude?: number;
     longitude?: number;
@@ -170,6 +171,91 @@ function timeLabel(value: string) {
   });
 }
 
+const DEFAULT_STOP_DURATION_MINUTES = 60;
+const MIN_STOP_DURATION_MINUTES = 15;
+const MAX_STOP_DURATION_MINUTES = 240;
+const CULINARY_STOP_DURATION_MAX_MINUTES = 60;
+
+const culinarySlots = [
+  { start: 12 * 60, end: 13 * 60 },
+  { start: 15 * 60 + 30, end: 16 * 60 + 30 },
+  { start: 19 * 60 + 30, end: 20 * 60 + 30 },
+];
+
+function durationOptions(maxMinutes: number) {
+  const options: number[] = [];
+  for (let value = MIN_STOP_DURATION_MINUTES; value <= maxMinutes; value += 5) {
+    options.push(value);
+  }
+  return options;
+}
+
+function minutesOfDay(value: Date) {
+  return value.getHours() * 60 + value.getMinutes();
+}
+
+function dateAtMinutes(base: Date, minutes: number, dayOffset = 0) {
+  const next = new Date(base);
+  next.setDate(next.getDate() + dayOffset);
+  next.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+  return next;
+}
+
+function alignCulinaryStart(arrivalTime: Date, stayDuration: number) {
+  const arrivalMinutes = minutesOfDay(arrivalTime);
+
+  for (const slot of culinarySlots) {
+    const slotStart = dateAtMinutes(arrivalTime, slot.start);
+    const slotEnd = dateAtMinutes(arrivalTime, slot.end);
+    const candidateStart =
+      arrivalMinutes <= slot.start ? slotStart : new Date(arrivalTime);
+
+    if (candidateStart >= slotStart && candidateStart.getTime() + stayDuration * 60000 <= slotEnd.getTime()) {
+      return candidateStart;
+    }
+  }
+
+  return dateAtMinutes(arrivalTime, culinarySlots[0].start, 1);
+}
+
+function isCulinaryCategory(value?: string, kind?: string) {
+  return normalizeRouteCategory(kind || value) === 'kuliner';
+}
+
+function recalculateItinerary(items: ItineraryItem[]) {
+  if (items.length === 0) return items;
+
+  let currentStart = new Date(items[0].startTime);
+
+  const recalculated = items.map((item, index) => {
+    const arrivalTime =
+      index === 0
+        ? new Date(currentStart)
+        : new Date(currentStart.getTime() + item.travelTime * 60000);
+    const startTime = isCulinaryCategory(item.destination.category, item.destination.kind)
+      ? alignCulinaryStart(arrivalTime, item.stayDuration)
+      : arrivalTime;
+    const endTime = new Date(startTime.getTime() + item.stayDuration * 60000);
+
+    currentStart = endTime;
+
+    return {
+      ...item,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+    };
+  });
+
+  return recalculated;
+}
+
+function calculateItineraryDuration(items: ItineraryItem[]) {
+  if (items.length === 0) return 0;
+  const start = new Date(items[0].startTime);
+  const end = new Date(items[items.length - 1].endTime);
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+}
+
 function normalizeRouteCategory(value?: string) {
   const normalized = String(value || '').toLowerCase();
   if (normalized.includes('kuliner')) return 'kuliner';
@@ -183,7 +269,7 @@ export default function SmartMagelangPage() {
   const { token, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<SmartTab>('ai');
   const [duration, setDuration] = useState('4');
-  const [stopDuration, setStopDuration] = useState('90');
+  const [stopDuration, setStopDuration] = useState(String(DEFAULT_STOP_DURATION_MINUTES));
   const [departureTime, setDepartureTime] = useState('08:00');
   const [interests, setInterests] = useState<string[]>(['wisata', 'kuliner']);
   const [result, setResult] = useState<ItineraryResult | null>(null);
@@ -291,6 +377,26 @@ export default function SmartMagelangPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCardStayDurationChange = (index: number, value: string) => {
+    const stayDuration = Number(value);
+    if (!Number.isFinite(stayDuration)) return;
+
+    setResult((current) => {
+      if (!current) return current;
+
+      const updatedItems = current.itinerary.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, stayDuration } : item
+      );
+      const recalculatedItems = recalculateItinerary(updatedItems);
+
+      return {
+        ...current,
+        itinerary: recalculatedItems,
+        totalDuration: calculateItineraryDuration(recalculatedItems),
+      };
+    });
   };
 
   const storeItineraryForSmartMap = () => {
@@ -426,7 +532,7 @@ export default function SmartMagelangPage() {
                     </span>
                   </div>
                   <span className="mt-2 block text-xs font-normal text-slate-400">
-                    Default 90 menit. Atur sesuai lama kunjungan di tiap destinasi.
+                    Default 60 menit. Nanti bisa diubah lagi per kartu destinasi.
                   </span>
                 </label>
 
@@ -531,7 +637,15 @@ export default function SmartMagelangPage() {
                   </a>
 
                   <div className="space-y-4">
-                    {result.itinerary.map((item) => (
+                    {result.itinerary.map((item, index) => {
+                      const culinaryItem = isCulinaryCategory(
+                        item.destination.category,
+                        item.destination.kind
+                      );
+                      const maxStayDuration = culinaryItem
+                        ? CULINARY_STOP_DURATION_MAX_MINUTES
+                        : MAX_STOP_DURATION_MINUTES;
+                      return (
                       <article
                         key={`${item.order}-${item.destination.name}`}
                         className="rounded-lg border border-slate-800 bg-slate-950/75 p-5"
@@ -555,7 +669,27 @@ export default function SmartMagelangPage() {
                         <div className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-3">
                           <p>Jarak: {item.distance.toFixed(1)} km</p>
                           <p>Tempuh: {item.travelTime} menit</p>
-                          <p>Singgah: {item.stayDuration} menit</p>
+                          <label className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                            <span>Singgah</span>
+                            <span className="flex overflow-hidden rounded-md border border-slate-700 bg-slate-950">
+                              <select
+                                value={item.stayDuration}
+                                onChange={(event) =>
+                                  handleCardStayDurationChange(index, event.target.value)
+                                }
+                                className="bg-transparent px-2 py-1 text-sm font-semibold text-white outline-none"
+                              >
+                                {durationOptions(maxStayDuration).map((option) => (
+                                  <option key={option} value={option} className="bg-slate-950">
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                              <span className="border-l border-slate-700 px-2 py-1 text-xs font-semibold text-cyan-200">
+                                menit
+                              </span>
+                            </span>
+                          </label>
                         </div>
                         <p className="mt-3 text-sm text-slate-500">{item.directions}</p>
                         <div className="mt-4 flex flex-wrap gap-3">
@@ -587,7 +721,8 @@ export default function SmartMagelangPage() {
                           )}
                         </div>
                       </article>
-                    ))}
+                    );
+                    })}
                   </div>
 
                   {result.tips.length > 0 && (
