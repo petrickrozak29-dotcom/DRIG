@@ -65,6 +65,19 @@ interface RouteCandidate {
   estimatedTravelTime: number;
 }
 
+const DEFAULT_STOP_DURATION_MINUTES = 90;
+const MIN_STOP_DURATION_MINUTES = 15;
+const MAX_STOP_DURATION_MINUTES = 240;
+const MIN_CULINARY_GAP_MINUTES = 120;
+
+const CULINARY_WINDOWS = [
+  { start: 7 * 60, end: 9 * 60 + 30 },
+  { start: 10 * 60, end: 11 * 60 + 15 },
+  { start: 12 * 60, end: 14 * 60 },
+  { start: 15 * 60, end: 17 * 60 },
+  { start: 18 * 60, end: 20 * 60 },
+];
+
 function normalizeInterest(value: string) {
   const normalized = value.toLowerCase().trim();
   if (['food', 'culinary', 'kuliner'].includes(normalized)) return 'kuliner';
@@ -82,6 +95,33 @@ function matchesInterest(candidate: any, interests: string[]) {
     if (interest === 'budaya') return candidate.kind === 'budaya';
     return candidate.kind === 'wisata';
   });
+}
+
+function minutesOfDay(value: Date) {
+  return value.getHours() * 60 + value.getMinutes();
+}
+
+function isCulinaryCandidate(candidate: RouteCandidate) {
+  return candidate.destination.kind === 'kuliner';
+}
+
+function isWithinCulinaryWindow(value: Date) {
+  const minutes = minutesOfDay(value);
+  return CULINARY_WINDOWS.some((window) => minutes >= window.start && minutes <= window.end);
+}
+
+function hasRecentCulinaryStop(itinerary: ItineraryItem[], nextArrival: Date) {
+  const lastCulinary = [...itinerary].reverse().find((item) => item.destination.kind === 'kuliner');
+  if (!lastCulinary) return false;
+
+  const gapMinutes = Math.floor((nextArrival.getTime() - lastCulinary.endTime.getTime()) / 60000);
+  return gapMinutes < MIN_CULINARY_GAP_MINUTES;
+}
+
+function canScheduleCandidate(candidate: RouteCandidate, itinerary: ItineraryItem[], arrivalTime: Date) {
+  if (!isCulinaryCandidate(candidate)) return true;
+  if (!isWithinCulinaryWindow(arrivalTime)) return false;
+  return !hasRecentCulinaryStop(itinerary, arrivalTime);
 }
 
 async function resolveSubmissionCoordinates(item: SubmissionWithRelations | any) {
@@ -345,6 +385,7 @@ export async function generateItinerary(
   userId: string,
   params: {
     duration: number; // hours
+    stopDuration?: number; // minutes
     startTime: Date;
     interests: string[];
     latitude?: number;
@@ -357,6 +398,16 @@ export async function generateItinerary(
   // Validate inputs
   if (duration <= 0) {
     throw new Error('Duration must be greater than 0');
+  }
+  const preferredStopDuration = Math.trunc(
+    params.stopDuration ?? DEFAULT_STOP_DURATION_MINUTES
+  );
+  if (
+    !Number.isFinite(preferredStopDuration) ||
+    preferredStopDuration < MIN_STOP_DURATION_MINUTES ||
+    preferredStopDuration > MAX_STOP_DURATION_MINUTES
+  ) {
+    throw new Error('Stop duration must be between 15 and 240 minutes');
   }
   if (interests.length === 0) {
     throw new Error('At least one interest must be specified');
@@ -376,7 +427,13 @@ export async function generateItinerary(
   let currentPoint = origin;
   const visited = new Set<string>();
 
-  while (remainingTime >= 45 && visited.size < candidates.length && itinerary.length < 6) {
+  const minimumStayTime = Math.min(30, preferredStopDuration);
+
+  while (
+    remainingTime >= minimumStayTime + 5 &&
+    visited.size < candidates.length &&
+    itinerary.length < 6
+  ) {
     const nearestCandidates = candidates
       .filter((candidate) => !visited.has(candidate.destination.id))
       .map((candidate) => {
@@ -395,12 +452,19 @@ export async function generateItinerary(
       })
       .sort((a, b) => a.distance - b.distance);
 
-    const next = nearestCandidates.find(
-      (candidate) => candidate.estimatedTravelTime + 30 <= remainingTime
-    );
+    const next = nearestCandidates.find((candidate) => {
+      const arrivalTime = new Date(currentTime.getTime() + candidate.estimatedTravelTime * 60000);
+      return (
+        candidate.estimatedTravelTime + minimumStayTime <= remainingTime &&
+        canScheduleCandidate(candidate, itinerary, arrivalTime)
+      );
+    });
     if (!next) break;
 
-    const stayTime = Math.min(90, Math.max(30, remainingTime - next.estimatedTravelTime));
+    const stayTime = Math.min(
+      preferredStopDuration,
+      Math.max(minimumStayTime, remainingTime - next.estimatedTravelTime)
+    );
     const totalTime = next.estimatedTravelTime + stayTime;
     const endTime = new Date(currentTime.getTime() + totalTime * 60000);
 

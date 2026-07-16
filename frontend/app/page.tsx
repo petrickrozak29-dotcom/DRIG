@@ -62,6 +62,8 @@ const faqs = [
   ['Bagaimana cara mengirim event?', 'Login terlebih dahulu, buka halaman Event, lalu gunakan fitur tambah event dan kirimkan data untuk ditinjau.'],
   ['Bagaimana cara melaporkan informasi yang kurang tepat?', 'Gunakan Form Saran/Aduan pada menu Bantuan. Laporan akan diteruskan kepada pengelola portal.'],
   ['Apa fungsi Smart Magelang?', 'Smart Magelang menyajikan gagasan, potensi, dan informasi perkembangan teknologi serta layanan kota.'],
+  ['Apa itu AI Assistant di Smart Magelang?', 'AI Assistant membantu menyusun itinerary berdasarkan jam mulai, waktu yang dimiliki, minat, lokasi awal, dan durasi singgah per destinasi.'],
+  ['Apa arti Smart Map dan Community Form?', 'Smart Map menampilkan marker lokasi publik, sedangkan Community Form dipakai user login untuk mengajukan konten event, wisata, atau kuliner agar ditinjau pengelola.'],
 ];
 
 const reveal = {

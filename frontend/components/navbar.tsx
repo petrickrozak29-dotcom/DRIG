@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Bell, LayoutDashboard, LogOut, Menu, ShieldCheck, UserCircle, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiBaseUrl } from '../lib/api';
 import { useEffect, useState } from 'react';
@@ -18,6 +19,7 @@ const links = [
 
 export default function Navbar() {
   const { user, isAuthenticated, logout, loading } = useAuth();
+  const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isDeveloper = user?.role === 'ADMIN';
@@ -51,7 +53,21 @@ export default function Navbar() {
           {mobileOpen ? <X /> : <Menu />}
         </button>
         <nav className={mobileOpen ? 'nav-links nav-open' : 'nav-links'}>
-          {links.map(([label, href]) => <Link key={href} href={href} onClick={() => setMobileOpen(false)}>{label}</Link>)}
+          {links.map(([label, href]) => {
+            const hrefValue = String(href);
+            const isActive = pathname === hrefValue || pathname.startsWith(`${hrefValue}/`);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={isActive ? 'nav-link-active' : undefined}
+                aria-current={isActive ? 'page' : undefined}
+                onClick={() => setMobileOpen(false)}
+              >
+                {label}
+              </Link>
+            );
+          })}
           {!isDeveloper && (
             <Link href="/community-form" className="community-badge-link" onClick={() => setMobileOpen(false)}>
               <ShieldCheck /> Community Form

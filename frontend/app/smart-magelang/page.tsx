@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bot,
@@ -183,6 +183,7 @@ export default function SmartMagelangPage() {
   const { token, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<SmartTab>('ai');
   const [duration, setDuration] = useState('4');
+  const [stopDuration, setStopDuration] = useState('90');
   const [departureTime, setDepartureTime] = useState('08:00');
   const [interests, setInterests] = useState<string[]>(['wisata', 'kuliner']);
   const [result, setResult] = useState<ItineraryResult | null>(null);
@@ -192,7 +193,10 @@ export default function SmartMagelangPage() {
   const [locationStatus, setLocationStatus] = useState('Aktifkan lokasi untuk rekomendasi terdekat');
 
   const requestLocation = () => {
-    if (!('geolocation' in navigator)) return;
+    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+      setLocationStatus('Geolocation tidak tersedia, memakai pusat Magelang');
+      return;
+    }
 
     setLocationStatus('Meminta izin lokasi perangkat...');
     navigator.geolocation.getCurrentPosition(
@@ -203,14 +207,16 @@ export default function SmartMagelangPage() {
         });
         setLocationStatus('Lokasi perangkat aktif');
       },
-      () => setLocationStatus('Izin lokasi belum aktif, memakai pusat Magelang'),
+      (error) => {
+        const message =
+          error.code === error.PERMISSION_DENIED
+            ? 'Izin lokasi ditolak, memakai pusat Magelang'
+            : 'Lokasi belum bisa diambil, memakai pusat Magelang';
+        setLocationStatus(message);
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   };
-
-  useEffect(() => {
-    requestLocation();
-  }, []);
 
   const tripWindow = useMemo(() => {
     const start = new Date();
@@ -241,6 +247,11 @@ export default function SmartMagelangPage() {
       return;
     }
 
+    if (Number(stopDuration) < 15 || Number(stopDuration) > 240) {
+      setError('Durasi singgah per lokasi harus antara 15 sampai 240 menit.');
+      return;
+    }
+
     if (interests.length === 0) {
       setError('Pilih minimal satu minat.');
       return;
@@ -261,6 +272,7 @@ export default function SmartMagelangPage() {
         },
         body: JSON.stringify({
           duration: Number(duration),
+          stopDuration: Number(stopDuration),
           startTime: start.toISOString(),
           interests,
           latitude: location.lat,
@@ -361,8 +373,8 @@ export default function SmartMagelangPage() {
                 AI Assistant
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">
-                Masukkan jam mulai, waktu yang tersedia, dan minat. AI akan menyusun rekomendasi
-                dari titik terdekat dulu.
+                Masukkan jam mulai, waktu yang tersedia, durasi singgah, dan minat. AI akan
+                menyusun rekomendasi dari titik terdekat dulu.
               </p>
 
               <div className="mt-6 space-y-5">
@@ -379,16 +391,43 @@ export default function SmartMagelangPage() {
 
                 <label className="block text-sm font-semibold text-slate-200">
                   Waktu yang dimiliki
-                  <input
-                    type="number"
-                    min="1"
-                    step="0.5"
-                    value={duration}
-                    onChange={(event) => setDuration(event.target.value)}
-                    className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
-                    placeholder="Contoh: 1, 2, 3, 4, 6"
-                    required
-                  />
+                  <div className="mt-2 flex overflow-hidden rounded-lg border border-slate-700 bg-slate-950 focus-within:border-cyan-400">
+                    <input
+                      type="number"
+                      min="1"
+                      step="0.5"
+                      value={duration}
+                      onChange={(event) => setDuration(event.target.value)}
+                      className="w-full bg-transparent px-4 py-3 text-white outline-none"
+                      placeholder="Contoh: 1, 2, 3, 4, 6"
+                      required
+                    />
+                    <span className="flex items-center border-l border-slate-700 px-4 text-sm font-bold text-cyan-200">
+                      Jam
+                    </span>
+                  </div>
+                </label>
+
+                <label className="block text-sm font-semibold text-slate-200">
+                  Durasi singgah per lokasi
+                  <div className="mt-2 flex overflow-hidden rounded-lg border border-slate-700 bg-slate-950 focus-within:border-cyan-400">
+                    <input
+                      type="number"
+                      min="15"
+                      max="240"
+                      step="5"
+                      value={stopDuration}
+                      onChange={(event) => setStopDuration(event.target.value)}
+                      className="w-full bg-transparent px-4 py-3 text-white outline-none"
+                      required
+                    />
+                    <span className="flex items-center border-l border-slate-700 px-4 text-sm font-bold text-cyan-200">
+                      Menit
+                    </span>
+                  </div>
+                  <span className="mt-2 block text-xs font-normal text-slate-400">
+                    Default 90 menit. Atur sesuai lama kunjungan di tiap destinasi.
+                  </span>
                 </label>
 
                 <div>
@@ -424,6 +463,9 @@ export default function SmartMagelangPage() {
                   <p className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-cyan-300" />
                     Jadwal: {tripWindow}
+                  </p>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Waktu perjalanan dalam jam, durasi singgah dalam menit.
                   </p>
                   <p className="mt-2 flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-emerald-300" />

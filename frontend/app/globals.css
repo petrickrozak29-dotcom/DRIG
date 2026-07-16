@@ -106,6 +106,7 @@ summary {
 }
 
 .nav-links a {
+  position: relative;
   color: #eef4ff;
   font-size: 13px;
   font-weight: 650;
@@ -114,6 +115,22 @@ summary {
 }
 
 .nav-links a:hover { color: var(--cyan); }
+.nav-links a.nav-link-active {
+  color: #27e2ff;
+  font-weight: 850;
+}
+.nav-links a.nav-link-active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  width: 22px;
+  height: 2px;
+  border-radius: 999px;
+  background: #27e2ff;
+  box-shadow: 0 0 12px rgba(39, 226, 255, .75);
+  transform: translateX(-50%);
+}
 .nav-links .developer-link { display: inline-flex; align-items: center; gap: 6px; color: #cdafff; }
 .developer-link svg { width: 15px; height: 15px; }
 

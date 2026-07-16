@@ -44,7 +44,7 @@ router.get('/score', authenticate, async (req: Request, res: Response) => {
 router.post('/generate-itinerary', authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
-    const { duration, startTime, interests, latitude, longitude } = req.body;
+    const { duration, startTime, interests, stopDuration, latitude, longitude } = req.body;
 
     if (!duration || !startTime || !interests) {
       return res.status(400).json({
@@ -54,6 +54,7 @@ router.post('/generate-itinerary', authenticate, async (req: Request, res: Respo
 
     const itinerary = await recommendationService.generateItinerary(userId, {
       duration: parseFloat(duration),
+      stopDuration: stopDuration === undefined || stopDuration === '' ? undefined : parseInt(stopDuration, 10),
       startTime: new Date(startTime),
       interests: Array.isArray(interests) ? interests : [interests],
       latitude: latitude === undefined ? undefined : parseFloat(latitude),
