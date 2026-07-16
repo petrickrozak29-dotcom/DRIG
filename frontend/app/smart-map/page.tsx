@@ -344,7 +344,7 @@ export default function SmartMapPage() {
 
         <section className="space-y-6">
           <section className="rounded-lg border border-slate-800 bg-slate-900/80 p-4 text-sm text-slate-300">
-            <p className="font-semibold text-white">Batas Antara Kabupaten Magelang dan Kota Magelang</p>
+            <p className="font-semibold text-white">Informasi Batas Kabupaten Magelang dan Kota Magelang, Serta Rute dari Rekomendasi Itenary AI Asistant</p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <div className="flex items-center gap-3">
                 <span className="h-0 w-12 border-t-2 border-dashed border-red-500" />
@@ -353,6 +353,10 @@ export default function SmartMapPage() {
               <div className="flex items-center gap-3">
                 <span className="h-0 w-12 border-t-2 border-dashed border-blue-500" />
                 <span>Garis biru putus-putus: batas Kabupaten Magelang.</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white ring-2 ring-white">1</span>
+                <span>Rute Hijau : urutan rute itinerary AI Asistant.</span>
               </div>
             </div>
           </section>
