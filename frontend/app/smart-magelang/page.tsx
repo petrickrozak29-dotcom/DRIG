@@ -175,14 +175,8 @@ function timeLabel(value: string) {
 const DEFAULT_STOP_DURATION_MINUTES = 60;
 const MIN_STOP_DURATION_MINUTES = 15;
 const MAX_STOP_DURATION_MINUTES = 240;
-const CULINARY_STOP_DURATION_MAX_MINUTES = 120;
+const CULINARY_STOP_DURATION_MAX_MINUTES = 60;
 const APP_TIME_ZONE_OFFSET_MINUTES = 7 * 60;
-
-const culinarySlots = [
-  { start: 12 * 60, end: 14 * 60 },
-  { start: 15 * 60 + 30, end: 17 * 60 },
-  { start: 19 * 60 + 30, end: 21 * 60 },
-];
 
 function durationOptions(maxMinutes: number) {
   const options: number[] = [];
@@ -190,11 +184,6 @@ function durationOptions(maxMinutes: number) {
     options.push(value);
   }
   return options;
-}
-
-function minutesOfDay(value: Date) {
-  const local = new Date(value.getTime() + APP_TIME_ZONE_OFFSET_MINUTES * 60000);
-  return local.getUTCHours() * 60 + local.getUTCMinutes();
 }
 
 function dateAtMinutes(base: Date, minutes: number, dayOffset = 0) {
@@ -211,23 +200,6 @@ function dateAtMinutes(base: Date, minutes: number, dayOffset = 0) {
   return new Date(utcTime - APP_TIME_ZONE_OFFSET_MINUTES * 60000);
 }
 
-function alignCulinaryStart(arrivalTime: Date, stayDuration: number) {
-  const arrivalMinutes = minutesOfDay(arrivalTime);
-
-  for (const slot of culinarySlots) {
-    const slotStart = dateAtMinutes(arrivalTime, slot.start);
-    const slotEnd = dateAtMinutes(arrivalTime, slot.end);
-    const candidateStart =
-      arrivalMinutes <= slot.start ? slotStart : new Date(arrivalTime);
-
-    if (candidateStart >= slotStart && candidateStart.getTime() + stayDuration * 60000 <= slotEnd.getTime()) {
-      return candidateStart;
-    }
-  }
-
-  return dateAtMinutes(arrivalTime, culinarySlots[0].start, 1);
-}
-
 function isCulinaryCategory(value?: string, kind?: string) {
   return normalizeRouteCategory(kind || value) === 'kuliner';
 }
@@ -242,9 +214,7 @@ function recalculateItinerary(items: ItineraryItem[]) {
       index === 0
         ? new Date(currentStart)
         : new Date(currentStart.getTime() + item.travelTime * 60000);
-    const startTime = isCulinaryCategory(item.destination.category, item.destination.kind)
-      ? alignCulinaryStart(arrivalTime, item.stayDuration)
-      : arrivalTime;
+    const startTime = arrivalTime;
     const endTime = new Date(startTime.getTime() + item.stayDuration * 60000);
 
     currentStart = endTime;

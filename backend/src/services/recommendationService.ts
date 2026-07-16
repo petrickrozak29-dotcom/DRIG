@@ -69,14 +69,13 @@ const DEFAULT_STOP_DURATION_MINUTES = 60;
 const MIN_STOP_DURATION_MINUTES = 15;
 const MAX_STOP_DURATION_MINUTES = 240;
 const MIN_CULINARY_GAP_MINUTES = 120;
-const CULINARY_APPROACH_MINUTES = 45;
 const APP_TIME_ZONE = 'Asia/Jakarta';
 const APP_TIME_ZONE_OFFSET_MINUTES = 7 * 60;
 
 const CULINARY_WINDOWS = [
-  { start: 12 * 60, end: 14 * 60 },
-  { start: 15 * 60 + 30, end: 17 * 60 },
-  { start: 19 * 60 + 30, end: 21 * 60 },
+  { start: 12 * 60, end: 13 * 60 },
+  { start: 15 * 60 + 30, end: 16 * 60 + 30 },
+  { start: 19 * 60 + 30, end: 20 * 60 + 30 },
 ];
 
 function normalizeInterest(value: string) {
@@ -121,18 +120,9 @@ function isCulinaryCandidate(candidate: RouteCandidate) {
   return candidate.destination.kind === 'kuliner';
 }
 
-function isWithinCulinaryWindow(value: Date) {
-  const minutes = minutesOfDay(value);
-  return CULINARY_WINDOWS.some((window) => minutes >= window.start && minutes < window.end);
-}
-
 function activeCulinaryWindow(value: Date) {
   const minutes = minutesOfDay(value);
-  return (
-    CULINARY_WINDOWS.find(
-      (window) => minutes >= window.start - CULINARY_APPROACH_MINUTES && minutes < window.end
-    ) || null
-  );
+  return CULINARY_WINDOWS.find((window) => minutes >= window.start && minutes < window.end) || null;
 }
 
 function formatTime(value: Date) {
@@ -175,25 +165,6 @@ function hasRecentCulinaryStop(itinerary: ItineraryItem[], nextArrival: Date) {
   return gapMinutes < MIN_CULINARY_GAP_MINUTES;
 }
 
-function findCulinarySlotStart(
-  arrivalTime: Date,
-  stayDuration: number,
-  window: (typeof CULINARY_WINDOWS)[number]
-) {
-  const slotStart = dateAtMinutes(arrivalTime, window.start);
-  const slotEnd = dateAtMinutes(arrivalTime, window.end);
-  const candidateStart = arrivalTime <= slotStart ? slotStart : arrivalTime;
-
-  if (
-    candidateStart >= slotStart &&
-    candidateStart.getTime() + stayDuration * 60000 <= slotEnd.getTime()
-  ) {
-    return candidateStart;
-  }
-
-  return null;
-}
-
 function preferredStayDuration(candidate: RouteCandidate, preferredStopDuration: number) {
   if (!isCulinaryCandidate(candidate)) return preferredStopDuration;
   const longestCulinaryWindow = Math.max(
@@ -205,24 +176,25 @@ function preferredStayDuration(candidate: RouteCandidate, preferredStopDuration:
 function scheduleCandidate(
   candidate: RouteCandidate,
   itinerary: ItineraryItem[],
-  arrivalTime: Date,
-  stayDuration: number,
-  culinaryWindow: (typeof CULINARY_WINDOWS)[number] | null
+  arrivalTime: Date
 ) {
-  if (!isCulinaryCandidate(candidate)) {
-    if (culinaryWindow) return null;
-    return { startTime: arrivalTime, waitTime: 0 };
-  }
-
-  if (!culinaryWindow) return null;
-
-  const slotStart = findCulinarySlotStart(arrivalTime, stayDuration, culinaryWindow);
-  if (!slotStart || hasRecentCulinaryStop(itinerary, slotStart)) return null;
+  if (isCulinaryCandidate(candidate) && hasRecentCulinaryStop(itinerary, arrivalTime)) return null;
 
   return {
-    startTime: slotStart,
-    waitTime: Math.max(0, Math.round((slotStart.getTime() - arrivalTime.getTime()) / 60000)),
+    startTime: arrivalTime,
   };
+}
+
+function nextDecisionBoundary(currentTime: Date, tripEndTime: Date) {
+  const minutes = minutesOfDay(currentTime);
+  const activeWindow = activeCulinaryWindow(currentTime);
+  const boundaryMinutes =
+    activeWindow?.end || CULINARY_WINDOWS.find((window) => minutes < window.start)?.start;
+
+  if (boundaryMinutes === undefined) return tripEndTime;
+
+  const boundaryTime = dateAtMinutes(currentTime, boundaryMinutes);
+  return boundaryTime > currentTime && boundaryTime < tripEndTime ? boundaryTime : tripEndTime;
 }
 
 async function resolveSubmissionCoordinates(item: SubmissionWithRelations | any) {
@@ -326,7 +298,9 @@ async function getRouteCandidates(
     ...historyRecords,
     ...cultureRecords,
   ];
-  const matched = allCandidates.filter((item) => matchesInterest(item, selectedInterests));
+  const matched = allCandidates.filter(
+    (item) => matchesInterest(item, selectedInterests) || item.kind === 'kuliner'
+  );
   const source = matched.length > 0 ? matched : allCandidates;
 
   const withCoords = await Promise.all(
@@ -525,18 +499,20 @@ export async function generateItinerary(
 
   const itinerary: ItineraryItem[] = [];
   let currentTime = new Date(startTime);
-  let remainingTime = duration * 60; // convert to minutes
+  const tripEndTime = new Date(startTime.getTime() + duration * 60 * 60000);
   let totalDistance = 0;
   let currentPoint = origin;
   const visited = new Set<string>();
 
   const minimumStayTime = Math.min(30, preferredStopDuration);
 
-  while (
-    remainingTime >= minimumStayTime + 5 &&
-    visited.size < candidates.length &&
-    itinerary.length < 6
-  ) {
+  while (currentTime < tripEndTime) {
+    const remainingTime = Math.floor((tripEndTime.getTime() - currentTime.getTime()) / 60000);
+    if (remainingTime < 5) {
+      currentTime = tripEndTime;
+      continue;
+    }
+
     const nearestCandidates = candidates
       .filter((candidate) => !visited.has(candidate.destination.id))
       .map((candidate) => {
@@ -560,22 +536,22 @@ export async function generateItinerary(
       requiredCulinaryWindow ? isCulinaryCandidate(candidate) : !isCulinaryCandidate(candidate)
     );
 
+    if (categoryFilteredCandidates.length === 0) {
+      currentTime = nextDecisionBoundary(currentTime, tripEndTime);
+      continue;
+    }
+
     const schedulableCandidates = categoryFilteredCandidates
       .map((candidate) => {
         const stayDuration = preferredStayDuration(candidate, preferredStopDuration);
         const minimumCandidateStayTime = Math.min(30, stayDuration);
         const arrivalTime = new Date(currentTime.getTime() + candidate.estimatedTravelTime * 60000);
-        const schedule = scheduleCandidate(
-          candidate,
-          itinerary,
-          arrivalTime,
-          stayDuration,
-          requiredCulinaryWindow
-        );
+        const schedule = scheduleCandidate(candidate, itinerary, arrivalTime);
+        const availableStayTime = remainingTime - candidate.estimatedTravelTime;
 
         if (
           !schedule ||
-          candidate.estimatedTravelTime + schedule.waitTime + minimumCandidateStayTime > remainingTime
+          availableStayTime < minimumCandidateStayTime
         ) {
           return null;
         }
@@ -583,25 +559,24 @@ export async function generateItinerary(
         return {
           ...candidate,
           scheduledStartTime: schedule.startTime,
-          waitTime: schedule.waitTime,
           preferredStayTime: stayDuration,
           minimumStayTime: minimumCandidateStayTime,
+          availableStayTime,
         };
       })
       .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null);
 
     const next = schedulableCandidates[0];
 
-    if (!next) break;
+    if (!next) {
+      currentTime = nextDecisionBoundary(currentTime, tripEndTime);
+      continue;
+    }
 
     const stayTime = Math.min(
       next.preferredStayTime,
-      Math.max(
-        next.minimumStayTime,
-        remainingTime - next.estimatedTravelTime - next.waitTime
-      )
+      Math.max(next.minimumStayTime, next.availableStayTime)
     );
-    const totalTime = next.estimatedTravelTime + next.waitTime + stayTime;
     const endTime = new Date(next.scheduledStartTime.getTime() + stayTime * 60000);
 
     itinerary.push({
@@ -614,23 +589,27 @@ export async function generateItinerary(
       distance: next.distance,
       notes:
         next.destination.kind === 'kuliner'
-          ? 'Dijadwalkan pada slot kuliner agar tidak terlalu dekat dengan jadwal makan lain.'
+          ? 'Dijadwalkan saat currentTime masuk slot kuliner.'
           : 'Nikmati destinasi ini sesuai waktu kunjungan yang tersedia.',
-      directions: `${next.distance.toFixed(1)} km dari titik sebelumnya, estimasi ${next.estimatedTravelTime} menit perjalanan${
-        next.waitTime > 0 ? ` dan menunggu ${next.waitTime} menit sampai slot kuliner` : ''
-      }`,
+      directions: `${next.distance.toFixed(1)} km dari titik sebelumnya, estimasi ${next.estimatedTravelTime} menit perjalanan`,
     });
 
     currentTime = endTime;
-    remainingTime -= totalTime;
     totalDistance += next.distance;
     currentPoint = { latitude: next.latitude, longitude: next.longitude };
     visited.add(next.destination.id);
   }
 
-  const totalDuration = itinerary.length > 0
-    ? Math.max(0, Math.round((currentTime.getTime() - startTime.getTime()) / 60000))
-    : 0;
+  const totalDuration =
+    itinerary.length > 0
+      ? Math.max(
+          0,
+          Math.round(
+            (Math.min(currentTime.getTime(), tripEndTime.getTime()) - startTime.getTime()) /
+              60000
+          )
+        )
+      : 0;
 
   // Generate AI summary
   let summary = '';
